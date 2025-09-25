@@ -1,12 +1,9 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
-import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import AppLayout from "@/layouts/app-layout";
+import { Head } from "@inertiajs/react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { 
     Car, 
     Building2, 
@@ -20,40 +17,63 @@ import {
     ArrowUpRight,
     ArrowDownRight
 } from "lucide-react";
-import vehiclesRoute from '@/routes/vehicles';
+import { Vehicle, Organization } from "@/types/response";
+import { BreadcrumbItem } from "@/types";
+import { dashboard } from "@/routes";
+import vehiclesRoute from "@/routes/vehicles";
+
+interface VehicleOrder {
+    vehicle_id: number;
+    order_count: number;
+    total_fuel_qty: number;
+    total_spent: number;
+    vehicle?: Vehicle;
+}
+
+interface VehicleByFuel {
+    fuel_name: string;
+    fuel_type: string;
+    count: number;
+}
 
 interface Props {
     statistics: {
         totalVehicles: number;
-        totalOrganizations: number;
-        totalOrders: number;
-        totalFuelTypes: number;
     };
-    recentOrders: any[];
     vehiclesByType: Record<string, number>;
-    ordersByMonth: any[];
-    topOrganizations: any[];
-    fuelConsumption: any[];
+    vehiclesByFuel: VehicleByFuel[];
+    vehiclesByOrganization: Organization[];
+    recentVehicles: Vehicle[];
+    vehicleOrders: VehicleOrder[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard().url,
-    },
-];
-
-export default function Dashboard({ 
+export default function VehicleDashboard({ 
     statistics, 
-    recentOrders, 
     vehiclesByType, 
-    ordersByMonth, 
-    topOrganizations, 
-    fuelConsumption 
+    vehiclesByFuel, 
+    vehiclesByOrganization, 
+    recentVehicles, 
+    vehicleOrders 
 }: Props) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard().url,
+        },
+        {
+            title: 'Vehicles Dashboard',
+            href: vehiclesRoute.dashboard?.()?.url || '/vehicles/dashboard',
+        },
+    ];
+
+    const totalVehicles = statistics.totalVehicles;
+    const totalOrganizations = vehiclesByOrganization.length;
+    const totalOrders = vehicleOrders.reduce((sum, order) => sum + order.order_count, 0);
+    const totalFuelConsumption = vehicleOrders.reduce((sum, order) => sum + order.total_fuel_qty, 0);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+            <Head title="Vehicle Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
                 {/* Statistics Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -63,7 +83,7 @@ export default function Dashboard({
                             <Car className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.totalVehicles}</div>
+                            <div className="text-2xl font-bold">{totalVehicles}</div>
                             <p className="text-xs text-muted-foreground">
                                 Registered vehicles
                             </p>
@@ -76,7 +96,7 @@ export default function Dashboard({
                             <Building2 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.totalOrganizations}</div>
+                            <div className="text-2xl font-bold">{totalOrganizations}</div>
                             <p className="text-xs text-muted-foreground">
                                 Active organizations
                             </p>
@@ -89,7 +109,7 @@ export default function Dashboard({
                             <Activity className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.totalOrders}</div>
+                            <div className="text-2xl font-bold">{totalOrders}</div>
                             <p className="text-xs text-muted-foreground">
                                 Fuel orders placed
                             </p>
@@ -98,13 +118,13 @@ export default function Dashboard({
                     
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Fuel Types</CardTitle>
+                            <CardTitle className="text-sm font-medium">Fuel Consumed</CardTitle>
                             <Fuel className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.totalFuelTypes}</div>
+                            <div className="text-2xl font-bold">{totalFuelConsumption.toFixed(2)}L</div>
                             <p className="text-xs text-muted-foreground">
-                                Available fuel types
+                                Total fuel consumed
                             </p>
                         </CardContent>
                     </Card>
@@ -126,7 +146,7 @@ export default function Dashboard({
                         <CardContent>
                             <div className="space-y-4">
                                 {Object.entries(vehiclesByType).map(([type, count]) => {
-                                    const percentage = statistics.totalVehicles > 0 ? (count / statistics.totalVehicles) * 100 : 0;
+                                    const percentage = totalVehicles > 0 ? (count / totalVehicles) * 100 : 0;
                                     return (
                                         <div key={type} className="space-y-2">
                                             <div className="flex items-center justify-between">
@@ -141,7 +161,42 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
 
-                    {/* Top Organizations */}
+                    {/* Vehicles by Fuel Type */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <BarChart3 className="h-5 w-5" />
+                                Vehicles by Fuel Type
+                            </CardTitle>
+                            <CardDescription>
+                                Distribution of vehicles by fuel type
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {vehiclesByFuel.map((fuel) => {
+                                    const percentage = totalVehicles > 0 ? (fuel.count / totalVehicles) * 100 : 0;
+                                    return (
+                                        <div key={fuel.fuel_name} className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-sm font-medium">{fuel.fuel_name}</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">({fuel.fuel_type})</span>
+                                                </div>
+                                                <span className="text-sm text-muted-foreground">{fuel.count}</span>
+                                            </div>
+                                            <Progress value={percentage} className="h-2" />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Top Organizations and Recent Vehicles */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    {/* Top Organizations by Vehicle Count */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -154,7 +209,7 @@ export default function Dashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {topOrganizations.slice(0, 5).map((org, index) => (
+                                {vehiclesByOrganization.slice(0, 5).map((org, index) => (
                                     <div key={org.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium">
@@ -173,44 +228,78 @@ export default function Dashboard({
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Recent Vehicles */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Calendar className="h-5 w-5" />
+                                Recent Vehicles
+                            </CardTitle>
+                            <CardDescription>
+                                Latest registered vehicles
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {recentVehicles.slice(0, 5).map((vehicle) => (
+                                    <div key={vehicle.id} className="flex items-center justify-between">
+                                        <div>
+                                            <div className="font-medium">{vehicle.name || 'Unnamed Vehicle'}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {vehicle.ucode} • {vehicle.fuel.name}
+                                            </div>
+                                        </div>
+                                        <Badge variant="outline">
+                                            {vehicle.type || 'Unspecified'}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Recent Orders */}
+                {/* Vehicle Orders Statistics */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Calendar className="h-5 w-5" />
-                            Recent Orders
+                            <TrendingUp className="h-5 w-5" />
+                            Vehicle Orders Statistics
                         </CardTitle>
                         <CardDescription>
-                            Latest fuel orders
+                            Top vehicles by order count and fuel consumption
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {recentOrders.slice(0, 5).map((order) => (
-                                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            {vehicleOrders.slice(0, 10).map((order, index) => (
+                                <div key={order.vehicle_id} className="flex items-center justify-between p-4 border rounded-lg">
                                     <div className="flex items-center gap-4">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium">
-                                            <Fuel className="h-4 w-4" />
+                                            {index + 1}
                                         </div>
                                         <div>
                                             <div className="font-medium">
                                                 {order.vehicle?.name || `Vehicle #${order.vehicle_id}`}
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                {order.organization?.name} • {order.fuel?.name}
+                                                {order.vehicle?.ucode} • {order.vehicle?.fuel.name}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-6">
                                         <div className="text-center">
-                                            <div className="text-sm font-medium">{order.fuel_qty}L</div>
-                                            <div className="text-xs text-muted-foreground">Quantity</div>
+                                            <div className="text-sm font-medium">{order.order_count}</div>
+                                            <div className="text-xs text-muted-foreground">Orders</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="text-sm font-medium">${order.total_price}</div>
-                                            <div className="text-xs text-muted-foreground">Total</div>
+                                            <div className="text-sm font-medium">{order.total_fuel_qty.toFixed(2)}L</div>
+                                            <div className="text-xs text-muted-foreground">Fuel</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-sm font-medium">${order.total_spent.toFixed(2)}</div>
+                                            <div className="text-xs text-muted-foreground">Spent</div>
                                         </div>
                                     </div>
                                 </div>
@@ -221,14 +310,14 @@ export default function Dashboard({
 
                 {/* Action Buttons */}
                 <div className="flex gap-4">
-                    {/* <Button asChild>
-                        <a href={vehiclesRoute.dashboard?.()?.url || '/vehicles/dashboard'}>
-                            Vehicle Dashboard
-                        </a>
-                    </Button> */}
-                    <Button variant="outline" asChild>
+                    <Button asChild>
                         <a href={vehiclesRoute.index().url}>
                             View All Vehicles
+                        </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <a href={dashboard().url}>
+                            Back to Main Dashboard
                         </a>
                     </Button>
                 </div>

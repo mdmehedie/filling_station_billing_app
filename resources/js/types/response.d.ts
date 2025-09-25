@@ -10,6 +10,7 @@ export interface Organization {
     deleted_at?: string;
     created_at: string;
     updated_at: string;
+    vehicles_count?: number;
     user: {
         id: number;
         name: string;

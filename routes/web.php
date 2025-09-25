@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FuelController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrganizationController;
@@ -13,9 +14,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('vehicles/dashboard', [DashboardController::class, 'vehicles'])->name('vehicles.dashboard');
 
     Route::apiResource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class);
