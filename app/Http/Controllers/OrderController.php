@@ -15,7 +15,7 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $orders = Order::with(['organization', 'vehicle', 'fuel'])->paginate(3);
+        $orders = Order::with(['organization', 'vehicle', 'fuel'])->paginate(15);
 
         return Inertia::render('Orders/Index', [
             'orders' => OrderResource::collection($orders),

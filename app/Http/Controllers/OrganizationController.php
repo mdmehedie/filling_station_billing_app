@@ -15,7 +15,7 @@ class OrganizationController extends Controller
     public function index()
     {   
         return inertia('Organizations/Index', [
-            'organizations' => OrganizationResource::collection(Organization::with('user')->paginate(3))
+            'organizations' => OrganizationResource::collection(Organization::with('user')->paginate(15))
         ]);
     }
 

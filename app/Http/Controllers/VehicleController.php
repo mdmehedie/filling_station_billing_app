@@ -14,7 +14,7 @@ class VehicleController extends Controller
      */
     public function index()
     {
-        $vehicles = Vehicle::with('fuel', 'organization')->paginate(3);
+        $vehicles = Vehicle::with('fuel', 'organization')->paginate(15);
     
         return inertia('Vehicles/Index', [
             'vehicles' => VehicleResource::collection($vehicles)
