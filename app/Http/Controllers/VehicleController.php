@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
+use App\Http\Resources\VehicleResource;
 use App\Models\Vehicle;
 
 class VehicleController extends Controller
@@ -13,7 +14,11 @@ class VehicleController extends Controller
      */
     public function index()
     {
-        //
+        $vehicles = Vehicle::with('fuel', 'organization')->paginate(3);
+    
+        return inertia('Vehicles/Index', [
+            'vehicles' => VehicleResource::collection($vehicles)
+        ]);
     }
 
     /**

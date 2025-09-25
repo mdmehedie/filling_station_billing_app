@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Organization;
+use App\Http\Resources\OrganizationResource;
 
 class OrganizationController extends Controller
 {
@@ -12,8 +13,10 @@ class OrganizationController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        //
+    {   
+        return inertia('Organizations/Index', [
+            'organizations' => OrganizationResource::collection(Organization::with('user')->paginate(3))
+        ]);
     }
 
     /**

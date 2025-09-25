@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreFuelRequest;
 use App\Http\Requests\UpdateFuelRequest;
 use App\Models\Fuel;
+use App\Http\Resources\FuelResource;
 
 class FuelController extends Controller
 {
@@ -13,7 +14,9 @@ class FuelController extends Controller
      */
     public function index()
     {
-        //
+        return inertia('Fuel/Index', [
+            'fuels' => FuelResource::collection(Fuel::paginate(3))
+        ]);
     }
 
     /**

@@ -26,5 +26,13 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        // Run the seeders in order
+        $this->call([
+            FuelSeeder::class,
+            OrganizationSeeder::class,
+            VehicleSeeder::class,
+            OrderSeeder::class,
+        ]);
     }
 }

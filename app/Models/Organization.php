@@ -15,4 +15,9 @@ class Organization extends Model
         'vat_rate',
         'vat_flat_amount',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
