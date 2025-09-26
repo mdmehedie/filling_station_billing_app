@@ -74,9 +74,17 @@ export interface DataTableProps<T> {
     responseData?: PaginatedResponse<T>
 }
 
+export interface Links {
+    first: string;
+    last: string;
+    next: string;
+    prev: string;
+}
+
+
 export interface PaginatedResponse<T> {
     data: T[];
-    links: PaginationLink;
+    links: Links;
     meta: {
         current_page: number
         from: number

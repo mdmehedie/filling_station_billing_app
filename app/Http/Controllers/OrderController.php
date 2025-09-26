@@ -13,6 +13,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderController extends Controller
@@ -21,41 +23,40 @@ class OrderController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-        $query = Order::with(['organization', 'vehicle', 'fuel']);
-
-        // Apply search filter
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
-                  ->orWhereHas('organization', function ($orgQuery) use ($search) {
-                      $orgQuery->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('vehicle', function ($vehicleQuery) use ($search) {
-                      $vehicleQuery->where('name', 'like', "%{$search}%")
-                                   ->orWhere('ucode', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('fuel', function ($fuelQuery) use ($search) {
-                      $fuelQuery->where('name', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Apply date filters
-        if ($request->has('start_date') && $request->start_date) {
-            $query->whereDate('sold_date', '>=', $request->start_date);
-        }
-
-        if ($request->has('end_date') && $request->end_date) {
-            $query->whereDate('sold_date', '<=', $request->end_date);
-        }
-
-        $orders = $query->orderBy('created_at', 'desc')->paginate(15);
-
+    {        
         return Inertia::render('Orders/Index', [
-            'orders' => OrderResource::collection($orders),
+            // 'orders' => OrderResource::collection($orders),
         ]);
+    }
+
+    public function orderList(Request $request)
+    {
+        $orders = QueryBuilder::for(Order::class)
+        ->with(['organization', 'vehicle', 'fuel'])
+        ->allowedFilters([
+            AllowedFilter::callback('search', function ($query, $value) {
+                $query->where('id', 'like', "%{$value}%")
+                      ->orWhereHas('organization', function ($orgQuery) use ($value) {
+                          $orgQuery->where('name', 'like', "%{$value}%");
+                      })
+                      ->orWhereHas('vehicle', function ($vehicleQuery) use ($value) {
+                          $vehicleQuery->where('name', 'like', "%{$value}%")
+                                       ->orWhere('ucode', 'like', "%{$value}%");
+                      })
+                      ->orWhereHas('fuel', function ($fuelQuery) use ($value) {
+                          $fuelQuery->where('name', 'like', "%{$value}%");
+                      });
+            }),
+            AllowedFilter::callback('start_date', function ($query, $value) {
+                $query->whereDate('sold_date', '>=', $value);
+            }),
+            AllowedFilter::callback('end_date', function ($query, $value) {
+                $query->whereDate('sold_date', '<=', $value);
+            }),
+        ])
+        ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
+        ->paginate(15);
+        return OrderResource::collection($orders);
     }
 
     /**

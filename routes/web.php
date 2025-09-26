@@ -27,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Export routes
     Route::get('api/orders/export', [OrderController::class, 'export'])->name('orders.export');
+    Route::get('api/orders', [OrderController::class, 'orderList']);
 });
 
 require __DIR__ . '/settings.php';

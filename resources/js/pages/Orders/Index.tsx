@@ -13,13 +13,11 @@ import { Order, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { orderList } from "@/lib/api";
+import axios from "axios";
 
-interface Props {
-    orders: PaginatedResponse<Order>;
-}
-
-export default function Index({ orders }: Props) {
+export default function Index() {
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -27,7 +25,33 @@ export default function Index({ orders }: Props) {
     const [showFilters, setShowFilters] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [orders, setOrders] = useState<PaginatedResponse<Order>>({
+        data: [],
+        links: {
+            first: '',
+            last: '',
+            next: '',
+            prev: '',
+        },
+        meta: {
+            current_page: 1,
+            from: 0,
+            last_page: 0,
+            links: [],
+            path: '',
+            per_page: 0,
+            to: 0,
+            total: 0
+        }
+    });
+    
+    useEffect(() => {
+        orderList((response: PaginatedResponse<Order>) => {
+            setOrders(response);
+        });
+    }, []);
 
+    
     // Custom debounced search function
     const debouncedSearch = useCallback((term: string) => {
         if (searchTimeoutRef.current) {
@@ -35,14 +59,13 @@ export default function Index({ orders }: Props) {
         }
         
         searchTimeoutRef.current = setTimeout(() => {
-            router.get('/orders', { 
-                search: term,
-                start_date: startDate,
-                end_date: endDate,
-                page: 1 // Reset to first page when searching
+            orderList((response: PaginatedResponse<Order>) => {
+                setOrders(response);
             }, {
-                preserveState: true,
-                preserveScroll: true,
+                "filter[search]": term,
+                "filter[start_date]": startDate,
+                "filter[end_date]": endDate,
+                page: 1 // Reset to first page when searching
             });
         }, 500);
     }, [startDate, endDate]);
@@ -53,59 +76,56 @@ export default function Index({ orders }: Props) {
     };
 
     const handlePageChange = (page: number) => {
-        router.get('/orders', { 
-            page,
-            search: searchTerm,
-            start_date: startDate,
-            end_date: endDate
+        orderList((response: PaginatedResponse<Order>) => {
+            setOrders(response);
         }, {
-            preserveState: true,
-            preserveScroll: true,
+            "filter[search]": searchTerm,
+            "filter[start_date]": startDate,
+            "filter[end_date]": endDate,
+            page: page
         });
     };
-
+    
     const handleFilterChange = () => {
-        router.get('/orders', { 
-            search: searchTerm,
-            start_date: startDate,
-            end_date: endDate,
-            page: 1
+        orderList((response: PaginatedResponse<Order>) => {
+            setOrders(response);
         }, {
-            preserveState: true,
-            preserveScroll: true,
+            "filter[search]": searchTerm,
+            "filter[start_date]": startDate,
+            "filter[end_date]": endDate,
+            page: 1
         });
     };
-
+    
     const clearFilters = () => {
         setStartDate('');
         setEndDate('');
         setSearchTerm('');
-        router.get('/orders', { page: 1 }, {
-            preserveState: true,
-            preserveScroll: true,
+        orderList((response: PaginatedResponse<Order>) => {
+            setOrders(response);
+        }, {
+            "filter[search]": '',
+            "filter[start_date]": '',
+            "filter[end_date]": '',
+            page: 1
         });
     };
+
 
     const handleExport = async () => {
         setIsExporting(true);
         try {
             const params = new URLSearchParams({
-                search: searchTerm,
-                start_date: startDate,
-                end_date: endDate,
+                "filter[search]": searchTerm,
+                "filter[start_date]": startDate,
+                "filter[end_date]": endDate,
                 format: exportFormat
             });
             
-            const response = await fetch(`/api/orders/export?${params}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
+            const response = await axios.get(`/api/orders/export?${params}`);
 
-            if (response.ok) {
-                const blob = await response.blob();
+            if (response.status === 200) {
+                const blob = await response.data.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -196,13 +216,21 @@ export default function Index({ orders }: Props) {
             key: 'sold_date',
             header: 'Sold Date',
             sortable: true,
-            render: (value) => new Date(value).toLocaleDateString()
+            render: (value) => new Date(value).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            })
         },
         {
             key: 'created_at',
             header: 'Created',
             sortable: true,
-            render: (value) => new Date(value).toLocaleDateString()
+            render: (value) => new Date(value).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            })
         },
         {
             key: 'actions',
@@ -312,14 +340,14 @@ export default function Index({ orders }: Props) {
                 </Card>
 
                 <DataTableWrapper
-                    response={orders}
+                    response={orders!}
                     columns={columns}
                     searchable={true}
                     searchPlaceholder="Search orders..."
                     onPageChange={handlePageChange}
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
-                    statusText={`Showing ${orders.meta.from} to ${orders.meta.to} of ${orders.meta.total} orders`}
+                    statusText={`Showing ${orders!.meta.from} to ${orders!.meta.to} of ${orders!.meta.total} orders`}
                 />
             </div>  
         </AppLayout>
