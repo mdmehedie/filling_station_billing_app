@@ -26,7 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     
     // Export routes
-    Route::get('api/orders/export', [OrderController::class, 'export'])->name('orders.export');
+    Route::post('api/orders/export', [OrderController::class, 'export']);
     Route::get('api/orders', [OrderController::class, 'orderList']);
 });
 

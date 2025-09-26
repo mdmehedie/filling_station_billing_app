@@ -122,7 +122,9 @@ export default function Index() {
                 format: exportFormat
             });
             
-            const response = await axios.get(`/api/orders/export?${params}`);
+            const response = await axios.post(`/api/orders/export`, {
+                format: exportFormat
+            });
 
             if (response.status === 200) {
                 const blob = await response.data.blob();
