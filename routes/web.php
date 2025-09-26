@@ -5,6 +5,7 @@ use App\Http\Controllers\FuelController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -22,6 +23,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::apiResource('fuels', FuelController::class);
     Route::resource('orders', OrderController::class);
     Route::apiResource('users', UserController::class);
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    
+    // Export routes
+    Route::get('api/orders/export', [OrderController::class, 'export'])->name('orders.export');
 });
 
 require __DIR__ . '/settings.php';
