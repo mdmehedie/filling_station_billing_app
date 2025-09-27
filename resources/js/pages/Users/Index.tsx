@@ -4,12 +4,13 @@ import { DataTable, Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, Eye, Shield, Mail, Phone, Calendar } from "lucide-react";
+import { Edit, Trash2, Eye, Shield, Mail, Phone, Calendar, Check, X, Loader2, Plus } from "lucide-react";
 import { User, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import usersRoute from "@/routes/users";
 import { dashboard } from "@/routes";
 import { useState, useCallback, useRef } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
     users: PaginatedResponse<User>;
@@ -18,6 +19,7 @@ interface Props {
 export default function Index({ users }: Props) {
     const [searchTerm, setSearchTerm] = useState('');
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [updatingUsers, setUpdatingUsers] = useState<Set<number>>(new Set());
 
     // Custom debounced search function
     const debouncedSearch = useCallback((term: string) => {
@@ -64,12 +66,52 @@ export default function Index({ users }: Props) {
         switch (role?.toLowerCase()) {
             case 'admin':
                 return 'destructive';
-            case 'manager':
-                return 'default';
             case 'user':
                 return 'secondary';
             default:
-                return 'outline';
+                return 'default';
+        }
+    };
+
+    const handleStatusUpdate = async (userId: number, newStatus: string) => {
+        setUpdatingUsers(prev => new Set(prev).add(userId));
+        
+        try {
+            await router.patch(usersRoute.update(userId).url, {
+                status: newStatus
+            }, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        } catch (error) {
+            console.error('Failed to update user status:', error);
+        } finally {
+            setUpdatingUsers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(userId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleRoleUpdate = async (userId: number, newRole: string) => {
+        setUpdatingUsers(prev => new Set(prev).add(userId));
+        
+        try {
+            await router.patch(usersRoute.update(userId).url, {
+                role: newRole
+            }, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        } catch (error) {
+            console.error('Failed to update user role:', error);
+        } finally {
+            setUpdatingUsers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(userId);
+                return newSet;
+            });
         }
     };
 
@@ -81,7 +123,6 @@ export default function Index({ users }: Props) {
             render: (value, row) => (
                 <div className="flex items-center space-x-3">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={row.avatar} alt={row.name} />
                         <AvatarFallback className="text-xs">
                             {getInitials(row.name)}
                         </AvatarFallback>
@@ -97,11 +138,33 @@ export default function Index({ users }: Props) {
             key: 'role',
             header: 'Role',
             sortable: true,
-            render: (value, row) => (
-                <Badge variant={getRoleColor(row.role || 'user')}>
-                    {row.role || 'User'}
-                </Badge>
-            )
+            render: (value, row) => {
+                const isUpdating = updatingUsers.has(row.id);
+                return (
+                    <div className="flex items-center space-x-2">
+                        {isUpdating ? (
+                            <div className="flex items-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm text-muted-foreground">Updating...</span>
+                            </div>
+                        ) : (
+                            <Select
+                                value={row.role || 'user'}
+                                onValueChange={(newRole) => handleRoleUpdate(row.id, newRole)}
+                                disabled={isUpdating || row.id === 1}
+                            >
+                                <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             key: 'phone',
@@ -122,21 +185,47 @@ export default function Index({ users }: Props) {
             )
         },
         {
-            key: 'email_verified_at',
-            header: 'Verification',
-            render: (value, row) => (
-                <div className="space-y-1">
-                    <Badge variant={row.email_verified_at ? "default" : "secondary"}>
-                        {row.email_verified_at ? 'Verified' : 'Unverified'}
-                    </Badge>
-                    {row.two_factor_enabled && (
-                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                            <Shield className="h-3 w-3" />
-                            <span>2FA Enabled</span>
-                        </div>
-                    )}
-                </div>
-            )
+            key: 'status',
+            header: 'Status',
+            render: (value, row) => {
+                const isUpdating = updatingUsers.has(row.id);
+                const currentStatus = row.status === 'active' ? 'active' : 'inactive';
+                
+                return (
+                    <div className="flex items-center space-x-2">
+                        {isUpdating ? (
+                            <div className="flex items-center space-x-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm text-muted-foreground">Updating...</span>
+                            </div>
+                        ) : (
+                            <Select
+                                value={currentStatus}
+                                onValueChange={(newStatus) => handleStatusUpdate(row.id, newStatus)}
+                                disabled={isUpdating || row.id === 1}
+                            >
+                                <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                                            <span>Active</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="inactive">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="h-2 w-2 bg-gray-400 rounded-full"></div>
+                                            <span>Inactive</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             key: 'created_at',
@@ -154,10 +243,10 @@ export default function Index({ users }: Props) {
             header: 'Actions',
             render: (value, row) => (
                 <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm" title="View User">
+                    {/* <Button variant="ghost" size="sm" title="View User">
                         <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" title="Edit User">
+                    </Button> */}
+                    <Button variant="ghost" size="sm" title="Edit User" onClick={() => router.get(usersRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
@@ -165,6 +254,7 @@ export default function Index({ users }: Props) {
                         size="sm" 
                         className="text-destructive hover:text-destructive"
                         title="Delete User"
+                        onClick={() => router.delete(usersRoute.destroy(row.id).url)}
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>
@@ -188,6 +278,13 @@ export default function Index({ users }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Users" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                    <div></div>
+                    <Button className="flex items-center gap-2" onClick={() => router.get(usersRoute.create().url)}>
+                        <Plus className="h-4 w-4" />
+                        New User
+                    </Button>
+                </div>
                 <DataTable
                     data={users.data}
                     columns={columns}

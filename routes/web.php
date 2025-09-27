@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization');
     Route::resource('fuels', FuelController::class)->except(['show']);
     Route::resource('orders', OrderController::class);
-    Route::apiResource('users', UserController::class);
+    Route::resource('users', UserController::class);
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     
     // api routes

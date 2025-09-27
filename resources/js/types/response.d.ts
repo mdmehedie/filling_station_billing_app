@@ -4,9 +4,7 @@ export interface User {
     email: string;
     phone?: string;
     role?: string;
-    avatar?: string;
-    email_verified_at: string | null;
-    two_factor_enabled?: boolean;
+    status?: string;
     created_at: string;
     updated_at: string;
 }
@@ -25,19 +23,7 @@ export interface Organization {
     created_at: string;
     vehicles_count?: number;
     orders_count?: number;
-    user: {
-        id: number;
-        name: string;
-        email: string;
-        phone: string;
-        email_verified_at: string;
-        role: string;
-        two_factor_secret?: string;
-        two_factor_recovery_codes?: string;
-        two_factor_confirmed_at?: string;
-        created_at: string;
-        updated_at: string;
-    };
+    user: User;
 }
 
 export interface PaginationLink {
