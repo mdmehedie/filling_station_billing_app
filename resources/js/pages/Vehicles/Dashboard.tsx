@@ -62,7 +62,7 @@ export default function VehicleDashboard({
         },
         {
             title: 'Vehicles Dashboard',
-            href: vehiclesRoute.dashboard?.()?.url || '/vehicles/dashboard',
+            href: vehiclesRoute.dashboard().url,
         },
     ];
 

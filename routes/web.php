@@ -18,14 +18,14 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('vehicles/dashboard', [DashboardController::class, 'vehicles'])->name('vehicles.dashboard');
 
-    Route::apiResource('vehicles', VehicleController::class);
+    Route::resource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization');
     Route::apiResource('fuels', FuelController::class);
     Route::resource('orders', OrderController::class);
     Route::apiResource('users', UserController::class);
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     
-    // Export routes
+    // api routes
     Route::post('api/orders/export', [OrderController::class, 'export']);
     Route::get('api/orders', [OrderController::class, 'orderList']);
     Route::get('api/vehicles', [VehicleController::class, 'getAllVehicles']);

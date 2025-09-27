@@ -11,7 +11,7 @@ class StoreVehicleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,26 @@ class StoreVehicleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'fuel_id' => 'required|exists:fuels,id',
+            'organization_id' => 'required|exists:organizations,id',
+            'ucode' => 'required|string|max:255|unique:vehicles,ucode',
+            'name' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
+            'type' => 'required|string|max:255',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'fuel_id.required' => 'The fuel field is required.',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'fuel_id' => 'Fuel',
         ];
     }
 }
