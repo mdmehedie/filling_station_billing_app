@@ -11,7 +11,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
+import { type NavItem, type SharedData } from '@/types';
 import { Link } from '@inertiajs/react';
 import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -21,8 +21,10 @@ import fuels from "@/routes/fuels";
 import orders from "@/routes/orders";
 import users from "@/routes/users";
 import reports from "@/routes/reports";
+import { usePage } from '@inertiajs/react';
+import { useCallback } from "react";
 
-const mainNavItems: NavItem[] = [
+const mainNavItemsBase: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -55,6 +57,8 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
+// if user is admin, show reports
+
 const footerNavItems: NavItem[] = [
     // {
     //     title: 'Repository',
@@ -69,6 +73,23 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const page = usePage();
+    const { auth } = page.props;
+
+    const mainNavItems = useCallback((items: NavItem[]): NavItem[] => {
+        if (auth.user?.role === 'admin') {
+            return items
+        }
+        
+        return [
+            {
+                title: 'Orders',
+                href: orders.index(),
+                icon: ShoppingCart,
+            }
+        ]
+    }, []);
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -84,7 +105,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={mainNavItems(mainNavItemsBase)} />
             </SidebarContent>
 
             <SidebarFooter>

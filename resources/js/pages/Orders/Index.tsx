@@ -1,5 +1,5 @@
 import AppLayout from "@/layouts/app-layout";
-import { Head, router } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Edit, Trash2, Eye, Download, Filter, X, Plus } from "lucide-react";
 import { Order, PaginatedResponse } from "@/types/response";
-import { BreadcrumbItem } from "@/types";
+import { BreadcrumbItem, SharedData } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -20,6 +20,7 @@ import axios from "axios";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 
 export default function Index() {
+    const { auth } = usePage().props;
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -295,10 +296,11 @@ export default function Index() {
                     <Button variant="ghost" size="sm" onClick={() => router.visit(ordersRoute.show(row.id).url)}>
                         <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => router.visit(ordersRoute.edit(row.id).url)}>
+                    <Button variant="ghost" size="sm" hidden={(auth as any).user?.role !== 'admin'} onClick={() => router.visit(ordersRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
+                        hidden={(auth as any).user?.role !== 'admin'} 
                         variant="ghost" 
                         size="sm" 
                         className="text-destructive hover:text-destructive" 

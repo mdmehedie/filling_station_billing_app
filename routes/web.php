@@ -11,18 +11,28 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    if(Auth::user()->role === 'admin') {
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('orders.index');
 })->name('home');
 
 Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('is_admin');
 
-    Route::resource('vehicles', VehicleController::class);
-    Route::resource('organizations', OrganizationController::class)->whereNumber('organization');
-    Route::resource('fuels', FuelController::class)->except(['show']);
-    Route::resource('orders', OrderController::class);
-    Route::resource('users', UserController::class);
-    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::resource('vehicles', VehicleController::class)->middleware('is_admin');
+    Route::resource('organizations', OrganizationController::class)->whereNumber('organization')->middleware('is_admin');
+    Route::resource('fuels', FuelController::class)->except(['show'])->middleware('is_admin');
+
+    Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('orders/{order}/show', [OrderController::class, 'show'])->name('orders.show');
+    Route::resource('orders', OrderController::class)->except(['index','create','store','show'])->middleware('is_admin');
+
+    Route::resource('users', UserController::class)->middleware('is_admin');
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index')->middleware('is_admin');
     
     // api routes
     Route::post('api/orders/export', [OrderController::class, 'export']);
