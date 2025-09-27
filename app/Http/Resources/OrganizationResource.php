@@ -18,11 +18,14 @@ class OrganizationResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'name_bn' => $this->name_bn,
-            'logo' => $this->logo,
+            'ucode' => $this->ucode,
+            'logo_url' => $this->logo_url,
             'is_vat_applied' => $this->is_vat_applied,
             'vat_rate' => $this->vat_rate,
-            'vat_flat_amount' => $this->vat_flat_amount,
             'user' => new UserResource($this->user),
+            'created_at' => $this->created_at,
+            'vehicles_count' => $this->vehicles_count,
+            'orders_count' => $this->orders_count,
         ];
     }
 }

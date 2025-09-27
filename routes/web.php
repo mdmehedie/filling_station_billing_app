@@ -19,7 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('vehicles/dashboard', [DashboardController::class, 'vehicles'])->name('vehicles.dashboard');
 
     Route::apiResource('vehicles', VehicleController::class);
-    Route::resource('organizations', OrganizationController::class);
+    Route::resource('organizations', OrganizationController::class)->whereNumber('organization');
     Route::apiResource('fuels', FuelController::class);
     Route::resource('orders', OrderController::class);
     Route::apiResource('users', UserController::class);

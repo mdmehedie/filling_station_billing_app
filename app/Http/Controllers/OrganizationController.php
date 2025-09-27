@@ -6,6 +6,10 @@ use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Organization;
 use App\Http\Resources\OrganizationResource;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class OrganizationController extends Controller
 {
@@ -15,7 +19,18 @@ class OrganizationController extends Controller
     public function index()
     {   
         return inertia('Organizations/Index', [
-            'organizations' => OrganizationResource::collection(Organization::with('user')->paginate(15))
+            'organizations' => OrganizationResource::collection(
+                QueryBuilder::for(Organization::class)
+                ->with('user')
+                ->orderBy('id', 'desc')
+                ->allowedFilters([
+                    AllowedFilter::callback('search', function ($query, $value) {
+                        $query->where('name', 'like', "%{$value}%")
+                              ->orWhere('name_bn', 'like', "%{$value}%")
+                              ->orWhere('ucode', 'like', "%{$value}%");
+                    })
+                ])
+            ->paginate(15))
         ]);
     }
 
@@ -24,7 +39,7 @@ class OrganizationController extends Controller
      */
     public function create()
     {
-        //
+        return inertia('Organizations/Create');
     }
 
     /**
@@ -32,7 +47,11 @@ class OrganizationController extends Controller
      */
     public function store(StoreOrganizationRequest $request)
     {
-        //
+        $data = $request->validated();
+        $data['user_id'] = auth()->id();
+        
+        $organization = Organization::create($data);
+        return redirect()->route('organizations.index')->with('success', 'Organization created successfully');
     }
 
     /**
@@ -40,7 +59,9 @@ class OrganizationController extends Controller
      */
     public function show(Organization $organization)
     {
-        //
+        return inertia('Organizations/Show', [
+            'organization' => OrganizationResource::make($organization)
+        ]);
     }
 
     /**
@@ -48,7 +69,9 @@ class OrganizationController extends Controller
      */
     public function edit(Organization $organization)
     {
-        //
+        return inertia('Organizations/Edit', [
+            'organization' => OrganizationResource::make($organization)
+        ]);
     }
 
     /**
@@ -56,7 +79,12 @@ class OrganizationController extends Controller
      */
     public function update(UpdateOrganizationRequest $request, Organization $organization)
     {
-        //
+        $data = $request->validated();
+
+        $organization->update($data);
+        
+        return redirect()->route('organizations.show', $organization)
+            ->with('success', 'Organization updated successfully');
     }
 
     /**
@@ -64,6 +92,19 @@ class OrganizationController extends Controller
      */
     public function destroy(Organization $organization)
     {
-        //
+        if($organization->logo){
+            Storage::delete('organizations/' . $organization->logo);
+        }
+
+        if($organization->vehicles_count > 0){
+            throw ValidationException::withMessages(['error' => "Organization has {$organization->vehicles_count} vehicles"]);
+        }
+
+        if($organization->orders_count > 0){
+            throw ValidationException::withMessages(['error' => "Organization has {$organization->orders_count} orders"]);
+        }
+
+        $organization->delete();
+        return redirect()->route('organizations.index')->with('success', 'Organization deleted successfully');
     }
 }

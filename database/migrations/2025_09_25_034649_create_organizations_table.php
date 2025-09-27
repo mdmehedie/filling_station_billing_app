@@ -12,13 +12,13 @@ return new class extends Migration {
     {
         Schema::create('organizations', function (Blueprint $table) {
             $table->id();
+            $table->string('ucode')->unique();
             $table->foreignId('user_id')->constrained('users');
             $table->string('name');
             $table->string('name_bn');
             $table->string('logo')->nullable();
             $table->boolean('is_vat_applied')->default(true);
             $table->decimal('vat_rate')->default(0);
-            $table->decimal('vat_flat_amount')->default(0);
             $table->softDeletes();
             $table->timestamps();
         });

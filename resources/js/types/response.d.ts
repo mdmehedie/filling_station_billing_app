@@ -14,16 +14,17 @@ export interface User {
 export interface Organization {
     id: number;
     user_id: number;
+    ucode: string;
     name: string;
     name_bn: string;
     logo?: string;
+    logo_url?: string;
     is_vat_applied: number;
     vat_rate?: string;
-    vat_flat_amount?: string;
     deleted_at?: string;
     created_at: string;
-    updated_at: string;
     vehicles_count?: number;
+    orders_count?: number;
     user: {
         id: number;
         name: string;
