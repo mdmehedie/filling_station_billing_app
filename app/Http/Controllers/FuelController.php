@@ -24,7 +24,7 @@ class FuelController extends Controller
      */
     public function create()
     {
-        //
+        return inertia('Fuel/Create');
     }
 
     /**
@@ -32,15 +32,11 @@ class FuelController extends Controller
      */
     public function store(StoreFuelRequest $request)
     {
-        //
-    }
+        $validated = $request->validated();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Fuel $fuel)
-    {
-        //
+        $fuel = Fuel::create($validated);
+
+        return redirect()->route('fuels.index')->with('success', 'Fuel created successfully');
     }
 
     /**
@@ -48,7 +44,9 @@ class FuelController extends Controller
      */
     public function edit(Fuel $fuel)
     {
-        //
+        return inertia('Fuel/Edit', [
+            'fuel' => FuelResource::make($fuel)
+        ]);
     }
 
     /**
@@ -56,7 +54,11 @@ class FuelController extends Controller
      */
     public function update(UpdateFuelRequest $request, Fuel $fuel)
     {
-        //
+        $validated = $request->validated();
+
+        $fuel->update($validated);
+
+        return redirect()->route('fuels.index')->with('success', 'Fuel updated successfully');
     }
 
     /**
@@ -64,6 +66,8 @@ class FuelController extends Controller
      */
     public function destroy(Fuel $fuel)
     {
-        //
+        $fuel->delete();
+
+        return redirect()->route('fuels.index')->with('success', 'Fuel deleted successfully');
     }
 }

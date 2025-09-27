@@ -4,7 +4,7 @@ import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Plus } from "lucide-react";
 import { Fuel, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import fuelsRoute from "@/routes/fuels";
@@ -76,26 +76,23 @@ export default function Index({ fuels }: Props) {
             key: 'created_at',
             header: 'Created',
             sortable: true,
-            render: (value) => new Date(value).toLocaleDateString()
+            render: (value) => value
         },
         {
             key: 'updated_at',
             header: 'Last Updated',
             sortable: true,
-            render: (value) => new Date(value).toLocaleDateString()
+            render: (value) => value
         },
         {
             key: 'actions',
             header: 'Actions',
             render: (value, row) => (
                 <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => router.visit(fuelsRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => router.visit(fuelsRoute.destroy(row.id).url)}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -118,6 +115,23 @@ export default function Index({ fuels }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Fuels" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Fuels</h1>
+                        <p className="text-muted-foreground">
+                            Manage fuel types and their pricing
+                        </p>
+                    </div>
+                    <Button 
+                        onClick={() => router.visit(fuelsRoute.create().url)}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add New Fuel
+                    </Button>
+                </div>
+
                 <DataTableWrapper
                     response={fuels}
                     columns={columns}

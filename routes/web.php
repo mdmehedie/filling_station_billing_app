@@ -16,11 +16,10 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('vehicles/dashboard', [DashboardController::class, 'vehicles'])->name('vehicles.dashboard');
 
     Route::resource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization');
-    Route::apiResource('fuels', FuelController::class);
+    Route::resource('fuels', FuelController::class)->except(['show']);
     Route::resource('orders', OrderController::class);
     Route::apiResource('users', UserController::class);
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');

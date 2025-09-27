@@ -18,6 +18,8 @@ class FuelResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'price' => $this->price,
+            'updated_at' => $this->updated_at->format('Y-m-d H:i:s A'),
+            'created_at' => $this->created_at->format('Y-m-d H:i:s A'),
         ];
     }
 }
