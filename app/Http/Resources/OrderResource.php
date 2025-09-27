@@ -21,8 +21,8 @@ class OrderResource extends JsonResource
             'fuel_id' => $this->fuel_id,
             'fuel_qty' => $this->fuel_qty,
             'total_price' => $this->total_price,
-            'sold_date' => $this->sold_date,
-            'created_at' => $this->created_at,
+            'sold_date' => $this->sold_date->format('Y-m-d'),
+            'created_at' => $this->created_at->format('Y-m-d'),
             'organization' => [
                 'id' => $this->organization->id,
                 'name' => $this->organization->name,

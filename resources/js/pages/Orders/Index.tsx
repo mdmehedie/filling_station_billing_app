@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Trash2, Eye, Download, Filter, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Edit, Trash2, Eye, Download, Filter, X, Plus } from "lucide-react";
 import { Order, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
@@ -16,14 +17,25 @@ import ordersRoute from "@/routes/orders";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { orderList } from "@/lib/api";
 import axios from "axios";
+import DeleteConfirmation from "@/components/DeleteConfirmation";
 
 export default function Index() {
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [exportFormat, setExportFormat] = useState<'pdf' | 'excel'>('pdf');
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        error: string | null;
+        order: Order | null;
+    }>({
+        isOpen: false,
+        error: null,
+        order: null,
+    });
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [orders, setOrders] = useState<PaginatedResponse<Order>>({
         data: [],
@@ -111,9 +123,50 @@ export default function Index() {
         });
     };
 
+    const handleDeleteClick = (order: Order) => {
+        setDeleteModal({
+            isOpen: true,
+            order,
+            error: null,
+        });
+    };
 
-    const handleExport = async () => {
+    const handleDeleteConfirm = () => {
+        if (deleteModal.order) {
+            router.delete(ordersRoute.destroy(deleteModal.order.id).url, {
+                onSuccess: () => {
+                    setDeleteModal({ isOpen: false, order: null, error: null });
+                    // Refresh the orders list after successful deletion
+                    orderList((response: PaginatedResponse<Order>) => {
+                        setOrders(response);
+                    }, {
+                        "filter[search]": searchTerm,
+                        "filter[start_date]": startDate,
+                        "filter[end_date]": endDate,
+                        page: 1
+                    });
+                },
+                onError: (errors) => {
+                    setDeleteModal({ isOpen: true, order: null, error: Object.values(errors).join(', ') });
+                    
+                    throw new Error(Object.values(errors).join(', '));
+                }
+            });
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteModal({ isOpen: false, order: null, error: null });
+    };
+
+
+    const handleExportClick = () => {
+        setShowExportModal(true);
+    };
+
+    const handleExportConfirm = async () => {
         setIsExporting(true);
+        setShowExportModal(false);
         try {
             const params = new URLSearchParams({
                 "filter[search]": searchTerm,
@@ -239,13 +292,18 @@ export default function Index() {
             header: 'Actions',
             render: (value, row) => (
                 <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => router.visit(ordersRoute.show(row.id).url)}>
                         <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => router.visit(ordersRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive" 
+                        onClick={() => handleDeleteClick(row)}
+                    >
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -268,6 +326,23 @@ export default function Index() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Orders" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+                        <p className="text-muted-foreground">
+                            Manage and track all fuel orders
+                        </p>
+                    </div>
+                    <Button 
+                        onClick={() => router.visit(ordersRoute.create().url)}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add New Order
+                    </Button>
+                </div>
+
                 {/* Filters and Export Section */}
                 <Card>
                     <CardHeader>
@@ -285,7 +360,7 @@ export default function Index() {
                                     {showFilters ? 'Hide Filters' : 'Show Filters'}
                                 </Button>
                                 <Button
-                                    onClick={handleExport}
+                                    onClick={handleExportClick}
                                     disabled={isExporting}
                                     className="bg-primary-custom hover:bg-primary-custom/90"
                                 >
@@ -296,45 +371,63 @@ export default function Index() {
                         </div>
                     </CardHeader>
                     {showFilters && (
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="start-date">Start Date</Label>
-                                    <Input
-                                        id="start-date"
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                    />
+                        <CardContent className="pt-0">
+                            <div className="space-y-6">
+                                {/* Date Range Filters */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="start-date" className="text-sm font-medium">
+                                            Start Date
+                                        </Label>
+                                        <Input
+                                            id="start-date"
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="end-date" className="text-sm font-medium">
+                                            End Date
+                                        </Label>
+                                        <Input
+                                            id="end-date"
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                            className="w-full"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="end-date">End Date</Label>
-                                    <Input
-                                        id="end-date"
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="export-format">Export Format</Label>
-                                    <Select value={exportFormat} onValueChange={(value: 'pdf' | 'excel') => setExportFormat(value)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select format" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="pdf">PDF</SelectItem>
-                                            <SelectItem value="excel">Excel</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex items-end gap-2">
-                                    <Button onClick={handleFilterChange} className="flex-1">
-                                        Apply Filters
-                                    </Button>
-                                    <Button variant="outline" onClick={clearFilters}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
+
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            onClick={handleFilterChange} 
+                                            className="flex items-center gap-2"
+                                        >
+                                            <Filter className="h-4 w-4" />
+                                            Apply Filters
+                                        </Button>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={clearFilters}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <X className="h-4 w-4" />
+                                            Clear All
+                                        </Button>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground flex items-center">
+                                        {startDate && endDate && (
+                                            <span>
+                                                Filtering from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
@@ -350,6 +443,59 @@ export default function Index() {
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
                     statusText={`Showing ${orders!.meta.from} to ${orders!.meta.to} of ${orders!.meta.total} orders`}
+                />
+
+                {/* Export Format Selection Modal */}
+                <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Download className="h-5 w-5" />
+                                Export Orders
+                            </DialogTitle>
+                            <DialogDescription>
+                                Choose the format for exporting your orders data.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="export-format-modal" className="text-sm font-medium">
+                                    Export Format
+                                </Label>
+                                <Select value={exportFormat} onValueChange={(value: 'pdf' | 'excel') => setExportFormat(value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select format" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="pdf">PDF Document</SelectItem>
+                                        <SelectItem value="excel">Excel Spreadsheet</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {startDate && endDate && (
+                                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                                    <strong>Export Range:</strong> {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowExportModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleExportConfirm} disabled={isExporting}>
+                                {isExporting ? 'Exporting...' : 'Export'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <DeleteConfirmation
+                    isOpen={deleteModal.isOpen}
+                    onClose={handleDeleteCancel}
+                    onConfirm={handleDeleteConfirm}
+                    title="Delete Order"
+                    description={`Are you sure you want to delete this order? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`}
+                    itemName={deleteModal.order ? `Order #${deleteModal.order.id.toString().padStart(4, '0')}` : ''}
                 />
             </div>  
         </AppLayout>

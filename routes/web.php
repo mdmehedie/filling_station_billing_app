@@ -14,7 +14,7 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('vehicles/dashboard', [DashboardController::class, 'vehicles'])->name('vehicles.dashboard');
 
@@ -28,6 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Export routes
     Route::post('api/orders/export', [OrderController::class, 'export']);
     Route::get('api/orders', [OrderController::class, 'orderList']);
+    Route::get('api/vehicles', [VehicleController::class, 'getAllVehicles']);
 });
 
 require __DIR__ . '/settings.php';

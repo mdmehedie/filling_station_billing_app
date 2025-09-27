@@ -21,6 +21,7 @@ class OrderService
     {
         return QueryBuilder::for(Order::class)
         ->with(['organization', 'vehicle', 'fuel'])
+        ->defaultSort('-id')
         ->allowedFilters([
             AllowedFilter::callback('search', function ($query, $value) {
                 $query->where('id', 'like', "%{$value}%")

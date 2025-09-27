@@ -6,6 +6,7 @@ use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
 use App\Http\Resources\VehicleResource;
 use App\Models\Vehicle;
+use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
@@ -19,6 +20,14 @@ class VehicleController extends Controller
         return inertia('Vehicles/Index', [
             'vehicles' => VehicleResource::collection($vehicles)
         ]);
+    }
+
+    // this is for api
+    public function getAllVehicles(Request $request)
+    {
+        return VehicleResource::collection(
+            Vehicle::select('id', 'name', 'ucode', 'model', 'type')->where('organization_id', $request->organization_id)->get()
+        );
     }
 
     /**
