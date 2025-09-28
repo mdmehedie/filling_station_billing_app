@@ -101,7 +101,7 @@ export default function Create({ organizations, fuels }: Props) {
 
     const handleInputChange = (field: keyof FormData, value: string) => {
         setData(field, value);
-        
+
         // Clear related fields when organization changes
         if (field === 'organization_id') {
             setData('vehicle_id', '');
@@ -112,7 +112,7 @@ export default function Create({ organizations, fuels }: Props) {
                 setVehicles(vehicles);
             }, { organization_id: value });
         }
-        
+
         // Auto-select fuel type when vehicle changes
         if (field === 'vehicle_id') {
             setData('fuel_qty', '');
@@ -160,7 +160,7 @@ export default function Create({ organizations, fuels }: Props) {
                             Add a new fuel order to the system
                         </p>
                     </div>
-                    <Button 
+                    <Button
                         variant="outline"
                         onClick={() => router.visit(ordersRoute.index().url)}
                         className="flex items-center gap-2"
@@ -190,8 +190,8 @@ export default function Create({ organizations, fuels }: Props) {
                         {/* 2. Organization Selection (Searchable) */}
                         <div className="space-y-2">
                             <Label className="text-base font-medium">Organization *</Label>
-                            <Select 
-                                value={data.organization_id} 
+                            <Select
+                                value={data.organization_id}
                                 onValueChange={(value) => {
                                     const org = organizations.find(o => o.id.toString() === value);
                                     setSelectedOrg(org || null);
@@ -216,7 +216,7 @@ export default function Create({ organizations, fuels }: Props) {
                                     </div>
                                     <div className="max-h-60 overflow-y-auto">
                                         {organizations
-                                            .filter(org => 
+                                            .filter(org =>
                                                 org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
                                                 org.ucode.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
                                                 (org.name_bn && org.name_bn.toLowerCase().includes(orgSearchTerm.toLowerCase()))
@@ -236,7 +236,7 @@ export default function Create({ organizations, fuels }: Props) {
                                                     </div>
                                                 </SelectItem>
                                             ))}
-                                        {organizations.filter(org => 
+                                        {organizations.filter(org =>
                                             org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
                                             org.ucode.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
                                             (org.name_bn && org.name_bn.toLowerCase().includes(orgSearchTerm.toLowerCase()))
@@ -256,8 +256,8 @@ export default function Create({ organizations, fuels }: Props) {
                         {/* 3. Vehicle Selection */}
                         <div className="space-y-2">
                             <Label className="text-base font-medium">Vehicle *</Label>
-                            <Select 
-                                value={data.vehicle_id} 
+                            <Select
+                                value={data.vehicle_id}
                                 onValueChange={(value) => handleInputChange('vehicle_id', value)}
                                 disabled={!data.organization_id}
                             >
@@ -285,11 +285,29 @@ export default function Create({ organizations, fuels }: Props) {
                             )}
                         </div>
 
+                        {/* 5. Fuel Quantity */}
+                        <div className="space-y-2">
+                            <Label htmlFor="fuel_qty" className="text-base font-medium">Fuel Quantity (Liters) *</Label>
+                            <Input
+                                id="fuel_qty"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={data.fuel_qty}
+                                onChange={(e) => handleInputChange('fuel_qty', e.target.value)}
+                                placeholder="Enter quantity in liters"
+                                className="h-12"
+                            />
+                            {errors.fuel_qty && (
+                                <p className="text-sm text-destructive">{errors.fuel_qty}</p>
+                            )}
+                        </div>
+
                         {/* 4. Fuel Type (Default Selected) */}
                         <div className="space-y-2">
                             <Label className="text-base font-medium">Fuel Type *</Label>
-                            <Select 
-                                value={data.fuel_id} 
+                            <Select
+                                value={data.fuel_id}
                                 onValueChange={(value) => handleInputChange('fuel_id', value)}
                             >
                                 <SelectTrigger className="h-12">
@@ -313,24 +331,6 @@ export default function Create({ organizations, fuels }: Props) {
                             </Select>
                             {errors.fuel_id && (
                                 <p className="text-sm text-destructive">{errors.fuel_id}</p>
-                            )}
-                        </div>
-
-                        {/* 5. Fuel Quantity */}
-                        <div className="space-y-2">
-                            <Label htmlFor="fuel_qty" className="text-base font-medium">Fuel Quantity (Liters) *</Label>
-                            <Input
-                                id="fuel_qty"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={data.fuel_qty}
-                                onChange={(e) => handleInputChange('fuel_qty', e.target.value)}
-                                placeholder="Enter quantity in liters"
-                                className="h-12"
-                            />
-                            {errors.fuel_qty && (
-                                <p className="text-sm text-destructive">{errors.fuel_qty}</p>
                             )}
                         </div>
                     </div>
@@ -381,15 +381,15 @@ export default function Create({ organizations, fuels }: Props) {
 
                     {/* Submit Button */}
                     <div className="flex justify-center gap-4">
-                        <Button 
-                            type="button" 
+                        <Button
+                            type="button"
                             variant="outline"
                             onClick={() => router.visit(ordersRoute.index().url)}
                         >
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             disabled={processing || !data.organization_id || !data.vehicle_id || !data.fuel_id || !data.fuel_qty}
                             className="flex items-center gap-2"
                         >
@@ -401,4 +401,4 @@ export default function Create({ organizations, fuels }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

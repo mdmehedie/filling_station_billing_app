@@ -57,20 +57,20 @@ export default function Index() {
             total: 0
         }
     });
-    
+
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
         });
     }, []);
 
-    
+
     // Custom debounced search function
     const debouncedSearch = useCallback((term: string) => {
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
-        
+
         searchTimeoutRef.current = setTimeout(() => {
             orderList((response: PaginatedResponse<Order>) => {
                 setOrders(response);
@@ -98,7 +98,7 @@ export default function Index() {
             page: page
         });
     };
-    
+
     const handleFilterChange = () => {
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
@@ -109,7 +109,7 @@ export default function Index() {
             page: 1
         });
     };
-    
+
     const clearFilters = () => {
         setStartDate('');
         setEndDate('');
@@ -149,7 +149,7 @@ export default function Index() {
                 },
                 onError: (errors) => {
                     setDeleteModal({ isOpen: true, order: null, error: Object.values(errors).join(', ') });
-                    
+
                     throw new Error(Object.values(errors).join(', '));
                 }
             });
@@ -175,7 +175,7 @@ export default function Index() {
                 "filter[end_date]": endDate,
                 format: exportFormat
             });
-            
+
             const response = await axios.post(`/api/orders/export`, {
                 format: exportFormat
             });
@@ -299,11 +299,11 @@ export default function Index() {
                     <Button variant="ghost" size="sm" hidden={(auth as any).user?.role !== 'admin'} onClick={() => router.visit(ordersRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                        hidden={(auth as any).user?.role !== 'admin'} 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive" 
+                    <Button
+                        hidden={(auth as any).user?.role !== 'admin'}
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
                         onClick={() => handleDeleteClick(row)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -336,7 +336,7 @@ export default function Index() {
                             Manage and track all fuel orders
                         </p>
                     </div>
-                    <Button 
+                    <Button
                         onClick={() => router.visit(ordersRoute.create().url)}
                         className="flex items-center gap-2"
                     >
@@ -407,15 +407,15 @@ export default function Index() {
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                                     <div className="flex gap-2">
-                                        <Button 
-                                            onClick={handleFilterChange} 
+                                        <Button
+                                            onClick={handleFilterChange}
                                             className="flex items-center gap-2"
                                         >
                                             <Filter className="h-4 w-4" />
                                             Apply Filters
                                         </Button>
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             onClick={clearFilters}
                                             className="flex items-center gap-2"
                                         >
@@ -499,7 +499,7 @@ export default function Index() {
                     description={`Are you sure you want to delete this order? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`}
                     itemName={deleteModal.order ? `Order #${deleteModal.order.id.toString().padStart(4, '0')}` : ''}
                 />
-            </div>  
+            </div>
         </AppLayout>
     )
 }

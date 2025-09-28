@@ -128,24 +128,24 @@ export default function Show({ order }: Props) {
                             </div>
                         </div>
                         <div className="flex space-x-2">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => router.visit(ordersRoute.edit(order.id).url)}
                             >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                             </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 className="text-destructive hover:text-destructive"
                                 onClick={handleDeleteClick}
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                             </Button>
-                            <Button 
+                            <Button
                                 variant="outline"
                                 onClick={() => router.visit(ordersRoute.index().url)}
                                 className="flex items-center gap-2"
@@ -157,6 +157,44 @@ export default function Show({ order }: Props) {
                     </div>
 
                     <Separator />
+
+                    {/* Order Statistics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">Order Date</span>
+                                </div>
+                                <p className="text-2xl font-bold">{new Date(order.sold_date).toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                })}</p>
+                                <p className="text-xs text-muted-foreground">Date of sale</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">Total Amount</span>
+                                </div>
+                                <p className="text-2xl font-bold">৳{order.total_price.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Order total value</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-6">
+                                <div className="flex items-center space-x-2">
+                                    <Fuel className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">Fuel Quantity</span>
+                                </div>
+                                <p className="text-2xl font-bold">{order.fuel_qty}L</p>
+                                <p className="text-xs text-muted-foreground">Total fuel ordered</p>
+                            </CardContent>
+                        </Card>
+                    </div>
 
                     {/* Order Details */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -274,7 +312,7 @@ export default function Show({ order }: Props) {
                                         <span className="text-lg font-bold text-primary">৳{order.total_price.toLocaleString()}</span>
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Sold Date</label>
                                     <p className="text-lg">{new Date(order.sold_date).toLocaleDateString('en-GB', {
@@ -283,7 +321,7 @@ export default function Show({ order }: Props) {
                                         year: 'numeric'
                                     })}</p>
                                 </div>
-                                
+
                                 <div>
                                     <label className="text-sm font-medium text-muted-foreground">Order Created</label>
                                     <p className="text-lg">{new Date(order.created_at).toLocaleDateString('en-GB', {
@@ -292,45 +330,6 @@ export default function Show({ order }: Props) {
                                         year: 'numeric'
                                     })}</p>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Order Statistics */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card>
-                            <CardContent className="p-6">
-                                <div className="flex items-center space-x-2">
-                                    <Fuel className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm font-medium text-muted-foreground">Fuel Quantity</span>
-                                </div>
-                                <p className="text-2xl font-bold">{order.fuel_qty}L</p>
-                                <p className="text-xs text-muted-foreground">Total fuel ordered</p>
-                            </CardContent>
-                        </Card>
-                        
-                        <Card>
-                            <CardContent className="p-6">
-                                <div className="flex items-center space-x-2">
-                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm font-medium text-muted-foreground">Total Amount</span>
-                                </div>
-                                <p className="text-2xl font-bold">৳{order.total_price.toLocaleString()}</p>
-                                <p className="text-xs text-muted-foreground">Order total value</p>
-                            </CardContent>
-                        </Card>
-                        
-                        <Card>
-                            <CardContent className="p-6">
-                                <div className="flex items-center space-x-2">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm font-medium text-muted-foreground">Order Date</span>
-                                </div>
-                                <p className="text-2xl font-bold">{new Date(order.sold_date).toLocaleDateString('en-GB', {
-                                    day: '2-digit',
-                                    month: '2-digit'
-                                })}</p>
-                                <p className="text-xs text-muted-foreground">Date of sale</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -347,4 +346,4 @@ export default function Show({ order }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}
