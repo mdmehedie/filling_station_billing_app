@@ -72,6 +72,19 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         });
     }, []);
 
+    // Load vehicles when organization changes
+    useEffect(() => {
+        if (selectedOrganization && selectedOrganization !== 'all') {
+            getAllVehicles((response: any[]) => {
+                setVehicles(response || []);
+            }, {
+                "organization_id": selectedOrganization
+            });
+        } else {
+            setVehicles([]);
+        }
+    }, [selectedOrganization]);
+
 
     // Custom debounced search function
     const debouncedSearch = useCallback((term: string) => {
@@ -360,7 +373,10 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         <Label htmlFor="organization-filter" className="text-sm font-medium">
                                             Organization
                                         </Label>
-                                        <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+                                        <Select value={selectedOrganization} onValueChange={(value) => {
+                                            setSelectedOrganization(value);
+                                            setSelectedVehicle('all'); // Reset vehicle selection when organization changes
+                                        }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="All Organizations" />
                                             </SelectTrigger>
@@ -378,9 +394,19 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         <Label htmlFor="vehicle-filter" className="text-sm font-medium">
                                             Vehicle
                                         </Label>
-                                        <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+                                        <Select 
+                                            value={selectedVehicle} 
+                                            onValueChange={setSelectedVehicle}
+                                            disabled={selectedOrganization === 'all' || vehicles.length === 0}
+                                        >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="All Vehicles" />
+                                                <SelectValue placeholder={
+                                                    selectedOrganization === 'all' 
+                                                        ? "Select an organization first" 
+                                                        : vehicles.length === 0 
+                                                            ? "No vehicles found" 
+                                                            : "All Vehicles"
+                                                } />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">All Vehicles</SelectItem>

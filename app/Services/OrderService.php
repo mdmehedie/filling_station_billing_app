@@ -40,6 +40,15 @@ class OrderService
                 AllowedFilter::callback('end_date', function ($query, $value) {
                     $query->whereDate('sold_date', '<=', $value);
                 }),
+                AllowedFilter::callback('organization_id', function ($query, $value) {
+                    $query->where('organization_id', $value);
+                }),
+                AllowedFilter::callback('vehicle_id', function ($query, $value) {
+                    $query->where('vehicle_id', $value);
+                }),
+                AllowedFilter::callback('fuel_id', function ($query, $value) {
+                    $query->where('fuel_id', $value);
+                }),
             ])
             ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
             ->when($isAll, function ($query) {
