@@ -68,9 +68,9 @@ class OrderController extends Controller
         $validated = $request->validated();
 
         $validated['user_id'] = auth()->user()->id;
-        Order::create($validated);
+        $order = Order::create($validated);
 
-        return redirect()->route('orders.index')->with('success', "Order {$validated['order_no']} created successfully");
+        return redirect()->route('orders.index')->with('success', "Order #00{$order->id} created successfully");
     }
 
     /**

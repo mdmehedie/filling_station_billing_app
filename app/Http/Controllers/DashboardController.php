@@ -22,7 +22,8 @@ class DashboardController extends Controller
         $totalOrganizations = Organization::count();
         $totalOrders = Order::count();
         $totalFuelTypes = Fuel::count();
-
+        $totalOrderQuantity = Order::sum('fuel_qty');
+        
         // Get recent orders
         $recentOrders = Order::with(['vehicle', 'organization', 'fuel'])
             ->orderBy('created_at', 'desc')
@@ -42,6 +43,16 @@ class DashboardController extends Controller
             ->orderBy('month')
             ->get();
 
+        // Get daily sales data for the last 30 days
+        $dailySales = Order::selectRaw('DATE(sold_date) as date, SUM(fuel_qty) as total_quantity, SUM(total_price) as total_amount')
+            ->where('sold_date', '>=', Carbon::now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Calculate total sales amount
+        $totalSalesAmount = Order::sum('total_price');
+
         // Get top organizations by vehicle count
         $topOrganizations = Organization::withCount('vehicles')
             ->orderBy('vehicles_count', 'desc')
@@ -56,16 +67,34 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'statistics' => [
-                'totalVehicles' => $totalVehicles,
-                'totalOrganizations' => $totalOrganizations,
-                'totalOrders' => $totalOrders,
-                'totalFuelTypes' => $totalFuelTypes,
+                'totalVehicles' => $this->formatNumber($totalVehicles),
+                'totalOrganizations' => $this->formatNumber($totalOrganizations),
+                'totalOrders' => $this->formatNumber($totalOrders),
+                'totalOrderQuantity' => $this->formatNumber($totalOrderQuantity),
+                'totalSalesAmount' => $this->formatNumber($totalSalesAmount),
             ],
             'recentOrders' => $recentOrders,
             'vehiclesByType' => $vehiclesByType,
             'ordersByMonth' => $ordersByMonth,
+            'dailySales' => $dailySales,
             'topOrganizations' => $topOrganizations,
             'fuelConsumption' => $fuelConsumption,
         ]);
+    }
+
+    /**
+     * Format numbers to short form (K, M, B)
+     */
+    private function formatNumber($number)
+    {
+        if ($number >= 1000000000) {
+            return round($number / 1000000000, 1) . 'B';
+        } elseif ($number >= 1000000) {
+            return round($number / 1000000, 1) . 'M';
+        } elseif ($number >= 1000) {
+            return round($number / 1000, 1) . 'K';
+        }
+        
+        return $number;
     }
 }
