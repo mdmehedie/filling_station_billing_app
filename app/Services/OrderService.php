@@ -3,52 +3,57 @@
 namespace App\Services;
 
 use App\Models\Order;
-use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
+use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class OrderService
 {
-    function __construct(){
-        
+    function __construct()
+    {
+
     }
 
     public function orderList($isAll = false)
     {
         return QueryBuilder::for(Order::class)
-        ->with(['organization', 'vehicle', 'fuel'])
-        ->defaultSort('-id')
-        ->allowedFilters([
-            AllowedFilter::callback('search', function ($query, $value) {
-                $query->where('id', 'like', "%{$value}%")
-                      ->orWhereHas('organization', function ($orgQuery) use ($value) {
-                          $orgQuery->where('name', 'like', "%{$value}%");
-                      })
-                      ->orWhereHas('vehicle', function ($vehicleQuery) use ($value) {
-                          $vehicleQuery->where('name', 'like', "%{$value}%")
-                                       ->orWhere('ucode', 'like', "%{$value}%");
-                      })
-                      ->orWhereHas('fuel', function ($fuelQuery) use ($value) {
-                          $fuelQuery->where('name', 'like', "%{$value}%");
-                      });
-            }),
-            AllowedFilter::callback('start_date', function ($query, $value) {
-                $query->whereDate('sold_date', '>=', $value);
-            }),
-            AllowedFilter::callback('end_date', function ($query, $value) {
-                $query->whereDate('sold_date', '<=', $value);
-            }),
-        ])
-        ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
-        ->when($isAll, function ($query) {
-            return $query->get();
-        }, function ($query) {
-            return $query->paginate(15);
-        });
+            ->with(['organization', 'vehicle', 'fuel'])
+            ->defaultSort('-id')
+            ->allowedFilters([
+                AllowedFilter::callback('search', function ($query, $value) {
+                    $query->where('id', 'like', "%{$value}%");
+                }),
+                AllowedFilter::callback('start_date', function ($query, $value) {
+                    $query->whereDate('sold_date', '>=', $value);
+                }),
+                AllowedFilter::callback('end_date', function ($query, $value) {
+                    $query->whereDate('sold_date', '<=', $value);
+                }),
+            ])
+            ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
+            ->when($isAll, function ($query) {
+                return $query->get();
+            }, function ($query) {
+                return $query->paginate(15);
+            });
+    }
+
+    public function generatOrderNo()
+    {
+        $order = Order::query()->orderBy('id', 'desc')->first();
+
+        if (!$order) {
+            $code = now()->format('dmy') . '0001';
+            return (int) $code;
+        }
+
+        $code = (int) $order->order_no;
+
+        return (int) $code + 1;
     }
 
     public function exportToExcel($orders)
@@ -102,9 +107,9 @@ class OrderService
         }
 
         $writer = new Xlsx($spreadsheet);
-        
+
         $filename = 'orders-export-' . date('Y-m-d') . '.xlsx';
-        
+
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
         }, $filename, [
@@ -123,9 +128,9 @@ class OrderService
 
         $pdf = Pdf::loadView('exports.orders', $data);
         $pdf->setPaper('A4', 'landscape');
-        
+
         $filename = 'orders-export-' . date('Y-m-d') . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 }

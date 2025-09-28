@@ -90,6 +90,16 @@ export default function Index({ organizations }: Props) {
 
     const columns: Column<Organization>[] = [
         {
+            header: 'Org ID',
+            key: 'ucode',
+            sortable: true,
+            render: (value, row) => (
+                <div>
+                    <div className="font-medium">#{value}</div>
+                </div>
+            )
+        },
+        {
             key: 'name',
             header: 'Organization Name',
             sortable: true,
@@ -108,17 +118,6 @@ export default function Index({ organizations }: Props) {
                             <div className="text-sm text-muted-foreground">{row.name_bn}</div>
                         )}
                     </div>
-                </div>
-            )
-        },
-        {
-            key: 'user',
-            header: 'Owner',
-            sortable: true,
-            render: (value, row) => (
-                <div>
-                    <div className="font-medium">{row.user.name}</div>
-                    <div className="text-sm text-muted-foreground">{row.user.email}</div>
                 </div>
             )
         },

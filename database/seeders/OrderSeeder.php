@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Fuel;
-use App\Models\Organization;
 use App\Models\Order;
+use App\Models\Organization;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
 
@@ -19,12 +19,12 @@ class OrderSeeder extends Seeder
         $fuels = Fuel::all();
         $organizations = Organization::all();
         $vehicles = Vehicle::all();
-        
+
         if ($fuels->isEmpty()) {
             $this->command->warn('No fuels found. Please run FuelSeeder first.');
             return;
         }
-        
+
         if ($organizations->isEmpty()) {
             $this->command->warn('No organizations found. Please run OrganizationSeeder first.');
             return;
@@ -37,6 +37,7 @@ class OrderSeeder extends Seeder
 
         $orders = [
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH001')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
@@ -45,6 +46,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(5),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH002')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Diesel')->first()->id,
@@ -53,6 +55,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(4),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(1)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH003')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
@@ -61,6 +64,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(3),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(1)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH004')->first()->id,
                 'fuel_id' => $fuels->where('name', 'CNG')->first()->id,
@@ -69,6 +73,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(2),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(2)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH005')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Diesel')->first()->id,
@@ -77,6 +82,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(1),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(2)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH006')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
@@ -85,6 +91,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now(),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(3)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH007')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Octane')->first()->id,
@@ -93,6 +100,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(6),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(3)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH008')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Diesel')->first()->id,
@@ -101,6 +109,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(7),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(4)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH009')->first()->id,
                 'fuel_id' => $fuels->where('name', 'LPG')->first()->id,
@@ -109,6 +118,7 @@ class OrderSeeder extends Seeder
                 'sold_date' => now()->subDays(8),
             ],
             [
+                'user_id' => 1,
                 'organization_id' => $organizations->skip(4)->first()->id,
                 'vehicle_id' => $vehicles->where('ucode', 'VH010')->first()->id,
                 'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,

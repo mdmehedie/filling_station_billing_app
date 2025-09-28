@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\OrderService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,6 +12,8 @@ class Order extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'user_id',
+        'order_no',
         'organization_id',
         'vehicle_id',
         'fuel_id',
@@ -38,5 +41,15 @@ class Order extends Model
     public function fuel(): BelongsTo
     {
         return $this->belongsTo(Fuel::class);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        $orderService = new OrderService();
+        self::creating(function (Order $order) use ($orderService) {
+            $order->order_no = $orderService->generatOrderNo();
+        });
     }
 }

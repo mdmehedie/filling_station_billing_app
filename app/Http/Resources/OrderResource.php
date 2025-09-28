@@ -25,6 +25,7 @@ class OrderResource extends JsonResource
             'created_at' => $this->created_at->format('Y-m-d'),
             'organization' => [
                 'id' => $this->organization->id,
+                'ucode' => $this->organization->ucode,
                 'name' => $this->organization->name,
                 'name_bn' => $this->organization->name_bn,
             ],

@@ -12,6 +12,8 @@ return new class extends Migration {
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('order_no')->unique();
             $table->foreignId('organization_id')->constrained('organizations');
             $table->foreignId('vehicle_id')->constrained('vehicles');
             $table->foreignId('fuel_id')->constrained('fuels');

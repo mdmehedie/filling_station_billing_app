@@ -132,6 +132,7 @@ export interface Order {
         id: number;
         name: string;
         name_bn: string;
+        ucode: string;
     };
     vehicle: {
         id: number;

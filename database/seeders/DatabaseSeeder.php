@@ -28,11 +28,18 @@ class DatabaseSeeder extends Seeder
         );
 
         // Run the seeders in order
-        $this->call([
-            FuelSeeder::class,
-            OrganizationSeeder::class,
-            VehicleSeeder::class,
-            OrderSeeder::class,
-        ]);
+        if (app()->isProduction() || app()->isLocal()) {
+            $this->call([
+                FuelSeeder::class,
+                OrganizationSeeder::class,
+            ]);
+        }
+
+        if (app()->isLocal()) {
+            $this->call([
+                VehicleSeeder::class,
+                OrderSeeder::class,
+            ]);
+        }
     }
 }

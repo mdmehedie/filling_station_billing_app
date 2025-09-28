@@ -230,7 +230,7 @@ export default function Index() {
             sortable: true,
             render: (value, row) => (
                 <div>
-                    <div className="font-medium">{row.organization.name}</div>
+                    <div className="font-medium">{row.organization.name} ({row.organization.ucode})</div>
                     <div className="text-sm text-muted-foreground">{row.organization.name_bn}</div>
                 </div>
             )
