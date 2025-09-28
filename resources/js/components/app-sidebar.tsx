@@ -11,16 +11,15 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem, type SharedData } from '@/types';
+import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2 } from 'lucide-react';
+import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2,SchoolIcon } from 'lucide-react';
 import AppLogo from './app-logo';
 import organizations from "@/routes/organizations";
 import vehicles from "@/routes/vehicles";
 import fuels from "@/routes/fuels";
 import orders from "@/routes/orders";
 import users from "@/routes/users";
-import reports from "@/routes/reports";
 import { usePage } from '@inertiajs/react';
 import { useCallback } from "react";
 
@@ -43,7 +42,7 @@ const mainNavItemsBase: NavItem[] = [
     {
         title: 'Organizations',
         href: organizations.index(),
-        icon: Building2, // add related icon
+        icon: SchoolIcon,
     },
     {
         title: 'Orders',
@@ -81,7 +80,7 @@ export function AppSidebar() {
         if (auth.user?.role === 'admin') {
             return items
         }
-        
+
         return [
             {
                 title: 'Orders',

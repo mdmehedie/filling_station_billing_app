@@ -18,7 +18,7 @@ class OrganizationController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {   
+    {
         return inertia('Organizations/Index', [
             'organizations' => OrganizationResource::collection(
                 QueryBuilder::for(Organization::class)
@@ -26,9 +26,9 @@ class OrganizationController extends Controller
                 ->orderBy('id', 'desc')
                 ->allowedFilters([
                     AllowedFilter::callback('search', function ($query, $value) {
-                        $query->where('name', 'like', "%{$value}%")
-                              ->orWhere('name_bn', 'like', "%{$value}%")
-                              ->orWhere('ucode', 'like', "%{$value}%");
+                        $query->where('ucode', 'like', "%{$value}%")
+                            ->orWhere('name', 'like', "%{$value}%")
+                            ->orWhere('name_bn', 'like', "%{$value}%");
                     })
                 ])
             ->paginate(15))
@@ -55,7 +55,7 @@ class OrganizationController extends Controller
     {
         $data = $request->validated();
         $data['user_id'] = auth()->id();
-        
+
         $organization = Organization::create($data);
         return redirect()->route('organizations.index')->with('success', 'Organization created successfully');
     }
@@ -88,7 +88,7 @@ class OrganizationController extends Controller
         $data = $request->validated();
 
         $organization->update($data);
-        
+
         return redirect()->route('organizations.show', $organization)
             ->with('success', 'Organization updated successfully');
     }
