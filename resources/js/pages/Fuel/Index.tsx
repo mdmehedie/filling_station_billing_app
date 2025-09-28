@@ -10,6 +10,7 @@ import { BreadcrumbItem } from "@/types";
 import fuelsRoute from "@/routes/fuels";
 import { dashboard } from "@/routes";
 import { useState, useCallback, useRef } from "react";
+import DeleteConfirmation from "@/components/DeleteConfirmation";
 
 interface Props {
     fuels: PaginatedResponse<Fuel>;
@@ -18,6 +19,15 @@ interface Props {
 export default function Index({ fuels }: Props) {
     const [searchTerm, setSearchTerm] = useState('');
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        error: string | null;
+        fuel: Fuel | null;
+    }>({
+        isOpen: false,
+        error: null,
+        fuel: null,
+    });
 
     // Custom debounced search function
     const debouncedSearch = useCallback((term: string) => {
@@ -49,6 +59,33 @@ export default function Index({ fuels }: Props) {
             preserveState: true,
             preserveScroll: true,
         });
+    };
+
+    const handleDeleteClick = (fuel: Fuel) => {
+        setDeleteModal({
+            isOpen: true,
+            fuel,
+            error: null,
+        });
+    };
+
+    const handleDeleteConfirm = () => {
+        if (deleteModal.fuel) {
+            router.delete(fuelsRoute.destroy(deleteModal.fuel.id).url, {
+                onSuccess: () => {
+                    setDeleteModal({ isOpen: false, fuel: null, error: null });
+                },
+                onError: (errors) => {
+                    setDeleteModal({ isOpen: true, fuel: null, error: Object.values(errors).join(', ') });
+                    
+                    throw new Error(Object.values(errors).join(', '));
+                }
+            });
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteModal({ isOpen: false, fuel: null, error: null });
     };
 
     const columns: Column<Fuel>[] = [
@@ -92,7 +129,12 @@ export default function Index({ fuels }: Props) {
                     <Button variant="ghost" size="sm" onClick={() => router.visit(fuelsRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => router.visit(fuelsRoute.destroy(row.id).url)}>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive" 
+                        onClick={() => handleDeleteClick(row)}
+                    >
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -141,6 +183,15 @@ export default function Index({ fuels }: Props) {
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
                     statusText={`Showing ${fuels.meta.from} to ${fuels.meta.to} of ${fuels.meta.total} fuels`}
+                />
+
+                <DeleteConfirmation
+                    isOpen={deleteModal.isOpen}
+                    onClose={handleDeleteCancel}
+                    onConfirm={handleDeleteConfirm}
+                    title="Delete Fuel"
+                    description={`Are you sure you want to delete this fuel? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`}
+                    itemName={deleteModal.fuel?.name}
                 />
             </div>  
         </AppLayout>

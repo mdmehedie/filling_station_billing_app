@@ -57,7 +57,7 @@ class OrganizationController extends Controller
         $data['user_id'] = auth()->id();
 
         $organization = Organization::create($data);
-        return redirect()->route('organizations.index')->with('success', 'Organization created successfully');
+        return redirect()->route('organizations.index')->with('success', "Organization {$organization->name} created successfully");
     }
 
     /**
@@ -90,7 +90,7 @@ class OrganizationController extends Controller
         $organization->update($data);
 
         return redirect()->route('organizations.show', $organization)
-            ->with('success', 'Organization updated successfully');
+            ->with('success', "Organization {$organization->name} updated successfully");
     }
 
     /**
@@ -111,6 +111,6 @@ class OrganizationController extends Controller
         }
 
         $organization->delete();
-        return redirect()->route('organizations.index')->with('success', 'Organization deleted successfully');
+        return redirect()->route('organizations.index')->with('success', "Organization {$organization->name} deleted successfully");
     }
 }

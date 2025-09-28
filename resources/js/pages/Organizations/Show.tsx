@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, User, Calendar, Percent, Hash, Globe } from 'lucide-react';
+import { Building2, User, Calendar, Percent, Hash, Globe, ArrowLeft } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import organizationsRoute from '@/routes/organizations';
@@ -121,6 +121,12 @@ export default function Show({ organization }: Props) {
                             >
                                 Delete
                             </Button>
+                            <Link href={organizationsRoute.index().url}>
+                                <Button variant="outline" size="sm">
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    Back
+                                </Button>
+                            </Link>
                         </div>
                     </div>
 
@@ -202,10 +208,10 @@ export default function Show({ organization }: Props) {
                         <CardHeader>
                             <CardTitle className="flex items-center space-x-2">
                                 <User className="h-5 w-5" />
-                                <span>Owner Information</span>
+                                <span>Created By Information</span>
                             </CardTitle>
                             <CardDescription>
-                                Organization owner and contact details
+                                Organization creator and contact details
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

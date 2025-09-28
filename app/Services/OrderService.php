@@ -25,7 +25,14 @@ class OrderService
             ->defaultSort('-id')
             ->allowedFilters([
                 AllowedFilter::callback('search', function ($query, $value) {
-                    $query->where('id', 'like', "%{$value}%");
+                    $query->where('id', 'like', "%{$value}%")
+                        ->orWhereHas('organization', function ($query) use ($value) {
+                        $query->where('name', 'like', "%{$value}%");
+                        $query->orWhere('name_bn', 'like', "%{$value}%");
+                    })
+                    ->orWhereHas('vehicle', function ($query) use ($value) {
+                        $query->where('name', 'like', "%{$value}%");
+                    });
                 }),
                 AllowedFilter::callback('start_date', function ($query, $value) {
                     $query->whereDate('sold_date', '>=', $value);

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Fuel extends Model
 {
-    use SoftDeletes;
 
     protected $fillable = [
         'name',

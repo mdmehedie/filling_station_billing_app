@@ -84,11 +84,6 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 setOrders(response);
             }, {
                 "filter[search]": term,
-                "filter[start_date]": startDate,
-                "filter[end_date]": endDate,
-                "filter[organization_id]": selectedOrganization === "all" ? "" : selectedOrganization,
-                "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
-                "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
                 page: 1 // Reset to first page when searching
             });
         }, 500);
@@ -254,16 +249,6 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         {
             key: 'sold_date',
             header: 'Sold Date',
-            sortable: true,
-            render: (value) => new Date(value).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            })
-        },
-        {
-            key: 'created_at',
-            header: 'Created',
             sortable: true,
             render: (value) => new Date(value).toLocaleDateString('en-GB', {
                 day: '2-digit',

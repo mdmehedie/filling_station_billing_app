@@ -77,7 +77,7 @@ class VehicleController extends Controller
 
         $vehicle = Vehicle::create($validated);
 
-        return redirect()->route('vehicles.index')->with('success', 'Vehicle created successfully');
+        return redirect()->route('vehicles.index')->with('success', "Vehicle {$vehicle->name} created successfully");
     }
 
     /**
@@ -109,7 +109,7 @@ class VehicleController extends Controller
     {
         $vehicle->update($request->validated());
 
-        return redirect()->route('vehicles.index')->with('success', 'Vehicle updated successfully');
+        return redirect()->route('vehicles.index')->with('success', "Vehicle {$vehicle->name} updated successfully");
     }
 
     /**
@@ -117,8 +117,12 @@ class VehicleController extends Controller
      */
     public function destroy(Vehicle $vehicle)
     {
-        $vehicle->delete();
+        try {
+            $vehicle->delete();
+            return redirect()->route('vehicles.index')->with('success', "Vehicle {$vehicle->name} deleted successfully");
+        } catch (\Exception $e) {
+            return redirect()->route('vehicles.index')->with('error', "Vehicle {$vehicle->name} cannot be deleted because it is associated with an order");
+        }
 
-        return redirect()->route('vehicles.index')->with('success', 'Vehicle deleted successfully');
     }
 }

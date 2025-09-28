@@ -70,7 +70,7 @@ class OrderController extends Controller
         $validated['user_id'] = auth()->user()->id;
         Order::create($validated);
 
-        return redirect()->route('orders.index')->with('success', 'Order created successfully');
+        return redirect()->route('orders.index')->with('success', "Order {$validated['order_no']} created successfully");
     }
 
     /**
@@ -104,7 +104,7 @@ class OrderController extends Controller
 
         $order->update($validated);
 
-        return redirect()->route('orders.index')->with('success', 'Order updated successfully');
+        return redirect()->route('orders.index')->with('success', "Order {$order->order_no} updated successfully");
     }
 
     /**
@@ -112,9 +112,14 @@ class OrderController extends Controller
      */
     public function destroy(Order $order)
     {
-        $order->delete();
+        try {
+            $order->delete();
+            return redirect()->route('orders.index')->with('success', "Order {$order->id} deleted successfully");
+        } catch (\Exception $e) {
+            return redirect()->route('orders.index')->with('error', "Order {$order->id} cannot be deleted because it is associated with a vehicle");
+        }
 
-        return redirect()->route('orders.index')->with('success', 'Order deleted successfully');
+
     }
 
     /**

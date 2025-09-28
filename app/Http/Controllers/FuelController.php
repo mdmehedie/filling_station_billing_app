@@ -36,7 +36,7 @@ class FuelController extends Controller
 
         $fuel = Fuel::create($validated);
 
-        return redirect()->route('fuels.index')->with('success', 'Fuel created successfully');
+        return redirect()->route('fuels.index')->with('success', "Fuel {$fuel->name} created successfully");
     }
 
     /**
@@ -58,7 +58,7 @@ class FuelController extends Controller
 
         $fuel->update($validated);
 
-        return redirect()->route('fuels.index')->with('success', 'Fuel updated successfully');
+        return redirect()->route('fuels.index')->with('success', "Fuel {$fuel->name} updated successfully");
     }
 
     /**
@@ -66,8 +66,12 @@ class FuelController extends Controller
      */
     public function destroy(Fuel $fuel)
     {
-        $fuel->delete();
+        try {
+            $fuel->delete();
+            return redirect()->route('fuels.index')->with( 'success', "Fuel {$fuel->name} deleted successfully");
+        } catch (\Exception $e) {
+            return redirect()->route('fuels.index')->with('error', "Fuel {$fuel->name} cannot be deleted because it is associated with a vehicle");
+        }
 
-        return redirect()->route('fuels.index')->with('success', 'Fuel deleted successfully');
     }
 }
