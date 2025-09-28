@@ -68,7 +68,7 @@ export default function Create() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="max-w-2xl">
+                    <div className="max-w-2xl mx-auto">
                         {/* Fuel Information Card */}
                         <Card>
                             <CardHeader>

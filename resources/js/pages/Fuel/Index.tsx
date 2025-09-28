@@ -135,7 +135,7 @@ export default function Index({ fuels }: Props) {
                 <DataTableWrapper
                     response={fuels}
                     columns={columns}
-                    searchable={true}
+                    searchable={false}
                     searchPlaceholder="Search fuels..."
                     onPageChange={handlePageChange}
                     onSearchChange={handleSearchChange}

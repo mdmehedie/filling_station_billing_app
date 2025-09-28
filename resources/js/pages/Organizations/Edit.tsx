@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import InputError from '@/components/input-error';
-import { Form, Head, useForm } from '@inertiajs/react';
+import { Form, Head, useForm, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { LoaderCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { LoaderCircle, Upload, X, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import organizationsRoute from '@/routes/organizations';
@@ -133,8 +133,26 @@ export default function Edit({ organization }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit ${organization.name} - Organization`} />
-            <div className="container mx-auto py-6">
-                <div className="max-w-2xl mx-auto">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Edit Organization</h1>
+                        <p className="text-muted-foreground">
+                            Update the details for {organization.name}
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={() => router.visit(organizationsRoute.show(organization.id).url)}
+                        className="flex items-center gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Organization
+                    </Button>
+                </div>
+
+                <div className="w-full max-w-none mx-auto" style={{ maxWidth: '800px' }}>
                     <Card>
                         <CardHeader>
                             <CardTitle>Edit Organization</CardTitle>

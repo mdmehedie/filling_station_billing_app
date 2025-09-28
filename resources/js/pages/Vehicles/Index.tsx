@@ -37,7 +37,7 @@ export default function Index({ vehicles }: Props) {
         
         searchTimeoutRef.current = setTimeout(() => {
             router.get('/vehicles', { 
-                search: term,
+                "filter[search]": term,
                 page: 1 // Reset to first page when searching
             }, {
                 preserveState: true,
@@ -54,7 +54,7 @@ export default function Index({ vehicles }: Props) {
     const handlePageChange = (page: number) => {
         router.get('/vehicles', { 
             page,
-            search: searchTerm // Preserve search term when changing pages
+            "filter[search]": searchTerm // Preserve search term when changing pages
         }, {
             preserveState: true,
             preserveScroll: true,

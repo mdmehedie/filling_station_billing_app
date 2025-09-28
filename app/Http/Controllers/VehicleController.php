@@ -28,16 +28,13 @@ class VehicleController extends Controller
             ->allowedFilters([
                 AllowedFilter::callback('search', function ($query, $value) {
                     $query->where('name', 'like', "%{$value}%")
-                          ->orWhere('ucode', 'like', "%{$value}%");
-                }),
-                AllowedFilter::callback('organization_id', function ($query, $value) {
-                    $query->where('organization_id', $value);
-                }),
-                AllowedFilter::callback('fuel_id', function ($query, $value) {
-                    $query->where('fuel_id', $value);
+                          ->orWhere('ucode', 'like', "%{$value}%")
+                          ->orWhereHas('organization', function ($query) use ($value) {
+                            $query->where('name', 'like', "%{$value}%")
+                                  ->orWhere('name_bn', 'like', "%{$value}%");
+                          });
                 }),
             ])
-            ->allowedSorts(['id', 'name', 'ucode', 'model', 'type', 'organization_id', 'fuel_id'])
             ->paginate(15);
     
         return inertia('Vehicles/Index', [

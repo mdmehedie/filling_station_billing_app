@@ -1,5 +1,5 @@
 import AppLayout from "@/layouts/app-layout";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, router } from "@inertiajs/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,22 +66,22 @@ export default function Edit({ user }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit User" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                {/* Header Section */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.history.back()}
-                            className="flex items-center gap-2"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back
-                        </Button>
-                        <div>
-                            <h1 className="text-2xl font-semibold">Edit User</h1>
-                            <p className="text-muted-foreground">Update user information</p>
-                        </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Edit User</h1>
+                        <p className="text-muted-foreground">
+                            Update user information for {user.name}
+                        </p>
                     </div>
+                    <Button
+                        variant="outline"
+                        onClick={() => router.visit(usersRoute.show(user.id).url)}
+                        className="flex items-center gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to User
+                    </Button>
                 </div>
 
                 <div className="grid gap-6">

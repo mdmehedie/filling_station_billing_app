@@ -27,10 +27,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     const [selectedOrganization, setSelectedOrganization] = useState('all');
     const [selectedVehicle, setSelectedVehicle] = useState('all');
     const [selectedFuel, setSelectedFuel] = useState('all');
-    const [exportFormat, setExportFormat] = useState<'pdf' | 'excel'>('pdf');
     const [showFilters, setShowFilters] = useState(true);
-    const [isExporting, setIsExporting] = useState(false);
-    const [showExportModal, setShowExportModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState<{
         isOpen: boolean;
         error: string | null;
@@ -186,46 +183,6 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         setDeleteModal({ isOpen: false, order: null, error: null });
     };
 
-
-    const handleExportClick = () => {
-        setShowExportModal(true);
-    };
-
-    const handleExportConfirm = async () => {
-        setIsExporting(true);
-        setShowExportModal(false);
-        try {
-            const params = new URLSearchParams({
-                "filter[search]": searchTerm,
-                "filter[start_date]": startDate,
-                "filter[end_date]": endDate,
-                format: exportFormat
-            });
-
-            const response = await axios.post(`/api/orders/export`, {
-                format: exportFormat
-            });
-
-            if (response.status === 200) {
-                const blob = await response.data.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `orders-export-${new Date().toISOString().split('T')[0]}.${exportFormat === 'pdf' ? 'pdf' : 'xlsx'}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            } else {
-                console.error('Export failed');
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-        } finally {
-            setIsExporting(false);
-        }
-    };
-
     const columns: Column<Order>[] = [
         {
             key: 'id',
@@ -371,31 +328,14 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     </Button>
                 </div>
 
-                {/* Filters and Export Section */}
+                {/* Filters Section */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center gap-2">
                                 <Filter className="h-5 w-5" />
-                                Filters & Export
+                                Filters
                             </CardTitle>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowFilters(!showFilters)}
-                                >
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    {showFilters ? 'Hide Filters' : 'Show Filters'}
-                                </Button>
-                                <Button
-                                    onClick={handleExportClick}
-                                    disabled={isExporting}
-                                    className="bg-primary-custom hover:bg-primary-custom/90"
-                                >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    {isExporting ? 'Exporting...' : 'Export'}
-                                </Button>
-                            </div>
                         </div>
                     </CardHeader>
                     {showFilters && (
@@ -530,50 +470,6 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     searchValue={searchTerm}
                     statusText={`Showing ${orders!.meta.from} to ${orders!.meta.to} of ${orders!.meta.total} orders`}
                 />
-
-                {/* Export Format Selection Modal */}
-                <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
-                    <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Download className="h-5 w-5" />
-                                Export Orders
-                            </DialogTitle>
-                            <DialogDescription>
-                                Choose the format for exporting your orders data.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="export-format-modal" className="text-sm font-medium">
-                                    Export Format
-                                </Label>
-                                <Select value={exportFormat} onValueChange={(value: 'pdf' | 'excel') => setExportFormat(value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select format" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="pdf">PDF Document</SelectItem>
-                                        <SelectItem value="excel">Excel Spreadsheet</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            {startDate && endDate && (
-                                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                                    <strong>Export Range:</strong> {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
-                                </div>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowExportModal(false)}>
-                                Cancel
-                            </Button>
-                            <Button onClick={handleExportConfirm} disabled={isExporting}>
-                                {isExporting ? 'Exporting...' : 'Export'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
 
                 <DeleteConfirmation
                     isOpen={deleteModal.isOpen}
