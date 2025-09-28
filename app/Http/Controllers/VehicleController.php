@@ -49,7 +49,10 @@ class VehicleController extends Controller
     public function getAllVehicles(Request $request)
     {
         return VehicleResource::collection(
-            Vehicle::select('id', 'name', 'ucode', 'model', 'type')->where('organization_id', $request->organization_id)->get()
+            Vehicle::select('id', 'name', 'ucode', 'model', 'type','fuel_id')
+            ->where('organization_id', $request->organization_id)
+            ->with('fuel')
+            ->get()
         );
     }
 

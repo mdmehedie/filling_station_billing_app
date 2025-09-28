@@ -77,6 +77,7 @@ export function AppSidebar() {
     const { auth } = page.props;
 
     const mainNavItems = useCallback((items: NavItem[]): NavItem[] => {
+        // @ts-ignore
         if (auth.user?.role === 'admin') {
             return items
         }

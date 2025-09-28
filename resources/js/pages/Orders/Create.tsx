@@ -28,6 +28,7 @@ interface Vehicle {
     model?: string;
     type?: string;
     organization_id: number;
+    fuel_id?: number;
 }
 
 interface Fuel {
@@ -35,6 +36,7 @@ interface Fuel {
     name: string;
     price: number;
     type?: string;
+    fuel_id: number;
 }
 
 interface FormData {
@@ -66,12 +68,12 @@ export default function Create({ organizations, fuels }: Props) {
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
     const [orgSearchTerm, setOrgSearchTerm] = useState('');
 
-    // Set default fuel selection
+    // Set default fuel selection only if no vehicle is selected
     useEffect(() => {
-        if (fuels.length > 0 && !data.fuel_id) {
+        if (fuels.length > 0 && !data.fuel_id && !data.vehicle_id) {
             setData('fuel_id', fuels[0].id.toString());
         }
-    }, [fuels, setData]);
+    }, [fuels, setData, data.vehicle_id]);
 
     // Update selected fuel and calculate total price
     useEffect(() => {
@@ -111,9 +113,14 @@ export default function Create({ organizations, fuels }: Props) {
             }, { organization_id: value });
         }
         
-        // Clear quantity when vehicle changes
+        // Auto-select fuel type when vehicle changes
         if (field === 'vehicle_id') {
             setData('fuel_qty', '');
+            // Find the selected vehicle and auto-select its fuel type
+            const selectedVehicle = vehicles.find(v => v.id.toString() === value);
+            if (selectedVehicle && selectedVehicle.fuel_id) {
+                setData('fuel_id', selectedVehicle.fuel_id.toString());
+            }
         }
     };
 
@@ -164,7 +171,7 @@ export default function Create({ organizations, fuels }: Props) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="max-w-2xl mx-auto space-y-6">
+                    <div className="max-w-2xl mx-auto space-y-6 border rounded-lg p-6">
                         {/* 1. Sold Date */}
                         <div className="space-y-2">
                             <Label htmlFor="sold_date" className="text-base font-medium">Sold Date *</Label>
