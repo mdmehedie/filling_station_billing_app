@@ -39,6 +39,7 @@ class OrderController extends Controller
     {        
         return Inertia::render('Orders/Index', [
             // 'orders' => OrderResource::collection($orders),
+            'fuels' => FuelResource::collection(Fuel::select('id', 'name', 'price')->get()),
         ]);
     }
 

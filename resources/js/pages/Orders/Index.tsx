@@ -10,20 +10,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Edit, Trash2, Eye, Download, Filter, X, Plus } from "lucide-react";
-import { Order, PaginatedResponse } from "@/types/response";
+import { Order, PaginatedResponse, Fuel, Vehicle } from "@/types/response";
 import { BreadcrumbItem, SharedData } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { orderList } from "@/lib/api";
+import { orderList, getAllOrganizations, getAllVehicles } from "@/lib/api";
 import axios from "axios";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 
-export default function Index() {
+export default function Index({ fuels }: { fuels: Fuel[] }) {
     const { auth } = usePage().props;
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [selectedOrganization, setSelectedOrganization] = useState('all');
+    const [selectedVehicle, setSelectedVehicle] = useState('all');
+    const [selectedFuel, setSelectedFuel] = useState('all');
     const [exportFormat, setExportFormat] = useState<'pdf' | 'excel'>('pdf');
     const [showFilters, setShowFilters] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
@@ -57,10 +60,17 @@ export default function Index() {
             total: 0
         }
     });
+    const [organizations, setOrganizations] = useState<any[]>([]);
+    const [vehicles, setVehicles] = useState<any[]>([]);
     
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
+        });
+        
+        // Load filter options
+        getAllOrganizations((response: any[]) => {
+            setOrganizations(response || []);
         });
     }, []);
 
@@ -78,10 +88,13 @@ export default function Index() {
                 "filter[search]": term,
                 "filter[start_date]": startDate,
                 "filter[end_date]": endDate,
+                "filter[organization_id]": selectedOrganization === "all" ? "" : selectedOrganization,
+                "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
+                "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
                 page: 1 // Reset to first page when searching
             });
         }, 500);
-    }, [startDate, endDate]);
+    }, [startDate, endDate, selectedOrganization, selectedVehicle, selectedFuel]);
 
     const handleSearchChange = (search: string) => {
         setSearchTerm(search);
@@ -95,6 +108,9 @@ export default function Index() {
             "filter[search]": searchTerm,
             "filter[start_date]": startDate,
             "filter[end_date]": endDate,
+            "filter[organization_id]": selectedOrganization === "all" ? "" : selectedOrganization,
+            "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
+            "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
             page: page
         });
     };
@@ -106,6 +122,9 @@ export default function Index() {
             "filter[search]": searchTerm,
             "filter[start_date]": startDate,
             "filter[end_date]": endDate,
+            "filter[organization_id]": selectedOrganization === "all" ? "" : selectedOrganization,
+            "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
+            "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
             page: 1
         });
     };
@@ -114,12 +133,18 @@ export default function Index() {
         setStartDate('');
         setEndDate('');
         setSearchTerm('');
+        setSelectedOrganization('all');
+        setSelectedVehicle('all');
+        setSelectedFuel('all');
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
         }, {
             "filter[search]": '',
             "filter[start_date]": '',
             "filter[end_date]": '',
+            "filter[organization_id]": '',
+            "filter[vehicle_id]": '',
+            "filter[fuel_id]": '',
             page: 1
         });
     };
@@ -400,6 +425,64 @@ export default function Index() {
                                             onChange={(e) => setEndDate(e.target.value)}
                                             className="w-full"
                                         />
+                                    </div>
+                                </div>
+
+                                {/* Entity Filters */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="organization-filter" className="text-sm font-medium">
+                                            Organization
+                                        </Label>
+                                        <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="All Organizations" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Organizations</SelectItem>
+                                                {organizations.map((org) => (
+                                                    <SelectItem key={org.id} value={org.id.toString()}>
+                                                        {org.name} ({org.ucode})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="vehicle-filter" className="text-sm font-medium">
+                                            Vehicle
+                                        </Label>
+                                        <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="All Vehicles" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Vehicles</SelectItem>
+                                                {vehicles.map((vehicle) => (
+                                                    <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                                        {vehicle.name} ({vehicle.ucode})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="fuel-filter" className="text-sm font-medium">
+                                            Fuel Type
+                                        </Label>
+                                        <Select value={selectedFuel} onValueChange={setSelectedFuel}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="All Fuel Types" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Fuel Types</SelectItem>
+                                                {fuels.map((fuel) => (
+                                                    <SelectItem key={fuel.id} value={fuel.id.toString()}>
+                                                        {fuel.name} (৳{fuel.price}/L)
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
 

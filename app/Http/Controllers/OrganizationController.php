@@ -10,6 +10,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
 
 class OrganizationController extends Controller
 {
@@ -32,6 +33,11 @@ class OrganizationController extends Controller
                 ])
             ->paginate(15))
         ]);
+    }
+
+    public function getAllOrganizations(Request $request)
+    {
+        return OrganizationResource::collection(Organization::select('id', 'name', 'name_bn', 'ucode')->get());
     }
 
     /**

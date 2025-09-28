@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users } from 'lucide-react';
+import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2 } from 'lucide-react';
 import AppLogo from './app-logo';
 import organizations from "@/routes/organizations";
 import vehicles from "@/routes/vehicles";
@@ -43,7 +43,7 @@ const mainNavItemsBase: NavItem[] = [
     {
         title: 'Organizations',
         href: organizations.index(),
-        icon: Folder,
+        icon: Building2, // add related icon
     },
     {
         title: 'Orders',
