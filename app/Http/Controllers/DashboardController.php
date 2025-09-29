@@ -9,6 +9,7 @@ use App\Models\Fuel;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -20,12 +21,13 @@ class DashboardController extends Controller
         // Get basic statistics
         $totalVehicles = Vehicle::count();
         $totalOrganizations = Organization::count();
-        $totalOrders = Order::count();
+        $totalOrders = Order::when(Auth::user()->role === 'user',fn($q) => $q->where('user_id',Auth::id()))->count();
         $totalFuelTypes = Fuel::count();
-        $totalOrderQuantity = Order::sum('fuel_qty');
+        $totalOrderQuantity = Order::when(Auth::user()->role === 'user',fn($q) => $q->where('user_id',Auth::id()))->sum('fuel_qty');
         
         // Get recent orders
         $recentOrders = Order::with(['vehicle', 'organization', 'fuel'])
+        ->when(Auth::user()->role === 'user',fn($q) => $q->where('user_id',Auth::id()))
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -38,6 +40,7 @@ class DashboardController extends Controller
 
         // Get orders by month for the last 6 months
         $ordersByMonth = Order::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count, SUM(total_price) as total_revenue')
+        ->when(Auth::user()->role === 'user',fn($q) => $q->where('user_id',Auth::id()))
             ->where('created_at', '>=', Carbon::now()->subMonths(6))
             ->groupBy('month')
             ->orderBy('month')
@@ -45,13 +48,14 @@ class DashboardController extends Controller
 
         // Get daily sales data for the last 30 days
         $dailySales = Order::selectRaw('DATE(sold_date) as date, SUM(fuel_qty) as total_quantity, SUM(total_price) as total_amount')
+        ->when(Auth::user()->role === 'user',fn($q) => $q->where('user_id',Auth::id()))
             ->where('sold_date', '>=', Carbon::now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
         // Calculate total sales amount
-        $totalSalesAmount = Order::sum('total_price');
+        $totalSalesAmount = Order::when(Auth::user()->role === 'user',fn($q) => $q->where('user_id',Auth::id()))->sum('total_price');
 
         // Get top organizations by vehicle count
         $topOrganizations = Organization::withCount('vehicles')
@@ -61,6 +65,7 @@ class DashboardController extends Controller
 
         // Get fuel consumption statistics
         $fuelConsumption = Order::with('fuel')
+        ->when(Auth::user()->role === 'user', fn($q) => $q->where('user_id',Auth::id()))
             ->selectRaw('fuel_id, SUM(fuel_qty) as total_qty, SUM(total_price) as total_price')
             ->groupBy('fuel_id')
             ->get();

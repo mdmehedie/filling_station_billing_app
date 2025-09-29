@@ -11,16 +11,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-   
-    if(Auth::check() && Auth::user()->role === 'admin') {
-        return redirect()->route('dashboard');
-    }
-
     return redirect()->route('orders.index');
 })->name('home')->middleware('guest');
 
 Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('is_admin');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('vehicles', VehicleController::class)->middleware('is_admin');
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization')->middleware('is_admin');

@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2,SchoolIcon } from 'lucide-react';
+import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2, SchoolIcon } from 'lucide-react';
 import AppLogo from './app-logo';
 import organizations from "@/routes/organizations";
 import vehicles from "@/routes/vehicles";
@@ -83,10 +83,15 @@ export function AppSidebar() {
 
         return [
             {
+                title: 'Dashboard',
+                href: dashboard(),
+                icon: LayoutGrid,
+            },
+            {
                 title: 'Orders',
                 href: orders.index(),
                 icon: ShoppingCart,
-            }
+            },
         ]
     }, []);
 
