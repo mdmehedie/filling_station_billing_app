@@ -59,6 +59,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     });
     const [organizations, setOrganizations] = useState<any[]>([]);
     const [vehicles, setVehicles] = useState<any[]>([]);
+    const [organizationSearchTerm, setOrganizationSearchTerm] = useState('');
+    const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
     
 
     useEffect(() => {
@@ -142,6 +144,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         setSelectedOrganization('all');
         setSelectedVehicle('all');
         setSelectedFuel('all');
+        setOrganizationSearchTerm('');
+        setVehicleSearchTerm('');
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
         }, {
@@ -381,12 +385,26 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                                 <SelectValue placeholder="All Organizations" />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                <div className="p-2">
+                                                    <Input 
+                                                        placeholder="Search organizations..." 
+                                                        className="h-8"
+                                                        value={organizationSearchTerm}
+                                                        onChange={(e) => setOrganizationSearchTerm(e.target.value)}
+                                                    />
+                                                </div>
                                                 <SelectItem value="all">All Organizations</SelectItem>
-                                                {organizations.map((org) => (
-                                                    <SelectItem key={org.id} value={org.id.toString()}>
-                                                        {org.name} ({org.ucode})
-                                                    </SelectItem>
-                                                ))}
+                                                {organizations
+                                                    .filter(org => 
+                                                        org.name.toLowerCase().includes(organizationSearchTerm.toLowerCase()) ||
+                                                        org.ucode.toLowerCase().includes(organizationSearchTerm.toLowerCase()) ||
+                                                        (org.name_bn && org.name_bn.toLowerCase().includes(organizationSearchTerm.toLowerCase()))
+                                                    )
+                                                    .map((org) => (
+                                                        <SelectItem key={org.id} value={org.id.toString()}>
+                                                            {org.name} ({org.ucode})
+                                                        </SelectItem>
+                                                    ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -409,12 +427,26 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                                 } />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                <div className="p-2">
+                                                    <Input 
+                                                        placeholder="Search vehicles..." 
+                                                        className="h-8"
+                                                        value={vehicleSearchTerm}
+                                                        onChange={(e) => setVehicleSearchTerm(e.target.value)}
+                                                    />
+                                                </div>
                                                 <SelectItem value="all">All Vehicles</SelectItem>
-                                                {vehicles.map((vehicle) => (
-                                                    <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                                                        {vehicle.name} ({vehicle.ucode})
-                                                    </SelectItem>
-                                                ))}
+                                                {vehicles
+                                                    .filter(vehicle => 
+                                                        vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                                        vehicle.ucode.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                                        (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
+                                                    )
+                                                    .map((vehicle) => (
+                                                        <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                                            {vehicle.name} ({vehicle.ucode})
+                                                        </SelectItem>
+                                                    ))}
                                             </SelectContent>
                                         </Select>
                                     </div>

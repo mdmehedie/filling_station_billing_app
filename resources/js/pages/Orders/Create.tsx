@@ -67,6 +67,7 @@ export default function Create({ organizations, fuels }: Props) {
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
     const [orgSearchTerm, setOrgSearchTerm] = useState('');
+    const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
 
     // Set default fuel selection only if no vehicle is selected
     useEffect(() => {
@@ -106,6 +107,7 @@ export default function Create({ organizations, fuels }: Props) {
         if (field === 'organization_id') {
             setData('vehicle_id', '');
             setData('fuel_qty', '');
+            setVehicleSearchTerm(''); // Clear vehicle search term
             const org = organizations.find(o => o.id.toString() === value);
             setSelectedOrg(org || null);
             getAllVehicles((vehicles: Vehicle[]) => {
@@ -253,7 +255,7 @@ export default function Create({ organizations, fuels }: Props) {
                             )}
                         </div>
 
-                        {/* 3. Vehicle Selection */}
+                        {/* 3. Vehicle Selection (Searchable) */}
                         <div className="space-y-2">
                             <Label className="text-base font-medium">Vehicle *</Label>
                             <Select
@@ -265,19 +267,48 @@ export default function Create({ organizations, fuels }: Props) {
                                     <SelectValue placeholder={data.organization_id ? "Select vehicle" : "Select organization first"} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {vehicles.map((vehicle) => (
-                                        <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                                            <div className="flex items-center gap-2">
-                                                <Car className="h-4 w-4" />
-                                                <div className="flex flex-col">
-                                                    <span>{vehicle.name}</span>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {vehicle.ucode} • {vehicle.model || 'No model'}
-                                                    </span>
+                                    <div className="relative p-2 border-b">
+                                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search vehicles..."
+                                            value={vehicleSearchTerm}
+                                            onChange={(e) => setVehicleSearchTerm(e.target.value)}
+                                            onKeyDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="pl-10"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto">
+                                        {vehicles
+                                            .filter(vehicle =>
+                                                vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                                vehicle.ucode.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                                (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
+                                            )
+                                            .map((vehicle) => (
+                                                <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Car className="h-4 w-4" />
+                                                        <div className="flex flex-col">
+                                                            <span>{vehicle.name}</span>
+                                                            <span className="text-sm text-muted-foreground">
+                                                                {vehicle.ucode} • {vehicle.model || 'No model'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        {vehicles.filter(vehicle =>
+                                            vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                            vehicle.ucode.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                            (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
+                                        ).length === 0 && (
+                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                    No vehicles found
                                                 </div>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
+                                            )}
+                                    </div>
                                 </SelectContent>
                             </Select>
                             {errors.vehicle_id && (
