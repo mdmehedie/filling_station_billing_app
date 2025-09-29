@@ -2,27 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOrderRequest;
+use App\Http\Requests\UpdateOrderRequest;
+use App\Http\Resources\FuelResource;
 use App\Http\Resources\OrderCollection;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\OrganizationResource;
+use App\Http\Resources\VehicleResource;
+use App\Models\Fuel;
 use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Vehicle;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Http\Response;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Services\OrderService;
-use App\Http\Resources\OrganizationResource;
-use App\Http\Resources\VehicleResource;
-use App\Http\Resources\FuelResource;
-use App\Models\Fuel;
-use App\Http\Requests\UpdateOrderRequest;
-use App\Http\Requests\StoreOrderRequest;
 
 
 class OrderController extends Controller
@@ -36,7 +29,7 @@ class OrderController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {        
+    {
         return Inertia::render('Orders/Index', [
             // 'orders' => OrderResource::collection($orders),
             'fuels' => FuelResource::collection(Fuel::select('id', 'name', 'price')->get()),
@@ -53,7 +46,7 @@ class OrderController extends Controller
      */
     public function create(Request $request)
     {
-        return inertia('Orders/Create',[
+        return inertia('Orders/Create', [
             'organizations' => OrganizationResource::collection(Organization::select('id', 'name', 'name_bn', 'ucode')->get()),
             'vehicles' => VehicleResource::collection(Vehicle::select('id', 'name', 'ucode', 'model', 'type')->where('organization_id', $request->organization_id)->get()),
             'fuels' => FuelResource::collection(Fuel::select('id', 'name', 'price')->get()),

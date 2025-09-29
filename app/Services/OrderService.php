@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -27,12 +28,12 @@ class OrderService
                 AllowedFilter::callback('search', function ($query, $value) {
                     $query->where('id', 'like', "%{$value}%")
                         ->orWhereHas('organization', function ($query) use ($value) {
-                        $query->where('name', 'like', "%{$value}%");
-                        $query->orWhere('name_bn', 'like', "%{$value}%");
-                    })
-                    ->orWhereHas('vehicle', function ($query) use ($value) {
-                        $query->where('name', 'like', "%{$value}%");
-                    });
+                            $query->where('name', 'like', "%{$value}%");
+                            $query->orWhere('name_bn', 'like', "%{$value}%");
+                        })
+                        ->orWhereHas('vehicle', function ($query) use ($value) {
+                            $query->where('name', 'like', "%{$value}%");
+                        });
                 }),
                 AllowedFilter::callback('start_date', function ($query, $value) {
                     $query->whereDate('sold_date', '>=', $value);
@@ -50,6 +51,7 @@ class OrderService
                     $query->where('fuel_id', $value);
                 }),
             ])
+            ->when(Auth::user()->role === 'user', fn($q) => $q->where('user_id', Auth::id()))
             ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
             ->when($isAll, function ($query) {
                 return $query->get();
