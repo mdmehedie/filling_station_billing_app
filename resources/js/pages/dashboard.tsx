@@ -1,27 +1,18 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { 
-    Car, 
-    Building2, 
-    Fuel, 
-    TrendingUp, 
-    Users, 
+import {
+    Car,
+    Building2,
+    Fuel,
+    TrendingUp,
     Calendar,
-    BarChart3,
-    PieChart,
-    Activity,
-    ArrowUpRight,
-    ArrowDownRight,
-    DollarSign
-} from "lucide-react";
-import vehiclesRoute from '@/routes/vehicles';
+    Activity, SchoolIcon
+} from 'lucide-react';
+import ordersRoute from '@/routes/orders';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface Props {
@@ -32,6 +23,8 @@ interface Props {
         totalFuelTypes: number;
         totalOrderQuantity: number;
         totalSalesAmount: number;
+        thisMonthFuelQty: number;
+        thisMonthTotalPrice: number
     };
     recentOrders: any[];
     vehiclesByType: Record<string, number>;
@@ -48,14 +41,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ 
-    statistics, 
-    recentOrders, 
-    vehiclesByType, 
-    ordersByMonth, 
+export default function Dashboard({
+    statistics,
+    recentOrders,
+    vehiclesByType,
+    ordersByMonth,
     dailySales,
-    topOrganizations, 
-    fuelConsumption 
+    topOrganizations,
+    fuelConsumption
 }: Props) {
 
     console.log(dailySales);
@@ -101,7 +94,7 @@ export default function Dashboard({
                             </p>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Organizations</CardTitle>
@@ -130,8 +123,16 @@ export default function Dashboard({
                                 </CardDescription>
                             </div>
                             <div className="text-right">
+                                <div className="text-2xl font-bold text-blue-600">
+                                    ৳{statistics.thisMonthFuelQty} (L)
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Total Sold Fuel
+                                </p>
+                            </div>
+                            <div className="text-right">
                                 <div className="text-2xl font-bold text-primary">
-                                    ৳{statistics.totalSalesAmount}
+                                    ৳{statistics.thisMonthTotalPrice}
                                 </div>
                                 <p className="text-xs text-muted-foreground">
                                     Total Sales Amount
@@ -152,13 +153,13 @@ export default function Dashboard({
                                     }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis 
-                                        dataKey="date" 
+                                    <XAxis
+                                        dataKey="date"
                                         tickFormatter={(value) => {
                                             const date = new Date(value);
                                             const day = date.getDate();
                                             const month = date.toLocaleDateString('en-GB', { month: 'short' });
-                                            
+
                                             // Add ordinal suffix to day
                                             const getOrdinalSuffix = (day: number) => {
                                                 if (day >= 11 && day <= 13) return 'th';
@@ -169,22 +170,22 @@ export default function Dashboard({
                                                     default: return 'th';
                                                 }
                                             };
-                                            
+
                                             return `${day}${getOrdinalSuffix(day)} ${month}`;
                                         }}
                                     />
                                     <YAxis yAxisId="left" orientation="left" />
                                     <YAxis yAxisId="right" orientation="right" />
-                                    <Tooltip 
+                                    <Tooltip
                                         content={({ active, payload, label }) => {
                                             if (active && payload && payload.length && label) {
                                                 return (
                                                     <div className="rounded-lg border bg-background p-3 shadow-md">
-                                                        <p className="font-medium">{new Date(label).toLocaleDateString('en-GB', { 
-                                                            weekday: 'long', 
-                                                            year: 'numeric', 
-                                                            month: 'long', 
-                                                            day: 'numeric' 
+                                                        <p className="font-medium">{new Date(label).toLocaleDateString('en-GB', {
+                                                            weekday: 'long',
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
                                                         })}</p>
                                                         <div className="mt-2 space-y-1">
                                                             <p className="text-sm">
@@ -230,7 +231,7 @@ export default function Dashboard({
                 {/* Charts and Analytics */}
                 <div className="grid gap-4 md:grid-cols-2">
                     {/* use chart */}
-                    
+
                 </div>
 
                 {/* Recent Orders */}
@@ -247,27 +248,49 @@ export default function Dashboard({
                     <CardContent>
                         <div className="space-y-4">
                             {recentOrders.slice(0, 5).map((order) => (
-                                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="flex items-center gap-4">
+                                <div
+                                    key={order.id}
+                                    className="flex items-center justify-between p-4 border rounded-lg"
+                                >
+                                    {/* Organization */}
+                                    <div className="flex items-center gap-4 w-1/3">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium">
-                                            <Fuel className="h-4 w-4" />
+                                            <SchoolIcon className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <div className="font-medium">
+                                                {order.organization?.name || `Vehicle #${order.vehicle_id}`}{" "}
+                                                ({order.organization?.ucode})
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {order.organization?.name_bn}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Vehicle */}
+                                    <div className="flex items-center gap-4 w-1/3">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-medium">
+                                            <Car className="h-4 w-4" />
                                         </div>
                                         <div>
                                             <div className="font-medium">
                                                 {order.vehicle?.name || `Vehicle #${order.vehicle_id}`}
                                             </div>
                                             <div className="text-sm text-muted-foreground">
-                                                {order.organization?.name} • {order.fuel?.name}
+                                                {order.vehicle?.ucode} • {order.fuel?.name}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-center">
+
+                                    {/* Quantity + Total */}
+                                    <div className="flex items-center gap-10 w-1/3 justify-end">
+                                        <div className="text-right">
                                             <div className="text-sm font-medium">{order.fuel_qty}L</div>
                                             <div className="text-xs text-muted-foreground">Quantity</div>
                                         </div>
-                                        <div className="text-center">
-                                            <div className="text-sm font-medium">${order.total_price}</div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-medium">৳{order.total_price}</div>
                                             <div className="text-xs text-muted-foreground">Total</div>
                                         </div>
                                     </div>
@@ -285,8 +308,8 @@ export default function Dashboard({
                         </a>
                     </Button> */}
                     <Button variant="outline" asChild>
-                        <a href={vehiclesRoute.index().url}>
-                            View All Vehicles
+                        <a href={ordersRoute.index().url}>
+                            View All Orders
                         </a>
                     </Button>
                 </div>

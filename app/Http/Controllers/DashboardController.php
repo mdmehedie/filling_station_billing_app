@@ -17,13 +17,25 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $month = Carbon::now()->month;
+        $year = Carbon::now()->year;
+
         // Get basic statistics
         $totalVehicles = Vehicle::count();
         $totalOrganizations = Organization::count();
         $totalOrders = Order::count();
         $totalFuelTypes = Fuel::count();
         $totalOrderQuantity = Order::sum('fuel_qty');
-        
+
+        $thisMonthFuelQty = Order::whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->sum('fuel_qty');
+
+        $thisMonthTotalPrice = Order::whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->sum('total_price');
+
+
         // Get recent orders
         $recentOrders = Order::with(['vehicle', 'organization', 'fuel'])
             ->orderBy('created_at', 'desc')
@@ -72,6 +84,8 @@ class DashboardController extends Controller
                 'totalOrders' => $this->formatNumber($totalOrders),
                 'totalOrderQuantity' => $this->formatNumber($totalOrderQuantity),
                 'totalSalesAmount' => $this->formatNumber($totalSalesAmount),
+                'thisMonthFuelQty' => $this->formatNumber($thisMonthFuelQty),
+                'thisMonthTotalPrice' => $this->formatNumber($thisMonthTotalPrice),
             ],
             'recentOrders' => $recentOrders,
             'vehiclesByType' => $vehiclesByType,
@@ -94,7 +108,7 @@ class DashboardController extends Controller
         } elseif ($number >= 1000) {
             return round($number / 1000, 1) . 'K';
         }
-        
+
         return $number;
     }
 }
