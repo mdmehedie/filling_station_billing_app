@@ -6,6 +6,7 @@ use App\Models\Fuel;
 use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Vehicle;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class OrderSeeder extends Seeder
@@ -35,101 +36,79 @@ class OrderSeeder extends Seeder
             return;
         }
 
-        $orders = [
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH001')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
-                'fuel_qty' => 50.00,
-                'total_price' => 5000.00,
-                'sold_date' => now()->subDays(5),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH002')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Diesel')->first()->id,
-                'fuel_qty' => 75.00,
-                'total_price' => 6000.00,
-                'sold_date' => now()->subDays(4),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(1)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH003')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
-                'fuel_qty' => 30.00,
-                'total_price' => 3000.00,
-                'sold_date' => now()->subDays(3),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(1)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH004')->first()->id,
-                'fuel_id' => $fuels->where('name', 'CNG')->first()->id,
-                'fuel_qty' => 40.00,
-                'total_price' => 2000.00,
-                'sold_date' => now()->subDays(2),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(2)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH005')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Diesel')->first()->id,
-                'fuel_qty' => 100.00,
-                'total_price' => 8000.00,
-                'sold_date' => now()->subDays(1),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(2)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH006')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
-                'fuel_qty' => 25.00,
-                'total_price' => 2500.00,
-                'sold_date' => now(),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(3)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH007')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Octane')->first()->id,
-                'fuel_qty' => 60.00,
-                'total_price' => 7200.00,
-                'sold_date' => now()->subDays(6),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(3)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH008')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Diesel')->first()->id,
-                'fuel_qty' => 80.00,
-                'total_price' => 6400.00,
-                'sold_date' => now()->subDays(7),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(4)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH009')->first()->id,
-                'fuel_id' => $fuels->where('name', 'LPG')->first()->id,
-                'fuel_qty' => 35.00,
-                'total_price' => 1750.00,
-                'sold_date' => now()->subDays(8),
-            ],
-            [
-                'user_id' => 1,
-                'organization_id' => $organizations->skip(4)->first()->id,
-                'vehicle_id' => $vehicles->where('ucode', 'VH010')->first()->id,
-                'fuel_id' => $fuels->where('name', 'Petrol')->first()->id,
-                'fuel_qty' => 45.00,
-                'total_price' => 4500.00,
-                'sold_date' => now()->subDays(9),
-            ],
+        // Generate orders for multiple months dynamically
+        $startYear = 2024;
+        $startMonth = 6; // June
+        $numberOfMonths = 2; // Generate for 2 months
+
+        for ($i = 0; $i < $numberOfMonths; $i++) {
+            $currentDate = Carbon::create($startYear, $startMonth)->addMonths($i);
+            $this->generateOrdersForMonth($currentDate->year, $currentDate->month, $fuels, $organizations, $vehicles);
+            $this->command->info("Generated orders for {$currentDate->format('F Y')}");
+        }
+    }
+
+    private function generateOrdersForMonth($year, $month, $fuels, $organizations, $vehicles)
+    {
+        $startDate = Carbon::create($year, $month, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+
+        // Fuel price ranges (per liter)
+        $fuelPrices = [
+            'Petrol' => ['min' => 95, 'max' => 105],
+            'Diesel' => ['min' => 85, 'max' => 95],
+            'Octane' => ['min' => 110, 'max' => 125],
+            'CNG' => ['min' => 45, 'max' => 55],
+            'LPG' => ['min' => 50, 'max' => 60],
         ];
 
-        foreach ($orders as $order) {
-            Order::create($order);
+        // Generate 8-12 orders per day
+        for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
+            $ordersPerDay = rand(8, 12);
+
+            for ($i = 0; $i < $ordersPerDay; $i++) {
+                $fuel = $fuels->random();
+                $organization = $organizations->random();
+                $vehicle = $vehicles->random();
+
+                // Random quantity based on fuel type
+                $quantity = $this->getRandomQuantity($fuel->name);
+
+                // Calculate price with some variation
+                $priceRange = $fuelPrices[$fuel->name] ?? ['min' => 80, 'max' => 120];
+                $pricePerLiter = rand($priceRange['min'] * 100, $priceRange['max'] * 100) / 100;
+                $totalPrice = round($quantity * $pricePerLiter, 2);
+
+                // Random time during the day
+                $orderDate = $date->copy()->addHours(rand(6, 20))->addMinutes(rand(0, 59));
+
+                Order::create([
+                    'user_id' => 1,
+                    'organization_id' => $organization->id,
+                    'vehicle_id' => $vehicle->id,
+                    'fuel_id' => $fuel->id,
+                    'fuel_qty' => $quantity,
+                    'total_price' => $totalPrice,
+                    'sold_date' => $orderDate,
+                ]);
+            }
+        }
+    }
+
+    private function getRandomQuantity($fuelType)
+    {
+        switch ($fuelType) {
+            case 'Petrol':
+            case 'Octane':
+                return rand(2000, 8000) / 100; // 20-80 liters
+            case 'Diesel':
+                return rand(3000, 12000) / 100; // 30-120 liters
+            case 'CNG':
+                return rand(1500, 6000) / 100; // 15-60 liters
+            case 'LPG':
+                return rand(1000, 4000) / 100; // 10-40 liters
+            default:
+                return rand(2000, 6000) / 100; // 20-60 liters
         }
     }
 }

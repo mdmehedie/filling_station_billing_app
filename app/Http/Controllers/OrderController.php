@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\FuelResource;
@@ -15,6 +16,7 @@ use App\Models\Organization;
 use App\Models\Vehicle;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Inertia\Inertia;
 
 
@@ -111,27 +113,5 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('orders.index')->with('error', "Order {$order->id} cannot be deleted because it is associated with a vehicle");
         }
-
-
     }
-
-    /**
-     * Export orders to PDF or Excel
-     */
-    public function export(Request $request)
-    {
-        $validated = $request->validate([
-            'format' => 'required|in:pdf,excel',
-        ]);
-
-        $orders = $this->orderService->orderList(true);
-
-        if ($validated['format'] === 'excel') {
-            return $this->orderService->exportToExcel($orders);
-        } else {
-            return $this->orderService->exportToPdf($orders);
-        }
-    }
-
-
 }

@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2, SchoolIcon } from 'lucide-react';
+import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2, SchoolIcon, File } from 'lucide-react';
 import AppLogo from './app-logo';
 import organizations from "@/routes/organizations";
 import vehicles from "@/routes/vehicles";
@@ -22,6 +22,7 @@ import orders from "@/routes/orders";
 import users from "@/routes/users";
 import { usePage } from '@inertiajs/react';
 import { useCallback } from "react";
+import invoices from "@/routes/invoices";
 
 const mainNavItemsBase: NavItem[] = [
     {
@@ -53,6 +54,11 @@ const mainNavItemsBase: NavItem[] = [
         title: 'Users',
         href: users.index(),
         icon: Users,
+    },
+    {
+        title: 'Invoices',
+        href: invoices.index(),
+        icon: File,
     },
 ];
 

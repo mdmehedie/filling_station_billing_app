@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CheckUserRoleMiddleware
 {
@@ -17,7 +17,7 @@ class CheckUserRoleMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::user()->role !== 'admin') {
-            return abort(403, 'You are not authorized to access this page');
+            abort(403, 'You are not authorized to access this page');
         }
 
         return $next($request);
