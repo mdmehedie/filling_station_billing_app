@@ -14,24 +14,12 @@ class FuelSeeder extends Seeder
     {
         $fuels = [
             [
-                'name' => 'Petrol',
-                'price' => 120.50,
-            ],
-            [
                 'name' => 'Diesel',
-                'price' => 110.25,
+                'price' => 102,
             ],
             [
                 'name' => 'Octane',
-                'price' => 135.75,
-            ],
-            [
-                'name' => 'CNG',
-                'price' => 45.00,
-            ],
-            [
-                'name' => 'LPG',
-                'price' => 55.50,
+                'price' => 122,
             ],
         ];
 

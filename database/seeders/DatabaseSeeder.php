@@ -31,14 +31,15 @@ class DatabaseSeeder extends Seeder
         if (app()->isProduction() || app()->isLocal()) {
             $this->call([
                 OrganizationSeeder::class,
+                FuelSeeder::class,
+                VehicleSeeder::class,
+
             ]);
         }
 
         if (app()->isLocal()) {
             $this->call([
-                FuelSeeder::class,
-                VehicleSeeder::class,
-                OrderSeeder::class,
+//                OrderSeeder::class,
             ]);
         }
     }
