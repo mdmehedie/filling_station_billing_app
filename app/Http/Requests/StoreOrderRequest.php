@@ -23,11 +23,12 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'organization_id' => 'required|exists:organizations,id',
-            'vehicle_id' => 'required|exists:vehicles,id',
-            'fuel_id' => 'required|exists:fuels,id',
-            'fuel_qty' => 'required|numeric',
             'sold_date' => 'required|date',
-            'total_price' => 'required|numeric',
+            'order_items' => 'required|array',
+            'order_items.*.vehicle_id' => 'required|exists:vehicles,id',
+            'order_items.*.fuel_id' => 'required|exists:fuels,id',
+            'order_items.*.fuel_qty' => 'required|numeric',
+            'order_items.*.total_price' => 'required|numeric',
         ];
     }
 }

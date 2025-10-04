@@ -17,6 +17,7 @@ use App\Models\Vehicle;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 
@@ -62,9 +63,21 @@ class OrderController extends Controller
     {
         $validated = $request->validated();
 
-        $validated['user_id'] = auth()->user()->id;
-        $order = Order::create($validated);
 
+        $order = DB::transaction(function () use ($validated) {
+            foreach ($validated['order_items'] as $item) {
+                $orderData = $validated;
+                unset($orderData['order_items']);
+                $orderData['fuel_id'] = $item['fuel_id'];
+                $orderData['fuel_qty'] = $item['fuel_qty'];
+                $orderData['user_id'] = auth()->user()->id;
+                $orderData['vehicle_id'] = $item['vehicle_id'];
+
+                $order = Order::create($orderData);
+            }
+
+            return $order;
+        });
         return redirect()->route('orders.index')->with('success', "Order #00{$order->id} created successfully");
     }
 

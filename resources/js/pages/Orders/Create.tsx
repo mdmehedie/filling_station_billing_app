@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Car, Fuel, Calendar, Save, ArrowLeft, Search } from "lucide-react";
+import { Building2, Car, Fuel, Calendar, Save, ArrowLeft, Search, Plus, Trash2 } from "lucide-react";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
@@ -41,10 +41,15 @@ interface Fuel {
 
 interface FormData {
     organization_id: string;
+    sold_date: string;
+}
+
+interface OrderItem {
+    id: string;
     vehicle_id: string;
     fuel_id: string;
     fuel_qty: string;
-    sold_date: string;
+    total_price: number;
 }
 
 interface Props {
@@ -53,84 +58,150 @@ interface Props {
 }
 
 export default function Create({ organizations, fuels }: Props) {
-    const { data, setData, post, processing, errors, reset } = useForm<FormData & { total_price: number }>({
+    const { data, setData, post, processing, errors, reset } = useForm<FormData & { order_items: OrderItem[] }>({
         organization_id: '',
-        vehicle_id: '',
-        fuel_id: '',
-        fuel_qty: '',
         sold_date: new Date().toISOString().split('T')[0],
-        total_price: 0
+        order_items: []
     });
 
-    const [selectedFuel, setSelectedFuel] = useState<Fuel | null>(null);
-    const [totalPrice, setTotalPrice] = useState<number>(0);
+    const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
     const [orgSearchTerm, setOrgSearchTerm] = useState('');
     const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
+    const [totalOrderAmount, setTotalOrderAmount] = useState<number>(0);
+    const [vehicleSearchTerms, setVehicleSearchTerms] = useState<{ [key: string]: string }>({});
+    const [isValid, setIsValid] = useState<boolean>(false);
 
-    // Set default fuel selection only if no vehicle is selected
+    // Calculate total order amount when order items change
     useEffect(() => {
-        if (fuels.length > 0 && !data.fuel_id && !data.vehicle_id) {
-            setData('fuel_id', fuels[0].id.toString());
-        }
-    }, [fuels, setData, data.vehicle_id]);
-
-    // Update selected fuel and calculate total price
-    useEffect(() => {
-        if (data.fuel_id) {
-            const fuel = fuels.find(f => f.id.toString() === data.fuel_id);
-            setSelectedFuel(fuel || null);
-        } else {
-            setSelectedFuel(null);
-        }
-    }, [data.fuel_id, fuels]);
-
-    // Calculate total price when fuel or quantity changes
-    useEffect(() => {
-        if (selectedFuel && data.fuel_qty) {
-            const quantity = parseFloat(data.fuel_qty);
-            const price = selectedFuel.price;
-            const calculatedTotal = quantity * price;
-            setTotalPrice(calculatedTotal);
-            setData('total_price', calculatedTotal);
-        } else {
-            setTotalPrice(0);
-            setData('total_price', 0);
-        }
-    }, [selectedFuel, data.fuel_qty, setData]);
+        const total = orderItems.reduce((sum, item) => sum + item.total_price, 0);
+        setTotalOrderAmount(total);
+        setData('order_items', orderItems);
+        
+        // Validate all items
+        const allItemsValid = orderItems.every(item => 
+            item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0
+        );
+        setIsValid(allItemsValid && orderItems.length > 0 && !!data.organization_id);
+    }, [orderItems, setData, data.organization_id]);
 
     const handleInputChange = (field: keyof FormData, value: string) => {
         setData(field, value);
 
-        // Clear related fields when organization changes
+        // Clear order items when organization changes
         if (field === 'organization_id') {
-            setData('vehicle_id', '');
-            setData('fuel_qty', '');
-            setVehicleSearchTerm(''); // Clear vehicle search term
+            setOrderItems([]);
+            setVehicleSearchTerm('');
+            setVehicleSearchTerms({});
             const org = organizations.find(o => o.id.toString() === value);
             setSelectedOrg(org || null);
             getAllVehicles((vehicles: Vehicle[]) => {
                 setVehicles(vehicles);
+                // Auto-select first vehicle and its fuel
+                if (vehicles.length > 0) {
+                    const firstVehicle = vehicles[0];
+                    const newItem: OrderItem = {
+                        id: Date.now().toString(),
+                        vehicle_id: firstVehicle.id.toString(),
+                        fuel_id: firstVehicle.fuel_id ? firstVehicle.fuel_id.toString() : '',
+                        fuel_qty: '',
+                        total_price: 0
+                    };
+                    setOrderItems([newItem]);
+                }
             }, { organization_id: value });
-        }
-
-        // Auto-select fuel type when vehicle changes
-        if (field === 'vehicle_id') {
-            setData('fuel_qty', '');
-            // Find the selected vehicle and auto-select its fuel type
-            const selectedVehicle = vehicles.find(v => v.id.toString() === value);
-            if (selectedVehicle && selectedVehicle.fuel_id) {
-                setData('fuel_id', selectedVehicle.fuel_id.toString());
-            }
         }
     };
 
+    const addOrderItem = () => {
+        const newItem: OrderItem = {
+            id: Date.now().toString(),
+            vehicle_id: '',
+            fuel_id: '',
+            fuel_qty: '',
+            total_price: 0
+        };
+        setOrderItems([...orderItems, newItem]);
+    };
+
+
+    const removeOrderItem = (itemId: string) => {
+        setOrderItems(orderItems.filter(item => item.id !== itemId));
+    };
+
+    const updateOrderItem = (itemId: string, field: keyof OrderItem, value: string | number) => {
+        setOrderItems(orderItems.map(item => {
+            if (item.id === itemId) {
+                const updatedItem = { ...item, [field]: value };
+                
+                // Calculate total price when fuel or quantity changes
+                if (field === 'fuel_id' || field === 'fuel_qty') {
+                    const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
+                    const quantity = parseFloat(updatedItem.fuel_qty) || 0;
+                    const price = fuel?.price || 0;
+                    updatedItem.total_price = quantity * price;
+                }
+                
+                return updatedItem;
+            }
+            return item;
+        }));
+    };
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Enter key - add new vehicle
+            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                if (data.organization_id) {
+                    addOrderItem();
+                }
+            }
+            
+            // Ctrl/Cmd + Enter - submit form
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (isValid) {
+                    handleSubmit(e as any);
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [data.organization_id, isValid]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (!isValid) {
+            const incompleteItems = orderItems.filter(item => 
+                !item.vehicle_id || !item.fuel_id || !item.fuel_qty || parseFloat(item.fuel_qty) <= 0
+            );
+            
+            if (incompleteItems.length > 0) {
+                alert(`Please complete all vehicle details. ${incompleteItems.length} item(s) are incomplete.`);
+                return;
+            }
+            
+            if (!data.organization_id) {
+                alert('Please select an organization');
+                return;
+            }
+            
+            if (orderItems.length === 0) {
+                alert('Please add at least one vehicle');
+                return;
+            }
+        }
+        
         post(ordersRoute.store().url, {
             onSuccess: () => {
                 reset();
+                setOrderItems([]);
+                setVehicleSearchTerms({});
             }
         });
     };
@@ -173,239 +244,281 @@ export default function Create({ organizations, fuels }: Props) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="max-w-2xl mx-auto space-y-6 border rounded-lg p-6">
-                        {/* 1. Sold Date */}
-                        <div className="space-y-2">
-                            <Label htmlFor="sold_date" className="text-base font-medium">Sold Date *</Label>
-                            <Input
-                                id="sold_date"
-                                type="date"
-                                value={data.sold_date}
-                                onChange={(e) => handleInputChange('sold_date', e.target.value)}
-                                className="h-12"
-                            />
-                            {errors.sold_date && (
-                                <p className="text-sm text-destructive">{errors.sold_date}</p>
-                            )}
-                        </div>
+                    <div className="max-w-4xl mx-auto space-y-6 border rounded-lg p-6">
+                        {/* Order Header */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Sold Date */}
+                            <div className="space-y-2">
+                                <Label htmlFor="sold_date" className="text-base font-medium">Sold Date *</Label>
+                                <Input
+                                    id="sold_date"
+                                    type="date"
+                                    value={data.sold_date}
+                                    onChange={(e) => handleInputChange('sold_date', e.target.value)}
+                                    className="h-12"
+                                />
+                                {errors.sold_date && (
+                                    <p className="text-sm text-destructive">{errors.sold_date}</p>
+                                )}
+                            </div>
 
-                        {/* 2. Organization Selection (Searchable) */}
-                        <div className="space-y-2">
-                            <Label className="text-base font-medium">Organization *</Label>
-                            <Select
-                                value={data.organization_id}
-                                onValueChange={(value) => {
-                                    const org = organizations.find(o => o.id.toString() === value);
-                                    setSelectedOrg(org || null);
-                                    handleInputChange('organization_id', value);
-                                }}
-                            >
-                                <SelectTrigger className="h-12">
-                                    <SelectValue placeholder="Select organization" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <div className="relative p-2 border-b">
-                                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Search organizations..."
-                                            value={orgSearchTerm}
-                                            onChange={(e) => setOrgSearchTerm(e.target.value)}
-                                            onKeyDown={(e) => e.stopPropagation()}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="pl-10"
-                                            autoFocus
-                                        />
-                                    </div>
-                                    <div className="max-h-60 overflow-y-auto">
-                                        {organizations
-                                            .filter(org =>
-                                                org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-                                                org.ucode.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-                                                (org.name_bn && org.name_bn.toLowerCase().includes(orgSearchTerm.toLowerCase()))
-                                            )
-                                            .map((org) => (
-                                                <SelectItem key={org.id} value={org.id.toString()}>
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="h-4 w-4" />
-                                                        <div className="flex flex-col">
-                                                            <span>{org.name} ({org.ucode})</span>
-                                                            {org.name_bn && (
-                                                                <span className="text-sm text-muted-foreground">
-                                                                    ({org.name_bn})
-                                                                </span>
-                                                            )}
+                            {/* Organization Selection */}
+                            <div className="space-y-2">
+                                <Label className="text-base font-medium">Organization *</Label>
+                                <Select
+                                    value={data.organization_id}
+                                    onValueChange={(value) => {
+                                        const org = organizations.find(o => o.id.toString() === value);
+                                        setSelectedOrg(org || null);
+                                        handleInputChange('organization_id', value);
+                                    }}
+                                >
+                                    <SelectTrigger className="h-12">
+                                        <SelectValue placeholder="Select organization" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <div className="relative p-2 border-b">
+                                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                placeholder="Search organizations..."
+                                                value={orgSearchTerm}
+                                                onChange={(e) => setOrgSearchTerm(e.target.value)}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="pl-10"
+                                            />
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto">
+                                            {organizations
+                                                .filter(org =>
+                                                    org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
+                                                    org.ucode.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
+                                                    (org.name_bn && org.name_bn.toLowerCase().includes(orgSearchTerm.toLowerCase()))
+                                                )
+                                                .map((org) => (
+                                                    <SelectItem key={org.id} value={org.id.toString()}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Building2 className="h-4 w-4" />
+                                                            <div className="flex flex-col">
+                                                                <span>{org.name} ({org.ucode})</span>
+                                                                {org.name_bn && (
+                                                                    <span className="text-sm text-muted-foreground">
+                                                                        ({org.name_bn})
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        {organizations.filter(org =>
-                                            org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-                                            org.ucode.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-                                            (org.name_bn && org.name_bn.toLowerCase().includes(orgSearchTerm.toLowerCase()))
-                                        ).length === 0 && (
-                                                <div className="p-2 text-sm text-muted-foreground text-center">
-                                                    No organizations found
-                                                </div>
-                                            )}
-                                    </div>
-                                </SelectContent>
-                            </Select>
-                            {errors.organization_id && (
-                                <p className="text-sm text-destructive">{errors.organization_id}</p>
-                            )}
+                                                    </SelectItem>
+                                                ))}
+                                        </div>
+                                    </SelectContent>
+                                </Select>
+                                {errors.organization_id && (
+                                    <p className="text-sm text-destructive">{errors.organization_id}</p>
+                                )}
+                            </div>
                         </div>
 
-                        {/* 3. Vehicle Selection (Searchable) */}
-                        <div className="space-y-2">
-                            <Label className="text-base font-medium">Vehicle *</Label>
-                            <Select
-                                value={data.vehicle_id}
-                                onValueChange={(value) => handleInputChange('vehicle_id', value)}
-                                disabled={!data.organization_id}
-                            >
-                                <SelectTrigger className="h-12">
-                                    <SelectValue placeholder={data.organization_id ? "Select vehicle" : "Select organization first"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <div className="relative p-2 border-b">
-                                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            placeholder="Search vehicles..."
-                                            value={vehicleSearchTerm}
-                                            onChange={(e) => setVehicleSearchTerm(e.target.value)}
-                                            onKeyDown={(e) => e.stopPropagation()}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="pl-10"
-                                            autoFocus
-                                        />
-                                    </div>
-                                    <div className="max-h-60 overflow-y-auto">
-                                        {vehicles
-                                            .filter(vehicle =>
-                                                vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-                                                vehicle.ucode.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-                                                (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
-                                            )
-                                            .map((vehicle) => (
-                                                <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                        {/* Order Items - Simplified */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold">Add Vehicles</h3>
+                            </div>
+
+                            {orderItems.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="text-sm">Select an organization to see vehicles</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {orderItems.map((item, index) => {
+                                        const isComplete = item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0;
+                                        return (
+                                            <div key={item.id} className={`border rounded-lg p-4 bg-card transition-all duration-200 ${!isComplete ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : 'border-green-200 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20'}`}>
+                                                <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">
-                                                        <Car className="h-4 w-4" />
-                                                        <div className="flex flex-col">
-                                                            <span>{vehicle.name}</span>
-                                                            <span className="text-sm text-muted-foreground">
-                                                                {vehicle.ucode} • {vehicle.model || 'No model'}
+                                                        <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
+                                                        {!isComplete && (
+                                                            <span className="text-xs text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30 px-2 py-1 rounded-full">
+                                                                Incomplete
+                                                            </span>
+                                                        )}
+                                                        {isComplete && (
+                                                            <span className="text-xs text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                                                                ✓ Complete
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {orderItems.length > 1 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeOrderItem(item.id)}
+                                                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                        
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                                    {/* Vehicle */}
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs font-medium">Vehicle</Label>
+                                                        <Select
+                                                            value={item.vehicle_id}
+                                                            onValueChange={(value) => updateOrderItem(item.id, 'vehicle_id', value)}
+                                                        >
+                                                            <SelectTrigger className="h-9">
+                                                                <SelectValue placeholder="Select" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <div className="relative p-2 border-b">
+                                                                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                                    <Input
+                                                                        placeholder="Search vehicles..."
+                                                                        value={vehicleSearchTerms[item.id] || ''}
+                                                                        onChange={(e) => setVehicleSearchTerms(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                        onKeyDown={(e) => e.stopPropagation()}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="pl-10 h-8"
+                                                                    />
+                                                                </div>
+                                                                <div className="max-h-60 overflow-y-auto">
+                                                                    {vehicles
+                                                                        .filter(vehicle =>
+                                                                            vehicle.name.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
+                                                                            vehicle.ucode.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
+                                                                            (vehicle.model && vehicle.model.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()))
+                                                                        )
+                                                                        .map((vehicle) => (
+                                                                            <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Car className="h-3 w-3" />
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="text-sm">{vehicle.name}</span>
+                                                                                        <span className="text-xs text-muted-foreground">
+                                                                                            {vehicle.ucode} • {vehicle.model || 'No model'}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                </div>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Fuel */}
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs font-medium">Fuel</Label>
+                                                        <Select
+                                                            value={item.fuel_id}
+                                                            onValueChange={(value) => updateOrderItem(item.id, 'fuel_id', value)}
+                                                        >
+                                                            <SelectTrigger className="h-9">
+                                                                <SelectValue placeholder="Select" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {fuels.map((fuel) => (
+                                                                    <SelectItem key={fuel.id} value={fuel.id.toString()}>
+                                                                        <div className="flex items-center justify-between w-full">
+                                                                            <span className="text-sm">{fuel.name}</span>
+                                                                            <span className="text-xs text-muted-foreground ml-2">৳{fuel.price}</span>
+                                                                        </div>
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    {/* Quantity */}
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs font-medium">Quantity (L)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={item.fuel_qty}
+                                                            onChange={(e) => updateOrderItem(item.id, 'fuel_qty', e.target.value)}
+                                                            onWheel={(e) => e.currentTarget.blur()}
+                                                            placeholder="0"
+                                                            className="h-9 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                                        />
+                                                    </div>
+
+                                                    {/* Total */}
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs font-medium">Total</Label>
+                                                        <div className="h-9 flex items-center justify-end px-3 bg-muted rounded-md">
+                                                            <span className="text-sm font-medium">
+                                                                ৳{item.total_price.toLocaleString()}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                </SelectItem>
-                                            ))}
-                                        {vehicles.filter(vehicle =>
-                                            vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-                                            vehicle.ucode.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-                                            (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
-                                        ).length === 0 && (
-                                                <div className="p-2 text-sm text-muted-foreground text-center">
-                                                    No vehicles found
                                                 </div>
-                                            )}
-                                    </div>
-                                </SelectContent>
-                            </Select>
-                            {errors.vehicle_id && (
-                                <p className="text-sm text-destructive">{errors.vehicle_id}</p>
-                            )}
-                        </div>
-
-                        {/* 5. Fuel Quantity */}
-                        <div className="space-y-2">
-                            <Label htmlFor="fuel_qty" className="text-base font-medium">Fuel Quantity (Liters) *</Label>
-                            <Input
-                                id="fuel_qty"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={data.fuel_qty}
-                                onChange={(e) => handleInputChange('fuel_qty', e.target.value)}
-                                placeholder="Enter quantity in liters"
-                                className="h-12"
-                            />
-                            {errors.fuel_qty && (
-                                <p className="text-sm text-destructive">{errors.fuel_qty}</p>
-                            )}
-                        </div>
-
-                        {/* 4. Fuel Type (Default Selected) */}
-                        <div className="space-y-2">
-                            <Label className="text-base font-medium">Fuel Type *</Label>
-                            <Select
-                                value={data.fuel_id}
-                                onValueChange={(value) => handleInputChange('fuel_id', value)}
-                            >
-                                <SelectTrigger className="h-12">
-                                    <SelectValue placeholder="Select fuel type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {fuels.map((fuel) => (
-                                        <SelectItem key={fuel.id} value={fuel.id.toString()}>
-                                            <div className="flex items-center justify-between w-full">
-                                                <div className="flex items-center gap-2">
-                                                    <Fuel className="h-4 w-4" />
-                                                    <span>{fuel.name}</span>
-                                                </div>
-                                                <Badge variant="secondary" className="ml-2">
-                                                    ৳{fuel.price}/L
-                                                </Badge>
                                             </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.fuel_id && (
-                                <p className="text-sm text-destructive">{errors.fuel_id}</p>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Add Button at Bottom */}
+                            {orderItems.length > 0 && (
+                                <div className="flex flex-col items-center pt-4 space-y-2">
+                                    <Button
+                                        type="button"
+                                        onClick={addOrderItem}
+                                        disabled={!data.organization_id}
+                                        variant="outline"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Add Another Vehicle
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> to add vehicle • 
+                                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Ctrl+Enter</kbd> to create order
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Summary Section */}
-                    {selectedFuel && data.fuel_qty && selectedOrg && (
-                        <div className="bg-muted/50 border rounded-lg p-6 space-y-4 max-w-2xl mx-auto">
-                            <h3 className="text-lg font-semibold">Order Summary</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Date:</span>
-                                        <span className="text-sm font-medium">{new Date(data.sold_date).toLocaleDateString()}</span>
+                    {/* Quick Summary */}
+                    {orderItems.length > 0 && (
+                        <div className={`border rounded-lg p-4 max-w-4xl mx-auto transition-all duration-200 ${isValid ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="text-sm">
+                                        <span className="text-muted-foreground">Vehicles: </span>
+                                        <span className="font-medium">{orderItems.length}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Organization:</span>
-                                        <span className="text-sm font-medium">{selectedOrg.name}</span>
+                                    <div className="text-sm">
+                                        <span className="text-muted-foreground">Complete: </span>
+                                        <span className="font-medium">
+                                            {orderItems.filter(item => item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0).length}/{orderItems.length}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Vehicle:</span>
-                                        <span className="text-sm font-medium">
-                                            {vehicles.find(v => v.id.toString() === data.vehicle_id)?.name || 'Not selected'}
+                                    <div className="text-sm">
+                                        <span className="text-muted-foreground">Total: </span>
+                                        <span className="font-medium">
+                                            {orderItems.reduce((sum, item) => sum + parseFloat(item.fuel_qty || '0'), 0).toFixed(1)}L
                                         </span>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Fuel Type:</span>
-                                        <span className="text-sm font-medium">{selectedFuel.name}</span>
+                                <div className="text-right">
+                                    <div className="text-2xl font-bold text-primary">
+                                        ৳{totalOrderAmount.toLocaleString()}
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Price per Liter:</span>
-                                        <span className="text-sm font-medium">৳{selectedFuel.price}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Quantity:</span>
-                                        <span className="text-sm font-medium">{data.fuel_qty}L</span>
-                                    </div>
+                                    {!isValid && (
+                                        <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                                            Complete all items to create order
+                                        </p>
+                                    )}
                                 </div>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between items-center">
-                                <span className="text-lg font-bold">Total Amount:</span>
-                                <span className="text-2xl font-bold text-primary">৳{totalPrice.toLocaleString()}</span>
                             </div>
                         </div>
                     )}
@@ -421,7 +534,7 @@ export default function Create({ organizations, fuels }: Props) {
                         </Button>
                         <Button
                             type="submit"
-                            disabled={processing || !data.organization_id || !data.vehicle_id || !data.fuel_id || !data.fuel_qty}
+                            disabled={processing || !isValid}
                             className="flex items-center gap-2"
                         >
                             <Save className="h-4 w-4" />
