@@ -18,13 +18,15 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { orderList, getAllOrganizations, getAllVehicles } from "@/lib/api";
 import axios from "axios";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
+import OrganizationSelector from "@/components/OrganizationSelector";
+import { Organization } from "@/types/response";
 
 export default function Index({ fuels }: { fuels: Fuel[] }) {
     const { auth } = usePage().props;
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [selectedOrganization, setSelectedOrganization] = useState('all');
+    const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState('all');
     const [selectedFuel, setSelectedFuel] = useState('all');
     const [showFilters, setShowFilters] = useState(true);
@@ -57,9 +59,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             total: 0
         }
     });
-    const [organizations, setOrganizations] = useState<any[]>([]);
-    const [vehicles, setVehicles] = useState<any[]>([]);
-    const [organizationSearchTerm, setOrganizationSearchTerm] = useState('');
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
     
 
@@ -76,11 +77,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
 
     // Load vehicles when organization changes
     useEffect(() => {
-        if (selectedOrganization && selectedOrganization !== 'all') {
-            getAllVehicles((response: any[]) => {
+        if (selectedOrganization) {
+            getAllVehicles((response: Vehicle[]) => {
                 setVehicles(response || []);
             }, {
-                "organization_id": selectedOrganization
+                "organization_id": selectedOrganization.id.toString()
             });
         } else {
             setVehicles([]);
@@ -116,7 +117,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             "filter[search]": searchTerm,
             "filter[start_date]": startDate,
             "filter[end_date]": endDate,
-            "filter[organization_id]": selectedOrganization === "all" ? "" : selectedOrganization,
+            "filter[organization_id]": selectedOrganization ? selectedOrganization.id.toString() : "",
             "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
             "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
             page: page
@@ -130,7 +131,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             "filter[search]": searchTerm,
             "filter[start_date]": startDate,
             "filter[end_date]": endDate,
-            "filter[organization_id]": selectedOrganization === "all" ? "" : selectedOrganization,
+            "filter[organization_id]": selectedOrganization ? selectedOrganization.id.toString() : "",
             "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
             "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
             page: 1
@@ -141,10 +142,9 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         setStartDate('');
         setEndDate('');
         setSearchTerm('');
-        setSelectedOrganization('all');
+        setSelectedOrganization(null);
         setSelectedVehicle('all');
         setSelectedFuel('all');
-        setOrganizationSearchTerm('');
         setVehicleSearchTerm('');
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
@@ -377,36 +377,15 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         <Label htmlFor="organization-filter" className="text-sm font-medium">
                                             Organization
                                         </Label>
-                                        <Select value={selectedOrganization} onValueChange={(value) => {
-                                            setSelectedOrganization(value);
-                                            setSelectedVehicle('all'); // Reset vehicle selection when organization changes
-                                        }}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="All Organizations" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <div className="p-2">
-                                                    <Input 
-                                                        placeholder="Search organizations..." 
-                                                        className="h-8"
-                                                        value={organizationSearchTerm}
-                                                        onChange={(e) => setOrganizationSearchTerm(e.target.value)}
-                                                    />
-                                                </div>
-                                                <SelectItem value="all">All Organizations</SelectItem>
-                                                {organizations
-                                                    .filter(org => 
-                                                        org.name.toLowerCase().includes(organizationSearchTerm.toLowerCase()) ||
-                                                        org.ucode.toLowerCase().includes(organizationSearchTerm.toLowerCase()) ||
-                                                        (org.name_bn && org.name_bn.toLowerCase().includes(organizationSearchTerm.toLowerCase()))
-                                                    )
-                                                    .map((org) => (
-                                                        <SelectItem key={org.id} value={org.id.toString()}>
-                                                            {org.name} ({org.ucode})
-                                                        </SelectItem>
-                                                    ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <OrganizationSelector
+                                            organizations={organizations}
+                                            selectedOrganization={selectedOrganization}
+                                            onOrganizationSelect={(org) => {
+                                                setSelectedOrganization(org);
+                                                setSelectedVehicle('all'); // Reset vehicle selection when organization changes
+                                            }}
+                                            placeholder="All Organizations"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="vehicle-filter" className="text-sm font-medium">
@@ -415,11 +394,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         <Select 
                                             value={selectedVehicle} 
                                             onValueChange={setSelectedVehicle}
-                                            disabled={selectedOrganization === 'all' || vehicles.length === 0}
+                                            disabled={!selectedOrganization || vehicles.length === 0}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder={
-                                                    selectedOrganization === 'all' 
+                                                    !selectedOrganization 
                                                         ? "Select an organization first" 
                                                         : vehicles.length === 0 
                                                             ? "No vehicles found" 
@@ -438,8 +417,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                                 <SelectItem value="all">All Vehicles</SelectItem>
                                                 {vehicles
                                                     .filter(vehicle => 
-                                                        vehicle.name.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-                                                        vehicle.ucode.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                                        vehicle.name?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
+                                                        vehicle.ucode?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
                                                         (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
                                                     )
                                                     .map((vehicle) => (

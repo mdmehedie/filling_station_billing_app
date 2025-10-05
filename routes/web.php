@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     // invoices routes
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::post('api/invoices/{invoice}/export', [InvoiceController::class, 'exportPdf']);
+    
 
     // api routes
     Route::get('api/orders', [OrderController::class, 'orderList']);

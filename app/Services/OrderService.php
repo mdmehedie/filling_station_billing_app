@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use Auth;
-use Barryvdh\DomPDF\Facade\Pdf;
+use \Spatie\Browsershot\Browsershot;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -144,11 +144,18 @@ class OrderService
             'totalAmount' => $orders->sum('total_price')
         ];
 
-        $pdf = Pdf::loadView('exports.orders', $data);
-        $pdf->setPaper('A4', 'landscape');
+        $pdf = Browsershot::html(view('exports.orders', $data)->render())
+            ->format('A4')
+            ->landscape()
+            ->margins(10, 10, 10, 10)
+            ->showBackground()
+            ->pdf();
 
         $filename = 'orders-export-' . date('Y-m-d') . '.pdf';
 
-        return $pdf->download($filename);
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+        ]);
     }
 }

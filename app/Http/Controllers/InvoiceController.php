@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Organization;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use \Spatie\Browsershot\Browsershot;
 
 class InvoiceController extends Controller
 {
@@ -27,9 +27,12 @@ class InvoiceController extends Controller
             ->orderBy('year')
             ->pluck('year');
 
+        $organizations = Organization::select('id', 'name', 'name_bn', 'ucode')->get();
+
         return inertia('Invoice/Index', [
             'months' => $months,
             'years' => $years,
+            'organizations' => $organizations,
         ]);
     }
 
@@ -38,6 +41,7 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'month' => 'required|integer|min:1|max:12',
             'year' => 'required|integer|min:2000|max:2050',
+            'include_cover' => 'required|boolean',
         ]);
 
         $period = Carbon::create($validated['year'], $validated['month'], 1);
@@ -117,18 +121,56 @@ class InvoiceController extends Controller
             ];
         }, $fuels);
 
-        $fileName = 'invoice-' . date('Y-m-d-H-i-s') . '.pdf';
-        return Pdf::loadView('invoice-pdf', compact('data', 'tableHeaders'))
-            ->setPaper('Legal', 'landscape')
-            ->setOption('margin-bottom', 0)
-            ->setOption('margin-left', 0)
-            ->setOption('margin-right', 0)
-            ->setOption('dpi', 96)
-            ->setOption('enableJavascript', true)
-            ->setOption('enableHtml5Parser', true)
-            ->setOption('enableFontSubsetting', true)
-            ->setOption('encoding', 'utf-8')
-            ->setOption('enable-local-file-access', true)
-            ->download($fileName);
+        $organization = Organization::find($organization_id);
+        $fileName = $organization->name . '_' . $period->isoFormat('MMMM YYYY');
+
+        if ($validated['include_cover']) {
+            // Generate invoice PDF with Browsershot
+            $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
+                ->format('Legal')
+                ->landscape()
+                ->margins(0, 0, 0, 0)
+                ->showBackground()
+                ->pdf();
+
+            // Generate single PDF with Puppeteer for perfect Bengali support
+            $month = $validated['month'];
+            $year = $validated['year'];
+
+            $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data'))->render())
+                ->format('A4')
+                ->margins(10, 10, 10, 10)
+                ->showBackground()
+                ->pdf();
+
+
+            // Create a zip file in memory
+            $zipFileName = $fileName . '-invoice-with-cover.zip';
+            $zip = new \ZipArchive();
+            $tmpFile = tempnam(sys_get_temp_dir(), 'zip');
+
+            if ($zip->open($tmpFile, \ZipArchive::CREATE) === true) {
+                $zip->addFromString($fileName . '-invoice.pdf', $invoicePdf);
+                $zip->addFromString($fileName . '-cover.pdf', $coverPdf);
+                $zip->close();
+
+                return response()->download($tmpFile, $zipFileName)->deleteFileAfterSend(true);
+            } else {
+                abort(500, 'Could not create zip file.');
+            }
+        } else {
+            // Generate invoice PDF with Browsershot
+            $pdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
+                ->format('Legal')
+                ->landscape()
+                ->margins(0, 0, 0, 0)
+                ->showBackground()
+                ->pdf();
+
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '-cover.pdf' . '"'
+            ]);
+        }
     }
 }

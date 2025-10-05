@@ -13,13 +13,9 @@ import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
 import { useState, useEffect } from "react";
 import { getAllVehicles } from "@/lib/api";
+import OrganizationSelector from "@/components/OrganizationSelector";
+import { Organization } from "@/types/response";
 
-interface Organization {
-    id: number;
-    name: string;
-    name_bn?: string;
-    ucode: string;
-}
 
 interface Vehicle {
     id: number;
@@ -67,17 +63,25 @@ export default function Create({ organizations, fuels }: Props) {
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
-    const [orgSearchTerm, setOrgSearchTerm] = useState('');
     const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
     const [totalOrderAmount, setTotalOrderAmount] = useState<number>(0);
     const [vehicleSearchTerms, setVehicleSearchTerms] = useState<{ [key: string]: string }>({});
     const [isValid, setIsValid] = useState<boolean>(false);
+    const [usedVehicles, setUsedVehicles] = useState<Set<number>>(new Set());
 
     // Calculate total order amount when order items change
     useEffect(() => {
         const total = orderItems.reduce((sum, item) => sum + item.total_price, 0);
         setTotalOrderAmount(total);
         setData('order_items', orderItems);
+        
+        // Update used vehicles set
+        const usedVehicleIds = new Set(
+            orderItems
+                .filter(item => item.vehicle_id)
+                .map(item => parseInt(item.vehicle_id))
+        );
+        setUsedVehicles(usedVehicleIds);
         
         // Validate all items
         const allItemsValid = orderItems.every(item => 
@@ -88,15 +92,20 @@ export default function Create({ organizations, fuels }: Props) {
 
     const handleInputChange = (field: keyof FormData, value: string) => {
         setData(field, value);
+    };
 
-        // Clear order items when organization changes
-        if (field === 'organization_id') {
+    const handleOrganizationSelect = (org: Organization | null) => {
+        setSelectedOrg(org);
+        
+        if (org) {
+            setData('organization_id', org.id.toString());
             setOrderItems([]);
             setVehicleSearchTerm('');
             setVehicleSearchTerms({});
-            const org = organizations.find(o => o.id.toString() === value);
-            setSelectedOrg(org || null);
+            setUsedVehicles(new Set()); // Clear used vehicles when organization changes
+            
             getAllVehicles((vehicles: Vehicle[]) => {
+                console.log('Loaded vehicles:', vehicles);
                 setVehicles(vehicles);
                 // Auto-select first vehicle and its fuel
                 if (vehicles.length > 0) {
@@ -110,7 +119,12 @@ export default function Create({ organizations, fuels }: Props) {
                     };
                     setOrderItems([newItem]);
                 }
-            }, { organization_id: value });
+            }, { organization_id: org.id.toString() });
+        } else {
+            setData('organization_id', '');
+            setOrderItems([]);
+            setVehicles([]);
+            setUsedVehicles(new Set());
         }
     };
 
@@ -134,6 +148,19 @@ export default function Create({ organizations, fuels }: Props) {
         setOrderItems(orderItems.map(item => {
             if (item.id === itemId) {
                 const updatedItem = { ...item, [field]: value };
+                
+                // Validate vehicle selection - check if vehicle is already used by another item
+                if (field === 'vehicle_id' && value) {
+                    const vehicleId = parseInt(value.toString());
+                    const isAlreadyUsed = Array.from(orderItems)
+                        .filter(otherItem => otherItem.id !== itemId)
+                        .some(otherItem => parseInt(otherItem.vehicle_id) === vehicleId);
+                    
+                    if (isAlreadyUsed) {
+                        alert(`This vehicle is already selected in another order item. Please choose a different vehicle.`);
+                        return item; // Don't update if vehicle is already used
+                    }
+                }
                 
                 // Calculate total price when fuel or quantity changes
                 if (field === 'fuel_id' || field === 'fuel_qty') {
@@ -265,54 +292,12 @@ export default function Create({ organizations, fuels }: Props) {
                             {/* Organization Selection */}
                             <div className="space-y-2">
                                 <Label className="text-base font-medium">Organization *</Label>
-                                <Select
-                                    value={data.organization_id}
-                                    onValueChange={(value) => {
-                                        const org = organizations.find(o => o.id.toString() === value);
-                                        setSelectedOrg(org || null);
-                                        handleInputChange('organization_id', value);
-                                    }}
-                                >
-                                    <SelectTrigger className="h-12">
-                                        <SelectValue placeholder="Select organization" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <div className="relative p-2 border-b">
-                                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input
-                                                placeholder="Search organizations..."
-                                                value={orgSearchTerm}
-                                                onChange={(e) => setOrgSearchTerm(e.target.value)}
-                                                onKeyDown={(e) => e.stopPropagation()}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="pl-10"
-                                            />
-                                        </div>
-                                        <div className="max-h-60 overflow-y-auto">
-                                            {organizations
-                                                .filter(org =>
-                                                    org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-                                                    org.ucode.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-                                                    (org.name_bn && org.name_bn.toLowerCase().includes(orgSearchTerm.toLowerCase()))
-                                                )
-                                                .map((org) => (
-                                                    <SelectItem key={org.id} value={org.id.toString()}>
-                                                        <div className="flex items-center gap-2">
-                                                            <Building2 className="h-4 w-4" />
-                                                            <div className="flex flex-col">
-                                                                <span>{org.name} ({org.ucode})</span>
-                                                                {org.name_bn && (
-                                                                    <span className="text-sm text-muted-foreground">
-                                                                        ({org.name_bn})
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                        </div>
-                                    </SelectContent>
-                                </Select>
+                                <OrganizationSelector
+                                    organizations={organizations}
+                                    selectedOrganization={selectedOrg}
+                                    onOrganizationSelect={handleOrganizationSelect}
+                                    placeholder="Select organization"
+                                />
                                 {errors.organization_id && (
                                     <p className="text-sm text-destructive">{errors.organization_id}</p>
                                 )}
@@ -329,6 +314,11 @@ export default function Create({ organizations, fuels }: Props) {
                                 <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
                                     <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                     <p className="text-sm">Select an organization to see vehicles</p>
+                                    {vehicles.length > 0 && (
+                                        <p className="text-xs mt-2 text-green-600">
+                                            {vehicles.length} vehicles loaded
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -387,25 +377,58 @@ export default function Create({ organizations, fuels }: Props) {
                                                                     />
                                                                 </div>
                                                                 <div className="max-h-60 overflow-y-auto">
-                                                                    {vehicles
-                                                                        .filter(vehicle =>
-                                                                            vehicle.name.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
-                                                                            vehicle.ucode.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
-                                                                            (vehicle.model && vehicle.model.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()))
-                                                                        )
-                                                                        .map((vehicle) => (
-                                                                            <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <Car className="h-3 w-3" />
-                                                                                    <div className="flex flex-col">
-                                                                                        <span className="text-sm">{vehicle.name}</span>
-                                                                                        <span className="text-xs text-muted-foreground">
-                                                                                            {vehicle.ucode} • {vehicle.model || 'No model'}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </SelectItem>
-                                                                        ))}
+                                                                    {vehicles.length === 0 ? (
+                                                                        <div className="p-2 text-sm text-muted-foreground text-center">
+                                                                            No vehicles found for this organization
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div>
+                                                                            <div className="p-2 text-xs text-muted-foreground border-b">
+                                                                                {vehicles.length} vehicles available
+                                                                                {usedVehicles.size > 0 && (
+                                                                                    <span className="ml-2 text-orange-600">
+                                                                                        ({usedVehicles.size} already used)
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            {vehicles
+                                                                                .filter(vehicle => {
+                                                                                    // Filter out already used vehicles (except the current item's vehicle)
+                                                                                    const isUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
+                                                                                    if (isUsed) return false;
+                                                                                    
+                                                                                    // Apply search filter
+                                                                                    return vehicle.name?.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
+                                                                                        vehicle.ucode?.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
+                                                                                        (vehicle.model && vehicle.model.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()));
+                                                                                })
+                                                                                .map((vehicle) => {
+                                                                                    const isCurrentlyUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
+                                                                                    return (
+                                                                                        <SelectItem 
+                                                                                            key={vehicle.id} 
+                                                                                            value={vehicle.id.toString()}
+                                                                                            disabled={isCurrentlyUsed}
+                                                                                        >
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <Car className="h-3 w-3" />
+                                                                                                <div className="flex flex-col">
+                                                                                                    <span className="text-sm">{vehicle.name}</span>
+                                                                                                    <span className="text-xs text-muted-foreground">
+                                                                                                        {vehicle.ucode} • {vehicle.model || 'No model'}
+                                                                                                        {isCurrentlyUsed && (
+                                                                                                            <span className="ml-2 text-orange-600 font-medium">
+                                                                                                                (Already used)
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </SelectItem>
+                                                                                    );
+                                                                                })}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </SelectContent>
                                                         </Select>
