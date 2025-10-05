@@ -351,9 +351,6 @@
           </tr>
         </thead>
         <tbody>
-          @php
-            $totalAmount = 0;
-          @endphp
           @foreach ($data as $item)
             <tr>
               <td class="center">{{ $letterOrder[$loop->index] }}</td>
@@ -363,15 +360,12 @@
               <td class="num">{{ bdtBengaliCurrencyFormat($item['total_price']) }}</td>
               <td class="center">—</td>
             </tr>
-            @php
-              $totalAmount += $item['total_price'];
-            @endphp
           @endforeach
         </tbody>
         <tfoot>
           <tr>
             <td colspan="4" class="num">মোট টাকা</td>
-            <td class="num">{{ bdtBengaliCurrencyFormat($totalAmount) }}</td>
+            <td class="num">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
             <td></td>
           </tr>
         </tfoot>
@@ -379,7 +373,7 @@
     </li>
 
     <li class="para">
-      উপরোক্ত দাবিকৃত মূল্য বাবদ <span class="red">{{ bdtBengaliCurrencyFormat($totalAmount) }}</span> টাকা জরুরি
+      উপরোক্ত দাবিকৃত মূল্য বাবদ <span class="red">{{ bdtBengaliCurrencyFormat($totalBill) }}</span> টাকা জরুরি
       ভিত্তিতে
       “সি এস ডি ফিলিং স্টেশন” হিসাব নং <strong>০০০২-০২১০০৩৯৯৭৩</strong>
       দি ইস্টার্ন ব্যাংক লি. ক্যান্টনমেন্ট শাখা, ঢাকার অনুকূলে
@@ -411,8 +405,8 @@
     <div class="section">
       <h4>সংযুক্তঃ</h4>
       <ul>
-        <li>জ্বালানী সংগ্রহের কুপন - ৩৮ টি।</li>
-        <li>বিল সামারী - ০১ কপি।</li>
+        <li>জ্বালানী সংগ্রহের কুপন - {{ formatBengaliNumber($totalCoupon) }} টি।</li>
+        <li>বিল সামারী - {{ formatBengaliNumber($pageCount) }} কপি।</li>
       </ul>
     </div>
 
@@ -426,7 +420,7 @@
 
     <div class="section">
       <h4>কার্যক্রমঃ</h4>
-        <div class="red">{{ $organization->name_bn }}</div>
+      <div class="red">{{ $organization->name_bn }}</div>
     </div>
   </div>
 </body>

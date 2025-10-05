@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Credit Sale Statement</title>
@@ -8,105 +9,128 @@
       font-family: Arial, sans-serif;
       margin: 20px;
     }
+
     .header {
       text-align: center;
       margin-bottom: 10px;
     }
+
     .header h2 {
       margin: 0;
     }
+
     .header h3 {
       margin: 2px 0;
     }
+
     .client-info {
       text-align: center;
       font-weight: bold;
       margin-bottom: 15px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
       font-size: 12px;
     }
-    table, th, td {
+
+    table,
+    th,
+    td {
       border: 1px solid black;
     }
-    th, td {
+
+    th,
+    td {
       padding: 4px;
       text-align: center;
     }
+
     th {
       background-color: #f2f2f2;
     }
+
     .summary {
       font-weight: bold;
       margin-top: 10px;
     }
+
     .signatures {
       margin-top: 30px;
       display: flex;
       justify-content: space-between;
       font-size: 12px;
     }
+
     .sign-box {
       text-align: center;
       width: 23%;
     }
   </style>
 </head>
+
 <body>
 
   <div class="header">
     <h2>CSD Filling Station</h2>
     <h3>CSD Dhaka Cantonment, Dhaka -1206</h3>
-    <h3>Credit Sale Statement (For the Month of July 2025)</h3>
+    <h3>Credit Sale Statement (For the Month of {{ \Carbon\Carbon::create()->month($month)->year($year)->format('F') }}
+      {{ $year }})
+    </h3>
   </div>
 
   <div class="client-info">
-    Client: (99) DESCO (Agargoan Circle)
+    Client: {{ $organization->name }}
   </div>
 
+  @php
+    $fuelItems = "";
+  @endphp
   @foreach ($data as $fuel)
-  <h3>{{ $fuel['fuel_name'] }}</h3>
-  <table>
-    <tr>
-      <th>Veh. No</th>
-      <th>Count</th>
-      @foreach ($tableHeaders as $header)
-        <th>{{ $header['day'] }} {{ $header['month'] }}</th>
-      @endforeach
-      <!-- Continue until 31-Jul -->
-      <th>Total</th>
-    </tr>
-    @foreach ($fuel['vehicles'] as $vehicle)
-    <tr>
+    @php
+      $fuelItems .= $fuel['fuel_name'] . ' + ';
+    @endphp
+    <h3 style="text-align:center">{{ $fuel['fuel_name'] }}</h3>
+    <table>
+      <tr>
+        <th>Veh. No</th>
+        <th>Count</th>
+        @foreach ($tableHeaders as $header)
+          <th>{{ $header['day'] }} {{ $header['month'] }}</th>
+        @endforeach
+        <!-- Continue until 31-Jul -->
+        <th>Total</th>
+      </tr>
+      @foreach ($fuel['vehicles'] as $vehicle)
+        <tr>
+          <td>{{ $vehicle['ucode'] }}</td>
+          <td>{{ $vehicle['order_count'] }}</td>
 
-      <td>{{ $vehicle['ucode'] }}</td>
-      <td>{{ $vehicle['order_count'] }}</td>
+          @foreach ($vehicle['quantities'] as $qty)
+            <td>{{ $qty }}</td>
+          @endforeach
 
-      @foreach ($vehicle['quantities'] as $qty)
-      <td>{{ $qty }}</td>
+          <!-- Fill dynamically -->
+          <td>{{ $vehicle['total_qty'] }}</td>
+        </tr>
       @endforeach
-      
-      <!-- Fill dynamically -->
-      <td>{{ $vehicle['total_qty'] }}</td>
-    </tr>
-    @endforeach
-    <tr>
-      <td colspan="3" style="text-align:left;">Total Ltr.</td>
-      <td colspan="5" style="text-align:center;">{{ $fuel['total_qty'] }} Tk</td>
-      <td colspan="25"> Rate: {{ $fuel['per_ltr_price'] }} Tk/L</td>
-    </tr>
-    <tr>
-       <td colspan="33" style="text-align:left;">Total Bill. {{ $fuel['total_price'] }} Tk</td>
-    </tr>
-  </table>
+      <tr>
+        <td colspan="3" style="text-align:left;">Total Ltr.</td>
+        <td colspan="5" style="text-align:center;">{{ $fuel['total_qty'] }} Tk</td>
+        <td colspan="26"> Rate: {{ $fuel['per_ltr_price'] }} Tk/L</td>
+      </tr>
+      <tr>
+        <td colspan="34" style="text-align:left;">Total Bill. {{ $fuel['total_price'] }} Tk</td>
+      </tr>
+    </table>
   @endforeach
 
   <div class="summary">
-    Total Coupon: 2 <br>
-    Total Bill (Octane + Diesel): 10,608.00
+    Total Coupon: {{ $totalCoupon }} <br>
+    Total Bill ({{ substr($fuelItems, 0, -3) }}):
+    {{ (new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY))->format($totalBill) }}
   </div>
 
   <div class="signatures">
@@ -117,4 +141,5 @@
   </div>
 
 </body>
+
 </html>

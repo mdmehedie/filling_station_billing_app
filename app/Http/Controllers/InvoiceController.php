@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use setasign\Fpdi\Fpdi;
 use \Spatie\Browsershot\Browsershot;
 
 class InvoiceController extends Controller
@@ -93,22 +94,22 @@ class InvoiceController extends Controller
             ->get()
             ->toArray();
 
-        $data = array_map(function ($item) use ($orders, $tableHeaders) {
+        $totalCoupon = 0;
+        $totalBill = 0;
+        $data = array_map(function ($item) use ($orders, $tableHeaders, &$totalCoupon, &$totalBill) {
+            $total_qty = array_sum(array_map(function ($v) use ($item) {
+                return $v['name'] === $item['name'] ? $v['total_qty'] : 0;
+            }, $orders));
+
+            $totalBill += $total_qty * $item['price'];
             return [
                 'fuel_name' => $item['name'],
                 'per_ltr_price' => $item['price'],
+                "total_qty" => $total_qty,
+                "total_price" => $total_qty * $item['price'],
 
-                "total_qty" => array_sum(array_map(function ($v) use ($item) {
-                    return $v['name'] === $item['name'] ? $v['total_qty'] : 0;
-                }, $orders)),
-
-                "total_price" => array_sum(array_map(function ($v) use ($item) {
-                    return $v['name'] === $item['name'] ? $v['total_price'] : 0;
-                }, $orders)),
-
-
-                'vehicles' => array_map(function ($v) use ($item, $tableHeaders) {
-                    return [
+                'vehicles' => array_map(function ($v) use ($item, $tableHeaders, &$totalCoupon) {
+                    $i = [
                         'ucode' => $v['ucode'],
                         "quantities" => array_map(function ($day) use ($v, $item, $tableHeaders) {
                             return $v['name'] === $item['name'] ? ($v['sold_day'] == $day['day'] ? $v['total_qty'] : 0) : 0;
@@ -117,17 +118,28 @@ class InvoiceController extends Controller
                         "total_price" => $v['name'] === $item['name'] ? $v['total_price'] : 0,
                         "order_count" => $v['name'] === $item['name'] ? $v['order_count'] : 0,
                     ];
+
+                    $totalCoupon += $i['order_count'];
+                    return $i;
                 }, $orders),
             ];
         }, $fuels);
 
         $organization = Organization::find($organization_id);
         $fileName = $organization->name . '_' . $period->isoFormat('MMMM YYYY');
+        $month = $validated['month'];
+        $year = $validated['year'];
+
+        // Calculate page count based on data
+        $pageCount = $this->calculatePageCount($data, $tableHeaders);
+        
+        // Log page count for debugging
+        \Log::info("Calculated page count: {$pageCount} for organization: {$organization->name}");
 
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -135,11 +147,9 @@ class InvoiceController extends Controller
                     ->setNodeModulePath(base_path('node_modules'))
                     ->pdf();
 
-                // Generate cover PDF with Browsershot for perfect Bengali support
-                $month = $validated['month'];
-                $year = $validated['year'];
 
-                $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data'))->render())
+                // Generate cover PDF with Browsershot for perfect Bengali support
+                $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render())
                     ->format('A4')
                     ->margins(10, 10, 10, 10)
                     ->showBackground()
@@ -167,8 +177,8 @@ class InvoiceController extends Controller
             }
         } else {
             try {
-                  // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
+                // Generate invoice PDF with Browsershot
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -185,5 +195,39 @@ class InvoiceController extends Controller
                 abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
             }
         }
+    }
+
+    /**
+     * Calculate the number of pages needed for the invoice PDF
+     */
+    private function calculatePageCount($data, $tableHeaders)
+    {
+        $maxVehiclesPerPage = 12; // Maximum vehicles that can fit on one page (Legal landscape)
+        $headerRows = 3; // Header rows (fuel name, price, totals)
+        $totalPages = 1; // Start with 1 page for the header
+        
+        $totalVehicles = 0;
+        $totalFuelTypes = count($data);
+        
+        // Count total vehicles across all fuel types
+        foreach ($data as $fuelData) {
+            $vehicleCount = count($fuelData['vehicles']);
+            $totalVehicles += $vehicleCount;
+        }
+        
+        // Calculate pages needed based on vehicles
+        if ($totalVehicles > 0) {
+            $pagesForVehicles = ceil($totalVehicles / $maxVehiclesPerPage);
+            $totalPages = max($totalPages, $pagesForVehicles);
+        }
+        
+        // Add extra pages for multiple fuel types (each fuel type needs some space)
+        if ($totalFuelTypes > 1) {
+            $additionalPages = ceil($totalFuelTypes / 3); // 3 fuel types per page
+            $totalPages += $additionalPages - 1;
+        }
+        
+        // Ensure at least 1 page
+        return max(1, $totalPages);
     }
 }
