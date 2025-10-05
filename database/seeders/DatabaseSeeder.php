@@ -33,13 +33,12 @@ class DatabaseSeeder extends Seeder
                 OrganizationSeeder::class,
                 FuelSeeder::class,
                 VehicleSeeder::class,
-
             ]);
         }
 
         if (app()->isLocal()) {
             $this->call([
-//                OrderSeeder::class,
+                //                OrderSeeder::class,
             ]);
         }
     }

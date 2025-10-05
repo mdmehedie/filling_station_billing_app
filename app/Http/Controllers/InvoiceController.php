@@ -125,23 +125,30 @@ class InvoiceController extends Controller
         $fileName = $organization->name . '_' . $period->isoFormat('MMMM YYYY');
 
         if ($validated['include_cover']) {
-            // Generate invoice PDF with Browsershot
-            $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
-                ->format('Legal')
-                ->landscape()
-                ->margins(0, 0, 0, 0)
-                ->showBackground()
-                ->pdf();
+            try {
+                // Generate invoice PDF with Browsershot
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
+                    ->format('Legal')
+                    ->landscape()
+                    ->margins(0, 0, 0, 0)
+                    ->showBackground()
+                    ->setNodeModulePath(base_path('node_modules'))
+                    ->pdf();
 
-            // Generate single PDF with Puppeteer for perfect Bengali support
-            $month = $validated['month'];
-            $year = $validated['year'];
+                // Generate cover PDF with Browsershot for perfect Bengali support
+                $month = $validated['month'];
+                $year = $validated['year'];
 
-            $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data'))->render())
-                ->format('A4')
-                ->margins(10, 10, 10, 10)
-                ->showBackground()
-                ->pdf();
+                $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data'))->render())
+                    ->format('A4')
+                    ->margins(10, 10, 10, 10)
+                    ->showBackground()
+                    ->setNodeModulePath(base_path('node_modules'))
+                    ->pdf();
+            } catch (\Exception $e) {
+                \Log::error('Browsershot PDF generation failed: ' . $e->getMessage());
+                abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
+            }
 
 
             // Create a zip file in memory
@@ -159,18 +166,24 @@ class InvoiceController extends Controller
                 abort(500, 'Could not create zip file.');
             }
         } else {
-            // Generate invoice PDF with Browsershot
-            $pdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
-                ->format('Legal')
-                ->landscape()
-                ->margins(0, 0, 0, 0)
-                ->showBackground()
-                ->pdf();
+            try {
+                  // Generate invoice PDF with Browsershot
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders'))->render())
+                    ->format('Legal')
+                    ->landscape()
+                    ->margins(0, 0, 0, 0)
+                    ->showBackground()
+                    ->setNodeModulePath(base_path('node_modules'))
+                    ->pdf();
 
-            return response($pdf, 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $fileName . '-cover.pdf' . '"'
-            ]);
+                return response($invoicePdf, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="' . $fileName . '-invoice.pdf' . '"'
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Browsershot PDF generation failed: ' . $e->getMessage());
+                abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
+            }
         }
     }
 }
