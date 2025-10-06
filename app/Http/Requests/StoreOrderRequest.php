@@ -29,6 +29,7 @@ class StoreOrderRequest extends FormRequest
             'order_items.*.fuel_id' => 'required|exists:fuels,id',
             'order_items.*.fuel_qty' => 'required|numeric',
             'order_items.*.total_price' => 'required|numeric',
+            'order_items.*.per_ltr_price' => 'required|numeric',
         ];
     }
 }

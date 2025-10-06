@@ -158,3 +158,14 @@ export interface SearchPaginationData {
     to: number;
     total: number;
 }
+
+export interface Invoice {
+    id: number;
+    month: string;
+    year: number;
+    organization: Organization;
+    totalBill: number;
+    totalCoupon: number;
+    totalQuantity: number;
+    updated_at: string;
+}

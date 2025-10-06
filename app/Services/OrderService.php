@@ -4,11 +4,11 @@ namespace App\Services;
 
 use App\Models\Order;
 use Auth;
-use \Spatie\Browsershot\Browsershot;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use \Spatie\Browsershot\Browsershot;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -16,7 +16,6 @@ class OrderService
 {
     function __construct()
     {
-
     }
 
     public function orderList($isAll = false)
@@ -72,90 +71,5 @@ class OrderService
         $code = (int) $order->order_no;
 
         return (int) $code + 1;
-    }
-
-    public function exportToExcel($orders)
-    {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Set headers
-        $headers = [
-            'A1' => 'Order ID',
-            'B1' => 'Organization',
-            'C1' => 'Vehicle',
-            'D1' => 'Fuel Type',
-            'E1' => 'Quantity (L)',
-            'F1' => 'Total Price',
-            'G1' => 'Sold Date',
-            'H1' => 'Created At'
-        ];
-
-        foreach ($headers as $cell => $value) {
-            $sheet->setCellValue($cell, $value);
-        }
-
-        // Style headers
-        $sheet->getStyle('A1:H1')->applyFromArray([
-            'font' => ['bold' => true],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '059669']
-            ],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
-        ]);
-
-        // Add data
-        $row = 2;
-        foreach ($orders as $order) {
-            $sheet->setCellValue('A' . $row, '#' . str_pad($order->id, 4, '0', STR_PAD_LEFT));
-            $sheet->setCellValue('B' . $row, $order->organization->name);
-            $sheet->setCellValue('C' . $row, $order->vehicle->name ?? 'Unnamed Vehicle');
-            $sheet->setCellValue('D' . $row, $order->fuel->name);
-            $sheet->setCellValue('E' . $row, $order->fuel_qty);
-            $sheet->setCellValue('F' . $row, '৳' . number_format($order->total_price, 2));
-            $sheet->setCellValue('G' . $row, $order->sold_date->format('Y-m-d'));
-            $sheet->setCellValue('H' . $row, $order->created_at->format('Y-m-d H:i:s'));
-            $row++;
-        }
-
-        // Auto-size columns
-        foreach (range('A', 'H') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-
-        $writer = new Xlsx($spreadsheet);
-
-        $filename = 'orders-export-' . date('Y-m-d') . '.xlsx';
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
-    }
-
-    public function exportToPdf($orders)
-    {
-        $data = [
-            'orders' => $orders,
-            'exportDate' => now()->format('Y-m-d H:i:s'),
-            'totalOrders' => $orders->count(),
-            'totalAmount' => $orders->sum('total_price')
-        ];
-
-        $pdf = Browsershot::html(view('exports.orders', $data)->render())
-            ->format('A4')
-            ->landscape()
-            ->margins(10, 10, 10, 10)
-            ->showBackground()
-            ->pdf();
-
-        $filename = 'orders-export-' . date('Y-m-d') . '.pdf';
-
-        return response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
-        ]);
     }
 }

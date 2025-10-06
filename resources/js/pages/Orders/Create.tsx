@@ -15,26 +15,8 @@ import { useState, useEffect } from "react";
 import { getAllVehicles } from "@/lib/api";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization } from "@/types/response";
-
-
-interface Vehicle {
-    id: number;
-    name: string;
-    ucode: string;
-    model?: string;
-    type?: string;
-    organization_id: number;
-    fuel_id?: number;
-}
-
-interface Fuel {
-    id: number;
-    name: string;
-    price: number;
-    type?: string;
-    fuel_id: number;
-}
-
+import { Vehicle } from "@/types/response";
+import { Fuel as FuelType } from "@/types/response";
 interface FormData {
     organization_id: string;
     sold_date: string;
@@ -46,11 +28,12 @@ interface OrderItem {
     fuel_id: string;
     fuel_qty: string;
     total_price: number;
+    per_ltr_price: number;
 }
 
 interface Props {
     organizations: Organization[];
-    fuels: Fuel[];
+    fuels: FuelType[];
 }
 
 export default function Create({ organizations, fuels }: Props) {
@@ -105,7 +88,6 @@ export default function Create({ organizations, fuels }: Props) {
             setUsedVehicles(new Set()); // Clear used vehicles when organization changes
             
             getAllVehicles((vehicles: Vehicle[]) => {
-                console.log('Loaded vehicles:', vehicles);
                 setVehicles(vehicles);
                 // Auto-select first vehicle and its fuel
                 if (vehicles.length > 0) {
@@ -115,7 +97,8 @@ export default function Create({ organizations, fuels }: Props) {
                         vehicle_id: firstVehicle.id.toString(),
                         fuel_id: firstVehicle.fuel_id ? firstVehicle.fuel_id.toString() : '',
                         fuel_qty: '',
-                        total_price: 0
+                        total_price: 0,
+                        per_ltr_price: firstVehicle.fuel ? firstVehicle.fuel.price : 0
                     };
                     setOrderItems([newItem]);
                 }
@@ -134,7 +117,8 @@ export default function Create({ organizations, fuels }: Props) {
             vehicle_id: '',
             fuel_id: '',
             fuel_qty: '',
-            total_price: 0
+            total_price: 0,
+            per_ltr_price: 0
         };
         setOrderItems([...orderItems, newItem]);
     };
@@ -170,6 +154,13 @@ export default function Create({ organizations, fuels }: Props) {
                     updatedItem.total_price = quantity * price;
                 }
                 
+                // Calculate per liter price when fuel or quantity changes
+                if (field === 'fuel_id' || field === 'per_ltr_price') {
+                    const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
+                    const price = fuel?.price || 0;
+                    updatedItem.per_ltr_price = price;
+                }
+
                 return updatedItem;
             }
             return item;

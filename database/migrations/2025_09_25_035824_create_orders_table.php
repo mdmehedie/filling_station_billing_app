@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->foreignId('vehicle_id')->constrained('vehicles');
             $table->foreignId('fuel_id')->constrained('fuels');
             $table->decimal('fuel_qty')->default(0);
+            $table->decimal('per_ltr_price')->default(0);
             $table->decimal('total_price', 15, 2)->default(0);
             $table->date('sold_date')->default(now());
             $table->softDeletes();

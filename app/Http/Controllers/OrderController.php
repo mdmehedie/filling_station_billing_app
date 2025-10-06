@@ -63,7 +63,6 @@ class OrderController extends Controller
     {
         $validated = $request->validated();
 
-
         $order = DB::transaction(function () use ($validated) {
             foreach ($validated['order_items'] as $item) {
                 $orderData = $validated;
@@ -72,6 +71,7 @@ class OrderController extends Controller
                 $orderData['fuel_qty'] = $item['fuel_qty'];
                 $orderData['user_id'] = auth()->user()->id;
                 $orderData['vehicle_id'] = $item['vehicle_id'];
+                $orderData['per_ltr_price'] = $item['per_ltr_price'];
 
                 $order = Order::create($orderData);
             }

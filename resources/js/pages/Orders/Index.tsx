@@ -20,6 +20,7 @@ import axios from "axios";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization } from "@/types/response";
+import { currenyFormat } from "@/lib/utils";
 
 export default function Index({ fuels }: { fuels: Fuel[] }) {
     const { auth } = usePage().props;
@@ -259,7 +260,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             sortable: true,
             render: (value, row) => (
                 <div className="text-right">
-                    <div className="font-medium">৳{row.total_price.toLocaleString()}</div>
+                    <div className="font-medium">{currenyFormat(row.total_price)}</div>
                 </div>
             )
         },

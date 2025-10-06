@@ -12,7 +12,7 @@ class OrganizationResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request):array
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,
@@ -22,7 +22,7 @@ class OrganizationResource extends JsonResource
             'logo_url' => $this->logo_url,
             'is_vat_applied' => $this->is_vat_applied,
             'vat_rate' => $this->vat_rate,
-            'user' => new UserResource($this->user),
+            'user' => $this->whenLoaded('user', fn() => new UserResource($this->user)),
             'created_at' => $this->created_at,
             'vehicles_count' => $this->vehicles_count,
             'orders_count' => $this->orders_count,

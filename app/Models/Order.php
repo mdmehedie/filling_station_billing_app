@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\InvoiceService;
 use App\Services\OrderService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,7 @@ class Order extends Model
         'vehicle_id',
         'fuel_id',
         'fuel_qty',
+        'per_ltr_price',
         'total_price',
         'sold_date',
     ];
@@ -25,6 +27,7 @@ class Order extends Model
         'sold_date' => 'date',
         'fuel_qty' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'per_ltr_price' => 'decimal:2',
     ];
 
     public function organization(): BelongsTo
@@ -49,6 +52,20 @@ class Order extends Model
         $orderService = new OrderService();
         self::creating(function (Order $order) use ($orderService) {
             $order->order_no = $orderService->generatOrderNo();
+        });
+
+        // update invoice : created, updated,deleted
+        $invoiceService = new InvoiceService();
+        self::created(function (Order $order) use ($invoiceService) {
+            $invoiceService->generateMonthlyInvoice(sold_date: $order->sold_date, organization_id: $order->organization_id);
+        });
+
+        self::updated(function (Order $order) use ($invoiceService) {
+            $invoiceService->generateMonthlyInvoice(sold_date: $order->sold_date, organization_id: $order->organization_id);
+        });
+
+        self::deleted(function (Order $order) use ($invoiceService) {
+            $invoiceService->generateMonthlyInvoice(sold_date: $order->sold_date, organization_id: $order->organization_id);
         });
     }
 }

@@ -118,7 +118,7 @@
       @endforeach
       <tr>
         <td colspan="3" style="text-align:left;">Total Ltr.</td>
-        <td colspan="5" style="text-align:center;">{{ $fuel['total_qty'] }} Tk</td>
+        <td colspan="5" style="text-align:center;">{{ $fuel['total_qty'] }}</td>
         <td colspan="26"> Rate: {{ $fuel['per_ltr_price'] }} Tk/L</td>
       </tr>
       <tr>
