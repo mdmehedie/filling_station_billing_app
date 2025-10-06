@@ -28,6 +28,7 @@ class UpdateOrderRequest extends FormRequest
             'fuel_qty' => 'required|numeric',
             'sold_date' => 'required|date',
             'total_price' => 'required|numeric',
+            'per_ltr_price' => 'required|numeric',
         ];
     }
 }

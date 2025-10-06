@@ -144,10 +144,17 @@ export default function Create({ organizations, fuels }: Props) {
                         alert(`This vehicle is already selected in another order item. Please choose a different vehicle.`);
                         return item; // Don't update if vehicle is already used
                     }
+                    
+                    // Auto-select the associated fuel for the vehicle
+                    const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+                    if (selectedVehicle && selectedVehicle.fuel_id) {
+                        updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
+                        updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
+                    }
                 }
                 
                 // Calculate total price when fuel or quantity changes
-                if (field === 'fuel_id' || field === 'fuel_qty') {
+                if (field === 'fuel_id' || field === 'fuel_qty' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
                     const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
                     const quantity = parseFloat(updatedItem.fuel_qty) || 0;
                     const price = fuel?.price || 0;
@@ -155,7 +162,7 @@ export default function Create({ organizations, fuels }: Props) {
                 }
                 
                 // Calculate per liter price when fuel or quantity changes
-                if (field === 'fuel_id' || field === 'per_ltr_price') {
+                if (field === 'fuel_id' || field === 'per_ltr_price' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
                     const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
                     const price = fuel?.price || 0;
                     updatedItem.per_ltr_price = price;

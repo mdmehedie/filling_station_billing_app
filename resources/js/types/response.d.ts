@@ -128,6 +128,7 @@ export interface Order {
     sold_date: string;
     created_at: string;
     updated_at: string;
+    per_ltr_price: number;
     organization: {
         id: number;
         name: string;

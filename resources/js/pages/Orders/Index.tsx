@@ -239,7 +239,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 <div>
                     <div className="font-medium">{row.fuel.name}</div>
                     <div className="text-sm text-muted-foreground">
-                        {row.fuel.type} • ৳{row.fuel.price}/L
+                        {row.fuel.type} • ৳{row.per_ltr_price}/L
                     </div>
                 </div>
             )

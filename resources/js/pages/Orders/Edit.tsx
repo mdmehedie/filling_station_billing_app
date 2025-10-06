@@ -7,66 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Car, Fuel, Calendar, Save, ArrowLeft, Search } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Building2, Car, Fuel, Calendar, Save, ArrowLeft, Search, AlertTriangle } from "lucide-react";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
 import { useState, useEffect } from "react";
 import { getAllVehicles } from "@/lib/api";
-
-interface Organization {
-    id: number;
-    name: string;
-    name_bn?: string;
-    ucode: string;
-}
-
-interface Vehicle {
-    id: number;
-    name: string;
-    ucode: string;
-    model?: string;
-    type?: string;
-    organization_id: number;
-    fuel_id?: number;
-}
-
-interface Fuel {
-    id: number;
-    name: string;
-    price: number;
-    type?: string;
-    fuel_id: number;
-}
-
-interface Order {
-    id: number;
-    organization_id: number;
-    vehicle_id: number;
-    fuel_id: number;
-    fuel_qty: number;
-    total_price: number;
-    sold_date: string;
-    created_at: string;
-    organization: {
-        id: number;
-        name: string;
-        name_bn?: string;
-    };
-    vehicle: {
-        id: number;
-        ucode: string;
-        name: string;
-        model?: string;
-        type?: string;
-    };
-    fuel: {
-        id: number;
-        name: string;
-        type?: string;
-        price: number;
-    };
-}
+import { Order, Organization, Fuel as FuelType, Vehicle } from "@/types/response";
 
 interface FormData {
     organization_id: string;
@@ -74,29 +23,37 @@ interface FormData {
     fuel_id: string;
     fuel_qty: string;
     sold_date: string;
+    per_ltr_price: number;
+    total_price: number;
 }
 
 interface Props {
     order: Order;
     organizations: Organization[];
-    fuels: Fuel[];
+    fuels: FuelType[];
 }
 
 export default function Edit({ order, organizations, fuels }: Props) {
-    const { data, setData, put, processing, errors, reset } = useForm<FormData & { total_price: number }>({
+    const { data, setData, put, processing, errors, reset } = useForm<FormData>({
         organization_id: order.organization_id.toString(),
         vehicle_id: order.vehicle_id.toString(),
         fuel_id: order.fuel_id.toString(),
         fuel_qty: order.fuel_qty.toString(),
         sold_date: order.sold_date,
-        total_price: order.total_price
+        total_price: order.total_price,
+        per_ltr_price: order.per_ltr_price,
     });
 
-    const [selectedFuel, setSelectedFuel] = useState<Fuel | null>(null);
+    const [selectedFuel, setSelectedFuel] = useState<FuelType | null>(null);
     const [totalPrice, setTotalPrice] = useState<number>(order.total_price);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
     const [orgSearchTerm, setOrgSearchTerm] = useState('');
+    const [previousFuelPrice, setPreviousFuelPrice] = useState<number | null>(null);
+    const [showPriceUpdateAlert, setShowPriceUpdateAlert] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [hasPriceChanged, setHasPriceChanged] = useState(false);
+    const [originalPrice, setOriginalPrice] = useState<number>(order.per_ltr_price);
 
     // Set selected organization on mount
     useEffect(() => {
@@ -117,11 +74,24 @@ export default function Edit({ order, organizations, fuels }: Props) {
     useEffect(() => {
         if (data.fuel_id) {
             const fuel = fuels.find(f => f.id.toString() === data.fuel_id);
-            setSelectedFuel(fuel || null);
+            if (fuel) {
+                // Check if price has changed from previous selection
+                if (previousFuelPrice !== null && previousFuelPrice !== fuel.price) {
+                    setShowPriceUpdateAlert(true);
+                    setHasPriceChanged(true);
+                    // Auto-hide alert after 5 seconds
+                    setTimeout(() => setShowPriceUpdateAlert(false), 5000);
+                }
+                setPreviousFuelPrice(fuel.price);
+                setSelectedFuel(fuel);
+            } else {
+                setSelectedFuel(null);
+            }
         } else {
             setSelectedFuel(null);
+            setPreviousFuelPrice(null);
         }
-    }, [data.fuel_id, fuels]);
+    }, [data.fuel_id, fuels, previousFuelPrice]);
 
     // Calculate total price when fuel or quantity changes
     useEffect(() => {
@@ -131,11 +101,29 @@ export default function Edit({ order, organizations, fuels }: Props) {
             const calculatedTotal = quantity * price;
             setTotalPrice(calculatedTotal);
             setData('total_price', calculatedTotal);
+            setData('per_ltr_price', price);
         } else {
             setTotalPrice(0);
             setData('total_price', 0);
+            setData('per_ltr_price', 0);
         }
     }, [selectedFuel, data.fuel_qty, setData]);
+
+    // Check if current per_ltr_price differs from selected fuel price
+    const isPriceChanged = () => {
+        if (!selectedFuel) {
+            console.log('No selected fuel');
+            return false;
+        }
+        // Compare current fuel price with original order price
+        const changed = selectedFuel.price !== originalPrice;
+        console.log('Price comparison:', {
+            originalPrice,
+            currentFuelPrice: selectedFuel.price,
+            changed
+        });
+        return changed;
+    };
 
     const handleInputChange = (field: keyof FormData, value: string) => {
         setData(field, value);
@@ -164,11 +152,43 @@ export default function Edit({ order, organizations, fuels }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Debug logging
+        console.log('Submit check:', {
+            isPriceChanged: isPriceChanged(),
+            hasPriceChanged,
+            selectedFuel: selectedFuel?.name,
+            originalPrice,
+            currentFuelPrice: selectedFuel?.price
+        });
+        
+        // Check if price has changed and show confirmation dialog
+        if (isPriceChanged() || hasPriceChanged) {
+            console.log('Showing confirmation dialog');
+            setShowConfirmDialog(true);
+            return;
+        }
+        
+        // Proceed with submission if no price change
+        console.log('Submitting directly');
+        submitOrder();
+    };
+
+    const submitOrder = () => {
         put(ordersRoute.update(order.id).url, {
             onSuccess: () => {
                 reset();
             }
         });
+    };
+
+    const handleConfirmSubmit = () => {
+        setShowConfirmDialog(false);
+        submitOrder();
+    };
+
+    const handleCancelSubmit = () => {
+        setShowConfirmDialog(false);
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -213,6 +233,19 @@ export default function Edit({ order, organizations, fuels }: Props) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Price Update Alert */}
+                    {showPriceUpdateAlert && selectedFuel && (
+                        <div className="max-w-2xl mx-auto">
+                            <Alert className="border-red-200 bg-red-50">
+                                <AlertTriangle className="h-4 w-4 text-red-600" />
+                                <AlertDescription className="text-red-800">
+                                    <strong>Fuel price updated!</strong> The price for {selectedFuel.name} has changed to ৳{selectedFuel.price} per liter. 
+                                    Your total amount has been recalculated accordingly.
+                                </AlertDescription>
+                            </Alert>
+                        </div>
+                    )}
+
                     <div className="max-w-2xl mx-auto space-y-6 border rounded-lg p-6">
                         {/* 1. Sold Date */}
                         <div className="space-y-2">
@@ -440,6 +473,61 @@ export default function Edit({ order, organizations, fuels }: Props) {
                         </Button>
                     </div>
                 </form>
+
+                {/* Confirmation Dialog */}
+                <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                                Confirm Price Update
+                            </DialogTitle>
+                            <DialogDescription>
+                                The fuel price has been updated during your editing session. 
+                                Are you sure you want to proceed with the updated price?
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-sm font-medium text-red-800">Fuel Type:</span>
+                                    <span className="text-sm text-red-800">{selectedFuel?.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm font-medium text-red-800">Original Price:</span>
+                                    <span className="text-sm text-red-800">৳{originalPrice} per liter</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm font-medium text-red-800">Updated Price:</span>
+                                    <span className="text-sm text-red-800">৳{selectedFuel?.price} per liter</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm font-medium text-red-800">Quantity:</span>
+                                    <span className="text-sm text-red-800">{data.fuel_qty}L</span>
+                                </div>
+                                <div className="flex justify-between border-t border-red-300 pt-2">
+                                    <span className="text-sm font-bold text-red-800">New Total:</span>
+                                    <span className="text-sm font-bold text-red-800">৳{totalPrice.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                onClick={handleCancelSubmit}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleConfirmSubmit}
+                                className="flex-1 bg-red-600 hover:bg-red-500 hover:text-white text-white border-0"
+                            >
+                                Confirm & Update
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );

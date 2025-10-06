@@ -72,6 +72,7 @@ class OrderController extends Controller
                 $orderData['user_id'] = auth()->user()->id;
                 $orderData['vehicle_id'] = $item['vehicle_id'];
                 $orderData['per_ltr_price'] = $item['per_ltr_price'];
+                $orderData['total_price'] = $item['total_price'];
 
                 $order = Order::create($orderData);
             }
