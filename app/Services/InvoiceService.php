@@ -78,7 +78,7 @@ class InvoiceService
                     ->setNodeModulePath(base_path('node_modules'))
                     ->pdf();
             } catch (\Exception $e) {
-                abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
+                abort(500, $e->getMessage());
             }
 
 
@@ -112,7 +112,7 @@ class InvoiceService
                     'Content-Disposition' => 'attachment; filename="' . $fileName . '-invoice.pdf' . '"'
                 ]);
             } catch (\Exception $e) {
-                abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
+                abort(500, $e->getMessage());
             }
         }
     }
