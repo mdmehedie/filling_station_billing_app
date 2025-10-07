@@ -45,16 +45,23 @@ class InvoiceService
         $month = $validated['month'];
         $year = $validated['year'];
 
-        // logo rendering fix for fpdi
+        // logo rendering for left side
+        $imagePath = public_path('default/csd-logo.jpeg');
+        $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
+        $imageData = file_get_contents($imagePath);
+        $logo1 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+
+        // logo rendering for right side
         $imagePath = public_path('default/logo.jpeg');
         $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
         $imageData = file_get_contents($imagePath);
-        $logo = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+        $logo2 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+
 
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -92,7 +99,7 @@ class InvoiceService
         } else {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)

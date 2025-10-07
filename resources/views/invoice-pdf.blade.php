@@ -95,6 +95,9 @@
 <body>
 
   <div class="header">
+    <div class="logo-container">
+      <img src="{{ $logo1 }}" alt="CSD Logo">
+    </div>
     <div class="header-content">
       <h2>CSD Filling Station</h2>
       <h3>CSD Dhaka Cantonment, Dhaka -1206</h3>
@@ -104,7 +107,7 @@
       </h3>
     </div>
     <div class="logo-container">
-      <img src="{{ $logo }}" alt="CSD Logo">
+      <img src="{{ $logo2 }}" alt="CSD Filling Station Logo">
     </div>
   </div>
 
