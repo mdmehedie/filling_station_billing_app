@@ -45,10 +45,16 @@ class InvoiceService
         $month = $validated['month'];
         $year = $validated['year'];
 
+        // logo rendering fix for fpdi
+        $imagePath = public_path('default/logo.jpeg');
+        $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
+        $imageData = file_get_contents($imagePath);
+        $logo = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -86,7 +92,7 @@ class InvoiceService
         } else {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)

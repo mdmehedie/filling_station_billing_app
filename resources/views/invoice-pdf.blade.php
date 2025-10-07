@@ -11,16 +11,37 @@
     }
 
     .header {
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-bottom: 10px;
     }
 
-    .header h2 {
+    .header-content {
+      flex: 1;
+      text-align: center;
+    }
+
+    .header-content h2 {
       margin: 0;
     }
 
-    .header h3 {
+    .header-content h3 {
       margin: 2px 0;
+    }
+
+    .logo-container {
+      width: 100px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
     }
 
     .client-info {
@@ -74,11 +95,17 @@
 <body>
 
   <div class="header">
-    <h2>CSD Filling Station</h2>
-    <h3>CSD Dhaka Cantonment, Dhaka -1206</h3>
-    <h3>Credit Sale Statement (For the Month of {{ \Carbon\Carbon::create()->month($month)->year($year)->format('F') }}
-      {{ $year }})
-    </h3>
+    <div class="header-content">
+      <h2>CSD Filling Station</h2>
+      <h3>CSD Dhaka Cantonment, Dhaka -1206</h3>
+      <h3>Credit Sale Statement (For the Month of
+        {{ \Carbon\Carbon::create()->month($month)->year($year)->format('F') }}
+        {{ $year }})
+      </h3>
+    </div>
+    <div class="logo-container">
+      <img src="{{ $logo }}" alt="CSD Logo">
+    </div>
   </div>
 
   <div class="client-info">
