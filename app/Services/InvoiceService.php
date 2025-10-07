@@ -65,7 +65,6 @@ class InvoiceService
                     ->setNodeModulePath(base_path('node_modules'))
                     ->pdf();
             } catch (\Exception $e) {
-                \Log::error('Browsershot PDF generation failed: ' . $e->getMessage());
                 abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
             }
 
@@ -100,7 +99,6 @@ class InvoiceService
                     'Content-Disposition' => 'attachment; filename="' . $fileName . '-invoice.pdf' . '"'
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Browsershot PDF generation failed: ' . $e->getMessage());
                 abort(500, 'PDF generation failed. Please check if Puppeteer and Chrome are properly installed.');
             }
         }
@@ -166,14 +164,10 @@ class InvoiceService
 
             $totalBill += $total_qty * $item['price'];
             $totalQty += $total_qty;
-            return [
-                'fuel_name' => $item['name'],
-                'per_ltr_price' => $item['price'],
-                "total_qty" => $total_qty,
-                "total_price" => $total_qty * $item['price'],
 
-
-                'vehicles' => array_map(function ($v) use ($item, $tableHeaders, &$totalCoupon) {
+            // Filter vehicles with total_price > 0
+            $vehicles = array_filter(
+                array_map(function ($v) use ($item, $tableHeaders, &$totalCoupon) {
                     $i = [
                         'ucode' => $v['ucode'],
 
@@ -189,6 +183,17 @@ class InvoiceService
                     $totalCoupon += $i['order_count'];
                     return $i;
                 }, $orders),
+                function ($vehicle) {
+                    return $vehicle['total_price'] > 0;
+                }
+            );
+
+            return [
+                'fuel_name' => $item['name'],
+                'per_ltr_price' => $item['price'],
+                "total_qty" => $total_qty,
+                "total_price" => $total_qty * $item['price'],
+                'vehicles' => array_values($vehicles), // reindex array
             ];
         }, $fuels);
 

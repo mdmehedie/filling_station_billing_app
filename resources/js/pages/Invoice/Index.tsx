@@ -53,8 +53,6 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         setIsDownloading(true);
         setDownloadProgress(0);
 
-        console.log(selectedOrganization, selectedMonth, selectedYear, includeCover);
-
         try {
             if (!selectedOrganization) {
                 alert('Please select an organization');
@@ -99,6 +97,11 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         } finally {
             setIsDownloading(false);
             setDownloadProgress(0);
+            // clear the form
+            setSelectedOrganization(null);
+            setSelectedMonth(months[0] || 0);
+            setSelectedYear(years[0] || 0);
+            setIncludeCover(false);
         }
     }
 
@@ -178,6 +181,11 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         } finally {
             setIsDownloading(false);
             setDownloadProgress(0);
+            // clear the form
+            setSelectedOrganization(null);
+            setSelectedMonth(months[0] || 0);
+            setSelectedYear(years[0] || 0);
+            setIncludeCover(false);
         }
     }
 

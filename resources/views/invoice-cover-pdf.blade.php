@@ -59,7 +59,7 @@
     }
 
     .brand-sub {
-      font-size: 10pt;
+      font-size: 12pt;
       color: var(--muted);
       margin: 0;
       line-height: 1.2;
@@ -81,7 +81,7 @@
 
     .date-loc {
       text-align: right;
-      font-size: 11pt;
+      font-size: 10pt;
     }
 
     /* ====== Subject ====== */
@@ -309,7 +309,9 @@
   <div class="header">
     <div class="header-left">
       <div class="ref">নথি নং- সি এস ডি/ফিলিং
-        স্টেশন/ক্রেডিট/{{ formatBengaliNumber($month) }}/{{ formatBengaliNumber($organization->ucode) }}</div>
+        স্টেশন/ক্রেডিট/{{ formatBengaliNumber($month) }}{{ formatBengaliNumber($year % 200) }} /
+        {{ formatBengaliNumber($organization->ucode) }}
+      </div>
     </div>
     <div class="header-right">
       <div class="brand bn-text">সি এস ডি ফিলিং স্টেশন</div>

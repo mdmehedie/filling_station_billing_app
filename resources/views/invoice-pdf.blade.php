@@ -95,7 +95,7 @@
     <h3 style="text-align:center">{{ $fuel['fuel_name'] }}</h3>
     <table>
       <tr>
-        <th>Veh. No</th>
+        <th width="60">Veh. No</th>
         <th>Count</th>
         @foreach ($tableHeaders as $header)
           <th>{{ $header['day'] }} {{ $header['month'] }}</th>
@@ -105,7 +105,7 @@
       </tr>
       @foreach ($fuel['vehicles'] as $vehicle)
         <tr>
-          <td>{{ $vehicle['ucode'] }}</td>
+          <td width="60" style="text-align: center; padding-left: 6px;">{{ $vehicle['ucode'] }}</td>
           <td>{{ $vehicle['order_count'] }}</td>
 
           @foreach ($vehicle['quantities'] as $qty)
@@ -122,7 +122,7 @@
         <td colspan="26"> Rate: {{ $fuel['per_ltr_price'] }} Tk/L</td>
       </tr>
       <tr>
-        <td colspan="34" style="text-align:left;">Total Bill. {{ $fuel['total_price'] }} Tk</td>
+        <td colspan="34" style="text-align:left;">Total Bill. <strong>{{ $fuel['total_price'] }} Tk</strong></td>
       </tr>
     </table>
   @endforeach
@@ -134,10 +134,18 @@
   </div>
 
   <div class="signatures">
-    <div class="sign-box">Md Mohi Uddin<br>Executive<br>CSD Filling Station</div>
-    <div class="sign-box">WO Md Rafiqul Islam (Retd)<br>Manager<br>CSD Filling Station</div>
-    <div class="sign-box">Engr. Md. Al Amin<br>AGM<br>CSD Filling Station</div>
-    <div class="sign-box">Lt Col Habib Abdullah Sayeed<br>Head of Filling Station & Motor Parts</div>
+    <div class="sign-box">
+      <strong>Md Mohi Uddin</strong>
+      <br>Executive<br>CSD Filling Station
+    </div>
+    <div class="sign-box">
+      <strong>WO Md Rafiqul Islam (Retd)</strong>
+      <br>Manager<br>CSD Filling Station
+    </div>
+    <div class="sign-box">
+      <strong>Lt Col Habib Abdullah Sayeed</strong>
+      <br>Head of Filling Station & Motor Parts
+    </div>
   </div>
 
 </body>
