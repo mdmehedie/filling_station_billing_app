@@ -67,8 +67,8 @@ class InvoiceService
                     ->margins(0, 0, 0, 0)
                     ->showBackground()
                     ->setNodeModulePath(base_path('node_modules'))
-                    ->setNodeBinary('/home/mehedi/.nvm/versions/node/v22.17.0/bin/node')
-                    ->setNpmBinary('/home/mehedi/.nvm/versions/node/v22.17.0/bin/npm')
+                    ->setNodeBinary('/usr/bin/node')
+                    ->setNpmBinary('/usr/bin/npm')
                     ->pdf();
 
 
@@ -78,8 +78,8 @@ class InvoiceService
                     ->margins(10, 10, 10, 10)
                     ->showBackground()
                     ->setNodeModulePath(base_path('node_modules'))
-                    ->setNodeBinary('/home/mehedi/.nvm/versions/node/v22.17.0/bin/node')
-                    ->setNpmBinary('/home/mehedi/.nvm/versions/node/v22.17.0/bin/npm')
+                    ->setNodeBinary('/usr/bin/node')
+                    ->setNpmBinary('/usr/bin/npm')
                     ->pdf();
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
@@ -109,8 +109,8 @@ class InvoiceService
                     ->margins(0, 0, 0, 0)
                     ->showBackground()
                     ->setNodeModulePath(base_path('node_modules'))
-                    ->setNodeBinary('/home/mehedi/.nvm/versions/node/v22.17.0/bin/node')
-                    ->setNpmBinary('/home/mehedi/.nvm/versions/node/v22.17.0/bin/npm')
+                    ->setNodeBinary('/usr/bin/node')
+                    ->setNpmBinary('/usr/bin/npm')
                     ->pdf();
 
                 return response($invoicePdf, 200, [
