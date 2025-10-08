@@ -1,7 +1,7 @@
 import AppLayout from "@/layouts/app-layout";
 import { Head, router } from "@inertiajs/react";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
-import { Column } from "@/components/data-table";
+import { Column, DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Eye, Plus } from "lucide-react";
@@ -205,12 +205,19 @@ export default function Index({ vehicles }: Props) {
                         Add New Vehicle
                     </Button>
                 </div>
-
-                <DataTableWrapper
-                    response={vehicles}
+                
+                <DataTable
+                    data={vehicles.data}
                     columns={columns}
                     searchable={true}
                     searchPlaceholder="Search vehicles..."
+                    serverSidePagination={true}
+                    showPagination={true}
+                    currentPage={vehicles.meta.current_page}
+                    lastPage={vehicles.meta.last_page}
+                    from={vehicles.meta.from}
+                    to={vehicles.meta.to}
+                    total={vehicles.meta.total}
                     onPageChange={handlePageChange}
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}

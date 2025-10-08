@@ -46,7 +46,7 @@ class InvoiceService
         $year = $validated['year'];
 
         // logo rendering for left side
-        $imagePath = public_path('default/csd-logo.jpeg');
+        $imagePath = public_path('default/csd-logo.png');
         $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
         $imageData = file_get_contents($imagePath);
         $logo1 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
@@ -67,8 +67,7 @@ class InvoiceService
                     ->margins(0, 0, 0, 0)
                     ->showBackground()
                     ->setNodeModulePath(base_path('node_modules'))
-                    ->setNodeBinary('/usr/bin/node')
-                    ->setNpmBinary('/usr/bin/npm')
+                    ->setIncludePath('$PATH:/usr/bin')
                     ->pdf();
 
 
@@ -78,8 +77,7 @@ class InvoiceService
                     ->margins(10, 10, 10, 10)
                     ->showBackground()
                     ->setNodeModulePath(base_path('node_modules'))
-                    ->setNodeBinary('/usr/bin/node')
-                    ->setNpmBinary('/usr/bin/npm')
+                    ->setIncludePath('$PATH:/usr/bin')
                     ->pdf();
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
@@ -109,8 +107,7 @@ class InvoiceService
                     ->margins(0, 0, 0, 0)
                     ->showBackground()
                     ->setNodeModulePath(base_path('node_modules'))
-                    ->setNodeBinary('/usr/bin/node')
-                    ->setNpmBinary('/usr/bin/npm')
+                    ->setIncludePath('$PATH:/usr/bin')
                     ->pdf();
 
                 return response($invoicePdf, 200, [

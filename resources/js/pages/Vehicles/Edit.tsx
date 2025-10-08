@@ -145,14 +145,13 @@ export default function Edit({ vehicle, organizations, fuels }: Props) {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="name" className="text-sm font-medium">
-                                        Vehicle Name <span className="text-destructive">*</span>
+                                        Vehicle Name 
                                     </Label>
                                     <Input
                                         id="name"
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
                                         placeholder="Enter vehicle name"
-                                        required
                                     />
                                     {errors.name && (
                                         <p className="text-sm text-destructive">{errors.name}</p>

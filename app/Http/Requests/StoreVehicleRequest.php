@@ -25,9 +25,9 @@ class StoreVehicleRequest extends FormRequest
             'fuel_id' => 'required|exists:fuels,id',
             'organization_id' => 'required|exists:organizations,id',
             'ucode' => 'required|string|max:255|unique:vehicles,ucode',
-            'name' => 'required|string|max:255',
-            'model' => 'required|string|max:255',
-            'type' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'model' => 'nullable|string|max:255',
+            'type' => 'nullable|string|max:255',
         ];
     }
 

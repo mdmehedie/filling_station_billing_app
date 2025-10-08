@@ -4,16 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
+use App\Http\Resources\FuelResource;
+use App\Http\Resources\OrganizationResource;
 use App\Http\Resources\VehicleResource;
+use App\Models\Fuel;
+use App\Models\Organization;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
-use App\Http\Resources\OrganizationResource;
-use App\Models\Organization;
-use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
-use App\Http\Resources\FuelResource;
-use App\Models\Fuel;
 use Inertia\Inertia;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class VehicleController extends Controller
 {
@@ -28,15 +28,15 @@ class VehicleController extends Controller
             ->allowedFilters([
                 AllowedFilter::callback('search', function ($query, $value) {
                     $query->where('name', 'like', "%{$value}%")
-                          ->orWhere('ucode', 'like', "%{$value}%")
-                          ->orWhereHas('organization', function ($query) use ($value) {
+                        ->orWhere('ucode', 'like', "%{$value}%")
+                        ->orWhereHas('organization', function ($query) use ($value) {
                             $query->where('name', 'like', "%{$value}%")
-                                  ->orWhere('name_bn', 'like', "%{$value}%");
-                          });
+                                ->orWhere('name_bn', 'like', "%{$value}%");
+                        });
                 }),
             ])
             ->paginate(15);
-    
+
         return inertia('Vehicles/Index', [
             'vehicles' => VehicleResource::collection($vehicles)
         ]);
@@ -46,10 +46,10 @@ class VehicleController extends Controller
     public function getAllVehicles(Request $request)
     {
         return VehicleResource::collection(
-            Vehicle::select('id', 'name', 'ucode', 'model', 'type','fuel_id')
-            ->where('organization_id', $request->organization_id)
-            ->with('fuel')
-            ->get()
+            Vehicle::select('id', 'name', 'ucode', 'model', 'type', 'fuel_id')
+                ->where('organization_id', $request->organization_id)
+                ->with('fuel')
+                ->get()
         );
     }
 
