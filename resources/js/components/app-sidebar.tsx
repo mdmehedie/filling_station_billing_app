@@ -98,6 +98,11 @@ export function AppSidebar() {
                 href: orders.index(),
                 icon: ShoppingCart,
             },
+            {
+                title: 'Vehicles',
+                href: vehicles.index(),
+                icon: Car,
+            },
         ]
     }, []);
 

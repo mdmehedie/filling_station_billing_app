@@ -11,7 +11,7 @@ import { Building2, Car, Fuel, Calendar, Save, ArrowLeft, Search, Plus, Trash2 }
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getAllVehicles } from "@/lib/api";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization } from "@/types/response";
@@ -51,6 +51,9 @@ export default function Create({ organizations, fuels }: Props) {
     const [vehicleSearchTerms, setVehicleSearchTerms] = useState<{ [key: string]: string }>({});
     const [isValid, setIsValid] = useState<boolean>(false);
     const [usedVehicles, setUsedVehicles] = useState<Set<number>>(new Set());
+    const searchInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+    const [selectedVehicleIndex, setSelectedVehicleIndex] = useState<{ [key: string]: number }>({});
+    const [openDropdowns, setOpenDropdowns] = useState<{ [key: string]: boolean }>({});
 
     // Calculate total order amount when order items change
     useEffect(() => {
@@ -76,6 +79,140 @@ export default function Create({ organizations, fuels }: Props) {
     const handleInputChange = (field: keyof FormData, value: string) => {
         setData(field, value);
     };
+
+    // Stable search handler to prevent re-renders
+    const handleSearchChange = useCallback((itemId: string, value: string) => {
+        setVehicleSearchTerms(prev => ({ ...prev, [itemId]: value }));
+        
+        // Reset selected index when search term changes
+        setSelectedVehicleIndex(prev => ({ ...prev, [itemId]: 0 }));
+        
+        // Maintain focus even when input becomes empty
+        setTimeout(() => {
+            const input = searchInputRefs.current[itemId];
+            if (input && document.contains(input) && input.offsetParent !== null) {
+                input.focus();
+            }
+        }, 0);
+    }, []);
+
+    // Focus next field after vehicle selection
+    const focusNextField = useCallback((itemId: string) => {
+        // Find the current item index
+        const currentItemIndex = orderItems.findIndex(item => item.id === itemId);
+        if (currentItemIndex === -1) return;
+        
+        // Find the fuel select trigger for this item
+        const fuelSelectTrigger = document.querySelector(`[data-item-id="${itemId}"] [data-fuel-select]`);
+        if (fuelSelectTrigger) {
+            setTimeout(() => {
+                (fuelSelectTrigger as HTMLElement)?.focus();
+            }, 100);
+        }
+    }, [orderItems]);
+
+    // Focus quantity field after fuel selection
+    const focusQuantityField = useCallback((itemId: string) => {
+        const quantityInput = document.querySelector(`[data-item-id="${itemId}"] [data-quantity-input]`);
+        if (quantityInput) {
+            setTimeout(() => {
+                (quantityInput as HTMLElement)?.focus();
+            }, 100);
+        }
+    }, []);
+
+    // Add new vehicle and focus its search input
+    const addVehicleAndFocus = useCallback(() => {
+        if (!data.organization_id) return;
+        
+        const newItem: OrderItem = {
+            id: Date.now().toString(),
+            vehicle_id: '',
+            fuel_id: '',
+            fuel_qty: '',
+            total_price: 0,
+            per_ltr_price: 0
+        };
+        
+        setOrderItems(prev => [...prev, newItem]);
+        
+        // Open the vehicle dropdown and focus search input
+        setTimeout(() => {
+            setOpenDropdowns(prev => ({ ...prev, [newItem.id]: true }));
+            // Wait for the DOM to update with the new item
+            setTimeout(() => {
+                const searchInput = searchInputRefs.current[newItem.id];
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }, 300);
+        }, 100);
+    }, [data.organization_id]);
+
+    // Handle keyboard navigation for vehicle selection
+    const handleVehicleKeyDown = useCallback((e: React.KeyboardEvent, itemId: string, filteredVehicles: Vehicle[]) => {
+        const currentIndex = selectedVehicleIndex[itemId] || 0;
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = Math.min(currentIndex + 1, filteredVehicles.length - 1);
+            setSelectedVehicleIndex(prev => ({ ...prev, [itemId]: nextIndex }));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = Math.max(currentIndex - 1, 0);
+            setSelectedVehicleIndex(prev => ({ ...prev, [itemId]: prevIndex }));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (filteredVehicles.length > 0 && currentIndex < filteredVehicles.length) {
+                const selectedVehicle = filteredVehicles[currentIndex];
+                // Call updateOrderItem directly since it's defined later
+                setOrderItems(prev => prev.map(item => {
+                    if (item.id === itemId) {
+                        const updatedItem = { ...item, vehicle_id: selectedVehicle.id.toString() };
+                        
+                        // Auto-select the associated fuel for the vehicle
+                        if (selectedVehicle.fuel_id) {
+                            updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
+                            updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
+                        }
+                        
+                        return updatedItem;
+                    }
+                    return item;
+                }));
+                
+                // Close the dropdown after selection
+                setOpenDropdowns(prev => ({ ...prev, [itemId]: false }));
+                
+                // Focus the next field (fuel select)
+                focusNextField(itemId);
+            }
+        }
+    }, [selectedVehicleIndex, focusNextField]);
+
+    // Maintain focus on search input
+    useEffect(() => {
+        const maintainFocus = () => {
+            // Check if any search input should maintain focus
+            Object.keys(searchInputRefs.current).forEach(itemId => {
+                const input = searchInputRefs.current[itemId];
+                if (input && document.activeElement !== input) {
+                    // Always try to refocus if the input is visible and in the DOM
+                    if (input && document.contains(input) && input.offsetParent !== null) {
+                        setTimeout(() => {
+                            if (input && document.contains(input)) {
+                                input.focus();
+                            }
+                        }, 0);
+                    }
+                }
+            });
+        };
+
+        // Use a small delay to ensure the DOM has updated
+        const timeoutId = setTimeout(maintainFocus, 10);
+        return () => clearTimeout(timeoutId);
+    }, [vehicleSearchTerms]);
 
     const handleOrganizationSelect = (org: Organization | null) => {
         setSelectedOrg(org);
@@ -177,19 +314,39 @@ export default function Create({ organizations, fuels }: Props) {
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Enter key - add new vehicle
-            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+            // Ctrl/Cmd + Enter - add new vehicle and focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
-                if (data.organization_id) {
-                    addOrderItem();
-                }
+                addVehicleAndFocus();
             }
             
-            // Ctrl/Cmd + Enter - submit form
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            // Alt + Enter - submit form
+            if (e.altKey && e.key === 'Enter') {
                 e.preventDefault();
                 if (isValid) {
                     handleSubmit(e as any);
+                }
+            }
+            
+            // Tab navigation between input fields (only when not in search input)
+            if (e.key === 'Tab' && !(e.target as Element)?.closest('[data-search-input]')) {
+                e.preventDefault();
+                const focusableElements = document.querySelectorAll(
+                    'input:not([disabled]):not([data-search-input]), select:not([disabled]), button:not([disabled])'
+                );
+                
+                // Find current element index
+                const currentElement = e.target as HTMLElement;
+                const currentIndex = Array.from(focusableElements).indexOf(currentElement);
+                
+                if (e.shiftKey) {
+                    // Shift + Tab - go to previous element
+                    const newIndex = currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
+                    (focusableElements[newIndex] as HTMLElement)?.focus();
+                } else {
+                    // Tab - go to next element
+                    const newIndex = currentIndex < focusableElements.length - 1 ? currentIndex + 1 : 0;
+                    (focusableElements[newIndex] as HTMLElement)?.focus();
                 }
             }
         };
@@ -323,7 +480,7 @@ export default function Create({ organizations, fuels }: Props) {
                                     {orderItems.map((item, index) => {
                                         const isComplete = item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0;
                                         return (
-                                            <div key={item.id} className={`border rounded-lg p-4 bg-card transition-all duration-200 ${!isComplete ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : 'border-green-200 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20'}`}>
+                                            <div key={item.id} data-item-id={item.id} className={`border rounded-lg p-4 bg-card transition-all duration-200 ${!isComplete ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : 'border-green-200 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20'}`}>
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
@@ -357,7 +514,24 @@ export default function Create({ organizations, fuels }: Props) {
                                                         <Label className="text-xs font-medium">Vehicle</Label>
                                                         <Select
                                                             value={item.vehicle_id}
-                                                            onValueChange={(value) => updateOrderItem(item.id, 'vehicle_id', value)}
+                                                            onValueChange={(value) => {
+                                                                updateOrderItem(item.id, 'vehicle_id', value);
+                                                                // Close dropdown after selection
+                                                                setOpenDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                                            }}
+                                                            open={openDropdowns[item.id] || false}
+                                                            onOpenChange={(open) => {
+                                                                setOpenDropdowns(prev => ({ ...prev, [item.id]: open }));
+                                                                if (open) {
+                                                                    // Focus the search input when dropdown opens
+                                                                    setTimeout(() => {
+                                                                        const input = searchInputRefs.current[item.id];
+                                                                        if (input) {
+                                                                            input.focus();
+                                                                        }
+                                                                    }, 100);
+                                                                }
+                                                            }}
                                                         >
                                                             <SelectTrigger className="h-9">
                                                                 <SelectValue placeholder="Select" />
@@ -366,12 +540,65 @@ export default function Create({ organizations, fuels }: Props) {
                                                                 <div className="relative p-2 border-b">
                                                                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                                     <Input
+                                                                        ref={(el) => {
+                                                                            searchInputRefs.current[item.id] = el;
+                                                                        }}
+                                                                        data-search-input="true"
                                                                         placeholder="Search vehicles..."
                                                                         value={vehicleSearchTerms[item.id] || ''}
-                                                                        onChange={(e) => setVehicleSearchTerms(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                                                        onKeyDown={(e) => e.stopPropagation()}
-                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onChange={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleSearchChange(item.id, e.target.value);
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                            e.stopPropagation();
+                                                                            
+                                                                            // Handle Tab to close dropdown and move to next field
+                                                                            if (e.key === 'Tab') {
+                                                                                setOpenDropdowns(prev => ({ ...prev, [item.id]: false }));
+                                                                                // Don't prevent default - let Tab work normally
+                                                                                return;
+                                                                            }
+                                                                            
+                                                                            // Get filtered vehicles for this item
+                                                                            const filteredVehicles = vehicles.filter(vehicle => {
+                                                                                const isUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
+                                                                                if (isUsed) return false;
+                                                                                
+                                                                                const searchTerm = (vehicleSearchTerms[item.id] || '').replace('-', '').toLowerCase();
+                                                                                const nameMatch = vehicle.name?.toLowerCase().includes(searchTerm);
+                                                                                const ucodeMatch = vehicle.ucode?.toLowerCase().includes(searchTerm);
+                                                                                const modelMatch = vehicle.model?.toLowerCase().includes(searchTerm);
+                                                                                
+                                                                                return nameMatch || ucodeMatch || modelMatch;
+                                                                            });
+                                                                            
+                                                                            // Handle arrow keys and Enter for navigation
+                                                                            if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+                                                                                handleVehicleKeyDown(e, item.id, filteredVehicles);
+                                                                            }
+                                                                        }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            e.currentTarget.focus();
+                                                                        }}
+                                                                        onFocus={(e) => {
+                                                                            e.stopPropagation();
+                                                                        }}
+                                                                        onBlur={(e) => {
+                                                                            e.stopPropagation();
+                                                                            // Prevent blur if the input is still visible
+                                                                            if (e.currentTarget.offsetParent !== null) {
+                                                                                setTimeout(() => {
+                                                                                    e.currentTarget.focus();
+                                                                                }, 0);
+                                                                            }
+                                                                        }}
+                                                                        onMouseDown={(e) => {
+                                                                            e.stopPropagation();
+                                                                        }}
                                                                         className="pl-10 h-8"
+                                                                        autoComplete="off"
                                                                     />
                                                                 </div>
                                                                 <div className="max-h-60 overflow-y-auto">
@@ -388,25 +615,35 @@ export default function Create({ organizations, fuels }: Props) {
                                                                                         ({usedVehicles.size} already used)
                                                                                     </span>
                                                                                 )}
+                                                                                <div className="mt-1 text-xs text-blue-600">
+                                                                                    Use ↑↓ arrows to navigate, Enter to select • Tab to next field
+                                                                                </div>
                                                                             </div>
                                                                             {vehicles
                                                                                 .filter(vehicle => {
                                                                                     // Filter out already used vehicles (except the current item's vehicle)
                                                                                     const isUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
                                                                                     if (isUsed) return false;
-                                                                                    
+
                                                                                     // Apply search filter
-                                                                                    return vehicle.name?.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
-                                                                                        vehicle.ucode?.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()) ||
-                                                                                        (vehicle.model && vehicle.model.toLowerCase().includes((vehicleSearchTerms[item.id] || '').toLowerCase()));
+                                                                                    const searchTerm = (vehicleSearchTerms[item.id] || '').replace('-', '').toLowerCase();
+
+                                                                                    // Check name, ucode, or model for match
+                                                                                    const nameMatch = vehicle.name?.toLowerCase().includes(searchTerm);
+                                                                                    const ucodeMatch = vehicle.ucode?.toLowerCase().includes(searchTerm);
+                                                                                    const modelMatch = vehicle.model?.toLowerCase().includes(searchTerm);
+
+                                                                                    return nameMatch || ucodeMatch || modelMatch;
                                                                                 })
-                                                                                .map((vehicle) => {
+                                                                                .map((vehicle, index) => {
                                                                                     const isCurrentlyUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
+                                                                                    const isSelected = selectedVehicleIndex[item.id] === index;
                                                                                     return (
                                                                                         <SelectItem 
                                                                                             key={vehicle.id} 
                                                                                             value={vehicle.id.toString()}
                                                                                             disabled={isCurrentlyUsed}
+                                                                                            className={isSelected ? "bg-accent text-accent-foreground" : ""}
                                                                                         >
                                                                                             <div className="flex items-center gap-2">
                                                                                                 <Car className="h-3 w-3" />
@@ -437,9 +674,13 @@ export default function Create({ organizations, fuels }: Props) {
                                                         <Label className="text-xs font-medium">Fuel</Label>
                                                         <Select
                                                             value={item.fuel_id}
-                                                            onValueChange={(value) => updateOrderItem(item.id, 'fuel_id', value)}
+                                                            onValueChange={(value) => {
+                                                                updateOrderItem(item.id, 'fuel_id', value);
+                                                                // Focus quantity field after fuel selection
+                                                                focusQuantityField(item.id);
+                                                            }}
                                                         >
-                                                            <SelectTrigger className="h-9">
+                                                            <SelectTrigger className="h-9" data-fuel-select>
                                                                 <SelectValue placeholder="Select" />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -459,12 +700,17 @@ export default function Create({ organizations, fuels }: Props) {
                                                     <div className="space-y-1">
                                                         <Label className="text-xs font-medium">Quantity (L)</Label>
                                                         <Input
+                                                            data-quantity-input="true"
                                                             type="number"
                                                             step="0.01"
                                                             min="0"
                                                             value={item.fuel_qty}
                                                             onChange={(e) => updateOrderItem(item.id, 'fuel_qty', e.target.value)}
                                                             onWheel={(e) => e.currentTarget.blur()}
+                                                            onKeyDown={(e) => {
+                                                                // Let the global keyboard handler manage Ctrl/Cmd + Enter
+                                                                // No need to handle it here to avoid double execution
+                                                            }}
                                                             placeholder="0"
                                                             className="h-9 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                                                         />
@@ -500,8 +746,9 @@ export default function Create({ organizations, fuels }: Props) {
                                         Add Another Vehicle
                                     </Button>
                                     <p className="text-xs text-muted-foreground">
-                                        Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> to add vehicle • 
-                                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Ctrl+Enter</kbd> to create order
+                                        Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Enter</kbd> in quantity field to add vehicle • 
+                                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Alt+Enter</kbd> to create order • 
+                                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Tab</kbd> to navigate fields
                                     </p>
                                 </div>
                             )}

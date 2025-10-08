@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use App\Http\Resources\InvoiceCollection;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Organization;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Spatie\Browsershot\Browsershot;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -34,7 +33,6 @@ class InvoiceService
 
     function exportPdf($validated, $organization_id)
     {
-
         [$start, $end, $period] = $this->findOutStartEndPeriod($validated['month'], $validated['year']);
 
         // 4) Structure data by fuel type and vehicle
@@ -57,7 +55,6 @@ class InvoiceService
         $imageData = file_get_contents($imagePath);
         $logo2 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
 
-
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
@@ -70,7 +67,6 @@ class InvoiceService
                     ->setIncludePath('$PATH:/usr/bin')
                     ->pdf();
 
-
                 // Generate cover PDF with Browsershot for perfect Bengali support
                 $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render())
                     ->format('A4')
@@ -82,7 +78,6 @@ class InvoiceService
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
             }
-
 
             // Create a zip file in memory
             $zipFileName = $fileName . '-invoice-with-cover.zip';
@@ -125,33 +120,34 @@ class InvoiceService
      */
     function getInvoiceData($organization_id, $start, $end, $period)
     {
-        // put all the date of this in an array
+        // Build table headers for each day of the month
         $tableHeaders = [];
         foreach (range(1, $period->daysInMonth) as $dayNumber) {
             $currentDay = $period->copy()->day($dayNumber);
             $tableHeaders[] = [
-                'month' => $currentDay->isoFormat('MMM'), // e.g., "Jun",
-                'year' => $currentDay->isoFormat('YYYY'), // e.g., "2024",
-                'day' => $currentDay->isoFormat('D'), // e.g., "1", "2", etc.
+                'month' => $currentDay->isoFormat('MMM'),
+                'year' => $currentDay->isoFormat('YYYY'),
+                'day' => $currentDay->isoFormat('D'),
             ];
         }
 
-        // 2) Pull orders (eager-load fuel to avoid N+1 + get fuel price/name reliably)
+        // Get all fuels used by this organization in this period
         $fuels = Order::query()
-            ->select('fuels.id', 'fuels.name', 'orders.per_ltr_price as price')
-            ->where('organization_id', $organization_id)
-            ->rightJoin('fuels', 'orders.fuel_id', '=', 'fuels.id')
+            ->select('fuels.id', 'fuels.name')
+            ->where('orders.organization_id', $organization_id)
+            ->leftJoin('fuels', 'orders.fuel_id', '=', 'fuels.id')
             ->whereDate('sold_date', '>=', $start->toDateString())
             ->whereDate('sold_date', '<=', $end->toDateString())
-            ->groupBy('fuels.id', 'fuels.name', 'orders.per_ltr_price') // group by fuel id to get distinct fuels
+            ->groupBy('fuels.id', 'fuels.name')
             ->get()
             ->toArray();
 
-        // 3. pull full wise vehicles
+        // Get all vehicles for this organization and period, grouped by fuel, vehicle, and day and per_ltr_price
         $orders = Order::query()
             ->select([
-                'fuels.name',
-                'vehicles.ucode',
+                'fuels.name as fuel_name',
+                'vehicles.ucode as ucode',
+                'orders.per_ltr_price',
                 DB::raw('EXTRACT(DAY FROM orders.sold_date) AS sold_day'),
                 DB::raw('SUM(orders.fuel_qty) AS total_qty'),
                 DB::raw('SUM(orders.total_price) AS total_price'),
@@ -164,61 +160,200 @@ class InvoiceService
             ->groupBy(
                 'fuels.name',
                 'vehicles.ucode',
+                'orders.per_ltr_price',
                 DB::raw('EXTRACT(DAY FROM orders.sold_date)')
             )
+            ->orderBy('fuels.name')
+            ->orderBy('vehicles.ucode')
             ->orderBy(DB::raw('EXTRACT(DAY FROM orders.sold_date)'), 'asc')
             ->get()
             ->toArray();
 
+        // Build a lookup: [fuel_name][ucode][day] = [qty, price, per_ltr_price, order_count]
+        $vehicleDayData = [];
+        foreach ($orders as $order) {
+            $fuel = $order['fuel_name'];
+            $ucode = $order['ucode'];
+            $day = (string) intval($order['sold_day']);  // day as string to match tableHeaders
+
+            if (!isset($vehicleDayData[$fuel])) {
+                $vehicleDayData[$fuel] = [];
+            }
+
+            if (!isset($vehicleDayData[$fuel][$ucode])) {
+                $vehicleDayData[$fuel][$ucode] = [];
+            }
+
+            $vehicleDayData[$fuel][$ucode][$day] = [
+                'qty' => $order['total_qty'],
+                'price' => $order['total_price'],
+                'per_ltr_price' => $order['per_ltr_price'],
+                'order_count' => $order['order_count'],
+            ];
+        }
+
+        // Now, fill missing days for each vehicle, and handle per_ltr_price change frequency
+        foreach ($vehicleDayData as $fuel => &$vehicles) {
+            foreach ($vehicles as $ucode => &$days) {
+                // Collect all per_ltr_price changes as [day => per_ltr_price]
+                $perLtrPriceByDay = [];
+                foreach ($days as $day => $info) {
+                    if ($info['per_ltr_price'] > 0) {
+                        $perLtrPriceByDay[(int) $day] = $info['per_ltr_price'];
+                    }
+                }
+                ksort($perLtrPriceByDay);
+
+                // Fill missing days and assign correct per_ltr_price
+                $lastPerLtrPrice = 0;
+                foreach (range(1, $period->daysInMonth) as $d) {
+                    $dStr = (string) $d;
+                    if (isset($perLtrPriceByDay[$d])) {
+                        $lastPerLtrPrice = $perLtrPriceByDay[$d];
+                    }
+                    if (!isset($days[$dStr])) {
+                        $days[$dStr] = [
+                            'qty' => 0,
+                            'price' => 0,
+                            'per_ltr_price' => $lastPerLtrPrice,
+                            'order_count' => 0,
+                        ];
+                    } else {
+                        if ($days[$dStr]['per_ltr_price'] == 0) {
+                            $days[$dStr]['per_ltr_price'] = $lastPerLtrPrice;
+                        } else {
+                            $lastPerLtrPrice = $days[$dStr]['per_ltr_price'];
+                        }
+                    }
+                }
+                ksort($days, SORT_NUMERIC);
+                $vehicles[$ucode] = $days;
+            }
+        }
+        unset($vehicles);  // break reference
+
+        // Now, calculate summary data for the invoice
         $totalCoupon = 0;
         $totalBill = 0;
         $totalQty = 0;
-        $data = array_map(function ($item) use ($orders, $tableHeaders, &$totalCoupon, &$totalBill, &$totalQty) {
-            $total_qty = array_sum(array_map(function ($v) use ($item) {
-                return $v['name'] === $item['name'] ? $v['total_qty'] : 0;
-            }, $orders));
+        $data = [];
 
-            $totalBill += $total_qty * $item['price'];
-            $totalQty += $total_qty;
+        // Build the $data array in the format expected by the PDF
+        foreach ($fuels as $fuel) {
+            $fuelName = $fuel['name'];
+            $vehiclesArr = [];
+            $fuelTotalQty = 0;
+            $fuelTotalPrice = 0;
 
-            // Filter vehicles with total_price > 0
-            $vehicles = array_filter(
-                array_map(function ($v) use ($item, $tableHeaders, &$totalCoupon) {
-                    $i = [
-                        'ucode' => $v['ucode'],
-
-                        "quantities" => array_map(function ($day) use ($v, $item, $tableHeaders) {
-                            return $v['name'] === $item['name'] ? ($v['sold_day'] == $day['day'] ? $v['total_qty'] : 0) : 0;
-                        }, $tableHeaders),
-
-                        "total_qty" => $v['name'] === $item['name'] ? $v['total_qty'] : 0,
-                        "total_price" => $v['name'] === $item['name'] ? $v['total_price'] : 0,
-                        "order_count" => $v['name'] === $item['name'] ? $v['order_count'] : 0,
-                    ];
-
-                    $totalCoupon += $i['order_count'];
-                    return $i;
-                }, $orders),
-                function ($vehicle) {
-                    return $vehicle['total_price'] > 0;
+            // Build per_ltr_price_ranges for this fuel dynamically based on order frequency
+            $perLtrPriceRanges = [];
+            if (isset($vehicleDayData[$fuelName])) {
+                // Collect all per_ltr_price changes for this fuel across all vehicles and all days
+                $priceChangeDays = [];
+                foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
+                    foreach ($days as $day => $info) {
+                        if ($info['per_ltr_price'] > 0) {
+                            $priceChangeDays[(int) $day] = $info['per_ltr_price'];
+                        }
+                    }
                 }
-            );
+                ksort($priceChangeDays);
 
-            return [
-                'fuel_name' => $item['name'],
-                'per_ltr_price' => $item['price'],
-                "total_qty" => $total_qty,
-                "total_price" => $total_qty * $item['price'],
-                'vehicles' => array_values($vehicles), // reindex array
+                // Build dynamic ranges: group consecutive days with the same price into a range
+                $ranges = [];
+                $daysInMonth = $period->daysInMonth;
+                $prevPrice = null;
+                $startDay = 1;  // Always start from 1
+
+                for ($d = 1; $d <= $daysInMonth; $d++) {
+                    $currentPrice = isset($priceChangeDays[$d]) ? $priceChangeDays[$d] : $prevPrice;
+                    if ($currentPrice !== $prevPrice) {
+                        if ($prevPrice !== null) {
+                            $ranges[] = [
+                                'start' => $startDay,
+                                'end' => $d - 1,
+                                'per_ltr_price' => $prevPrice,
+                            ];
+                        }
+                        $startDay = $d;
+                        $prevPrice = $currentPrice;
+                    }
+                }
+                // Add last range if any
+                if ($prevPrice !== null && $startDay !== null) {
+                    $ranges[] = [
+                        'start' => $startDay,
+                        'end' => $daysInMonth,
+                        'per_ltr_price' => $prevPrice,
+                    ];
+                }
+
+                // Ensure the first range always starts from 1
+                if (!empty($ranges) && $ranges[0]['start'] !== 1) {
+                    $ranges[0]['start'] = 1;
+                }
+
+                // Format as "1-7": 121, "8-31": 110, etc. (dynamic, not static)
+                foreach ($ranges as $range) {
+                    $label = $range['start'] . '-' . $range['end'];
+                    // Format price as string with 2 decimals
+                    $perLtrPriceRanges[$label] = number_format($range['per_ltr_price'], 2, '.', '');
+                }
+            }
+
+            if (isset($vehicleDayData[$fuelName])) {
+                foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
+                    $quantities = [];
+                    $vehicleTotalQty = 0;
+                    $vehicleTotalPrice = 0;
+                    $vehicleOrderCount = 0;
+
+                    foreach ($tableHeaders as $header) {
+                        $day = $header['day'];
+                        if (isset($days[$day])) {
+                            $qty = $days[$day]['qty'];
+                            $perLtrPrice = $days[$day]['per_ltr_price'];
+                            $price = $qty * $perLtrPrice;
+                            $orderCount = $days[$day]['order_count'];
+                        } else {
+                            $qty = 0;
+                            $price = 0;
+                            $orderCount = 0;
+                        }
+                        $quantities[] = $qty;
+                        $vehicleTotalQty += $qty;
+                        $vehicleTotalPrice += $price;
+                        $vehicleOrderCount += $orderCount;
+                    }
+
+                    $vehiclesArr[] = [
+                        'ucode' => $ucode,
+                        'quantities' => $quantities,
+                        'total_qty' => $vehicleTotalQty,
+                        'total_price' => $vehicleTotalPrice,
+                        'order_count' => $vehicleOrderCount,
+                    ];
+                    $fuelTotalQty += $vehicleTotalQty;
+                    $fuelTotalPrice += $vehicleTotalPrice;
+                    $totalCoupon += $vehicleOrderCount;
+                }
+            }
+
+            $totalBill += $fuelTotalPrice;
+            $totalQty += $fuelTotalQty;
+
+            $data[] = [
+                'fuel_name' => $fuelName,
+                // Example: ["1-7"=>121, "8-31"=>110] (dynamic, not static, depends on order frequency)
+                'per_ltr_price_ranges' => $perLtrPriceRanges,
+                'total_qty' => $fuelTotalQty,
+                'total_price' => $fuelTotalPrice,
+                'vehicles' => $vehiclesArr,
             ];
-        }, $fuels);
+        }
 
         // Calculate page count based on data
         $pageCount = $this->calculatePageCount($data, $tableHeaders);
-
-        if (count($data) === 0) {
-            abort(404, 'No data found for the selected month and organization.');
-        }
 
         return [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount];
     }
@@ -232,14 +367,14 @@ class InvoiceService
      * 5) Calculate total bill, total coupon, total quantity
      * 6) Calculate page count based on data
      */
-
     function generateMonthlyInvoice($sold_date, $organization_id)
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($sold_date->month, $sold_date->year);
         [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount] = $this->getInvoiceData($organization_id, $start, $end, $period);
 
         // get order ids for this period and organization
-        $orderIds = Order::query()->where('organization_id', $organization_id)
+        $orderIds = Order::query()
+            ->where('organization_id', $organization_id)
             ->whereDate('sold_date', '>=', $start->toDateString())
             ->whereDate('sold_date', '<=', $end->toDateString())
             ->pluck('id')
@@ -264,9 +399,9 @@ class InvoiceService
      */
     public function calculatePageCount($data, $tableHeaders)
     {
-        $maxVehiclesPerPage = 12; // Maximum vehicles that can fit on one page (Legal landscape)
-        $headerRows = 3; // Header rows (fuel name, price, totals)
-        $totalPages = 1; // Start with 1 page for the header
+        $maxVehiclesPerPage = 12;  // Maximum vehicles that can fit on one page (Legal landscape)
+        $headerRows = 3;  // Header rows (fuel name, price, totals)
+        $totalPages = 1;  // Start with 1 page for the header
 
         $totalVehicles = 0;
         $totalFuelTypes = count($data);
@@ -285,7 +420,7 @@ class InvoiceService
 
         // Add extra pages for multiple fuel types (each fuel type needs some space)
         if ($totalFuelTypes > 1) {
-            $additionalPages = ceil($totalFuelTypes / 3); // 3 fuel types per page
+            $additionalPages = ceil($totalFuelTypes / 3);  // 3 fuel types per page
             $totalPages += $additionalPages - 1;
         }
 
@@ -296,10 +431,12 @@ class InvoiceService
     function invoiceList()
     {
         return InvoiceResource::collection(
-            QueryBuilder::for(Invoice::class)->with('organization')
+            QueryBuilder::for(Invoice::class)
+                ->with('organization')
                 ->allowedFilters([
                     AllowedFilter::callback('search', function ($query, $value) {
-                        $query->where('id', 'like', "%{$value}%")
+                        $query
+                            ->where('id', 'like', "%{$value}%")
                             ->orWhereHas('organization', function ($query) use ($value) {
                                 $query->where('name', 'like', "%{$value}%");
                                 $query->orWhere('name_bn', 'like', "%{$value}%");

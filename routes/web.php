@@ -12,13 +12,13 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return redirect()->route('orders.index');
+    return redirect()->route('dashboard');
 })->name('home')->middleware('guest');
 
 Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::resource('vehicles', VehicleController::class)->middleware('is_admin');
+    Route::resource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization')->middleware('is_admin');
     Route::resource('fuels', FuelController::class)->except(['show'])->middleware('is_admin');
 
@@ -33,7 +33,6 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     // invoices routes
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::post('api/invoices/{invoice}/export', [InvoiceController::class, 'exportPdf']);
-    
 
     // api routes
     Route::get('api/orders', [OrderController::class, 'orderList']);

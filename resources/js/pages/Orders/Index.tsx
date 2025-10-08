@@ -197,16 +197,16 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     };
 
     const columns: Column<Order>[] = [
-        {
-            key: 'id',
-            header: 'Order ID',
-            sortable: true,
-            render: (value, row) => (
-                <div className="font-mono text-sm font-medium">
-                    #{row.id.toString().padStart(4, '0')}
-                </div>
-            )
-        },
+        // {
+        //     key: 'id',
+        //     header: 'Order ID',
+        //     sortable: true,
+        //     render: (value, row) => (
+        //         <div className="font-mono text-sm font-medium">
+        //             #{row.id.toString().padStart(4, '0')}
+        //         </div>
+        //     )
+        // },
         {
             key: 'vehicle',
             header: 'Vehicle',
