@@ -17,8 +17,8 @@
         html,
         body {
             font-family: "Noto Sans Bengali", Arial, sans-serif;
-            font-size: 10pt;
-            line-height: 1.8;
+            font-size: 9pt;
+            line-height: 1.6;
             color: #111;
         }
 
@@ -32,7 +32,7 @@
         /* ====== Header ====== */
         .header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: flex-start;
             margin-bottom: 8px;
         }
@@ -52,17 +52,18 @@
         }
 
         .brand {
-            font-weight: 700;
-            font-size: 18pt;
+            font-weight: 400;
+            font-size: 10pt;
             letter-spacing: .3px;
             margin-bottom: 2px;
         }
 
         .brand-sub {
-            font-size: 12pt;
-            color: var(--muted);
+            font-size: 9pt;
+            color: #000;
             margin: 0;
             line-height: 1.2;
+            font-weight: 400;
         }
 
         .top-meta {
@@ -70,25 +71,26 @@
             justify-content: space-between;
             align-items: flex-end;
             border-bottom: 2px solid #000;
-            padding-bottom: 8px;
-            margin-bottom: 14px;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
         }
 
         .ref {
-            font-weight: 600;
+            font-weight: 400;
             text-align: left;
+            font-size: 9pt;
         }
 
         .date-loc {
             text-align: right;
-            font-size: 10pt;
+            font-size: 9pt;
+            font-weight: 400;
         }
 
         /* ====== Subject ====== */
         .subject {
-            font-weight: 700;
-            font-size: 13.5pt;
-            margin: 12px 0 10px;
+            font-size: 10pt;
+            margin: 8px 0 6px;
         }
 
         .subject .label {
@@ -98,7 +100,7 @@
 
         /* ====== Body ====== */
         .para {
-            margin: 8px 0;
+            margin: 6px 0;
             text-align: justify;
         }
 
@@ -131,20 +133,22 @@
         table.sheet {
             width: 100%;
             border-collapse: collapse;
-            margin: 8px 0 6px;
+            margin: 6px 0 4px;
         }
 
         .sheet th,
         .sheet td {
             border: 1px solid var(--border);
-            padding: 6px 8px;
+            padding: 3px 4px;
             vertical-align: middle;
+            font-size: 8pt;
         }
 
         .sheet thead th {
-            background: #fafafa;
+            background: #f5f5f5;
             font-weight: 700;
             text-align: center;
+            font-size: 8pt;
         }
 
         .sheet td.num,
@@ -159,6 +163,7 @@
 
         .sheet tfoot td {
             font-weight: 700;
+            font-size: 8pt;
         }
 
         .muted {
@@ -167,38 +172,41 @@
 
         /* ====== Footer blocks ====== */
         .sig {
-            margin-top: 22px;
+            margin-top: 18px;
             text-align: right;
         }
 
         .sig .name {
             font-weight: 700;
-            margin-top: 36px;
+            margin-top: 30px;
+            font-size: 9pt;
         }
 
         .sig .desig {
             margin-top: 2px;
+            font-size: 8pt;
+            font-weight: 400;
         }
 
         .meta-list {
-            margin-top: 14px;
+            margin-top: 12px;
             display: block;
         }
 
         .meta-list .section {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .meta-list h4 {
-            margin: 8px 0 4px;
-            font-size: 11.5pt;
+            margin: 6px 0 3px;
+            font-size: 9pt;
             color: #000;
             font-weight: 700;
         }
 
         .meta-list ul {
             margin: 0;
-            padding-left: 16px;
+            padding-left: 14px;
         }
 
         .watermark {
@@ -215,7 +223,7 @@
         /* Ensure red text like the screenshot */
         .red {
             color: var(--accent);
-            font-weight: 700;
+            font-weight: 400;
         }
     </style>
 </head>
@@ -307,12 +315,6 @@
     @endphp
     <!-- Header -->
     <div class="header">
-        <div class="header-left">
-            <div class="ref">নথি নং- সি এস ডি/ফিলিং
-                স্টেশন/ক্রেডিট/{{ formatBengaliNumber($month) }}{{ formatBengaliNumber($year % 200) }} /
-                {{ formatBengaliNumber($organization->ucode) }}
-            </div>
-        </div>
         <div class="header-right">
             <div class="brand bn-text">সি এস ডি ফিলিং স্টেশন</div>
             <div class="brand-sub bn-text">সি এস ডি বাংলাদেশ</div>
@@ -321,7 +323,10 @@
     </div>
 
     <div class="top-meta">
-        <div></div>
+        <div class="ref">নথি নং- সি এস ডি/ফিলিং
+            স্টেশন/ক্রেডিট/{{ formatBengaliNumber($month) }}{{ formatBengaliNumber($year % 200) }} /
+            {{ formatBengaliNumber($organization->ucode) }}
+        </div>
         <div class="date-loc">
             {{ $bengaliMonths[now()->month] }} {{ formatBengaliNumber(now()->year) }}
         </div>
@@ -330,27 +335,30 @@
     <!-- Subject -->
     <div class="subject">
         <span class="label">বিষয়ঃ</span>
-        সি এস ডি ফিলিং স্টেশন হতে {{ $bengaliMonths[$month] }} {{ $bengaliYear }} মাসে ক্রেডিট ভাউচারের মাধ্যমে প্রদত্ত
-        পেট্রোলিয়াম
-        পণ্যের বিল পরিশোধ প্রসঙ্গে।
+        <span style="text-decoration: underline;">
+            সি এস ডি ফিলিং স্টেশন হতে {{ $bengaliMonths[$month] }} {{ $bengaliYear }} মাসে ক্রেডিট ভাউচারের মাধ্যমে
+            প্রদত্ত
+            পেট্রোলিয়াম
+            পণ্যের বিল পরিশোধ প্রসঙ্গে।
+        </span>
     </div>
 
     <!-- Body -->
     <ol class="bn">
         <li class="para">
-            আপনাদের চাহিদানুসারে অধোনিবন্ধিত সি এস ডি ফিলিং স্টেশন হতে {{ $bengaliMonths[$month] }} {{ $bengaliYear }}
+            আপনাদের চাহিদা অনুযায়ী সি এস ডি ফিলিং স্টেশন হতে {{ $bengaliMonths[$month] }} {{ $bengaliYear }}
             মাসে
-            ক্রেডিট ভাউচারের মাধ্যমে প্রদত্ত পেট্রোলিয়াম পণ্যের বিল পরিশোধের নিমিত্তে
-            দরপত্র (ইনভয়েস) প্রেরণ করা হলো:
+            ক্রেডিট ভাউচারের মাধ্যমে প্রদানকৃত পেট্রোলিয়াম পণ্যের বিল পরিশোধের নিমিত্তে নিম্নের্ণিত ছক মোতাবেক প্রেরণ
+            করা হলোঃ
             <table class="sheet">
                 <thead>
                     <tr>
-                        <th style="width: 60px;">ক্রম নং</th>
-                        <th>জ্বালানির প্রকার</th>
-                        <th class="num">পরিমাণ (লিটার)</th>
-                        <th class="num">মূল্য (প্রতি লিটার)</th>
-                        <th class="num">মোট মূল্য</th>
-                        <th class="center" style="width: 80px;">মন্তব্য</th>
+                        <td style="width: 50px;">ক্রম নং</td>
+                        <td>জ্বালানীর প্রকার</td>
+                        <td class="num">পরিমান (লিটার)</td>
+                        <td class="num">মূল্য (প্রতি লিটার)</td>
+                        <td class="num">মোট মূল্য</td>
+                        <td class="center" style="width: 60px;">মন্তব্য</td>
                     </tr>
                 </thead>
                 <tbody>
@@ -379,12 +387,12 @@
                                 $indexStart += $indexs;
                             @endphp
                             <tr>
-                                <td class="center">{{ $letterOrder[$serial] }})</td>
+                                <td class="center">{{ $letterOrder[$serial] }}।</td>
                                 <td>{{ getFuelBengaliName($item['fuel_name']) }}</td>
-                                <td class="num">{{ bdtBengaliCurrencyFormat($totalQtyOfRange) }}
+                                <td class="num red">{{ bdtBengaliCurrencyFormat($totalQtyOfRange) }}
                                 </td>
                                 <td class="num">{{ bdtBengaliCurrencyFormat($price) }}</td>
-                                <td class="num">
+                                <td class="num red">
                                     {{ bdtBengaliCurrencyFormat($totalBillOfRange) }}</td>
                                 <td class="center">—</td>
                             </tr>
@@ -397,7 +405,7 @@
                 <tfoot>
                     <tr>
                         <td colspan="4" class="num">মোট টাকা</td>
-                        <td class="num">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
+                        <td class="num red">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -405,30 +413,29 @@
         </li>
 
         <li class="para">
-            উপরোক্ত দাবিকৃত মূল্য বাবদ <span class="red">{{ bdtBengaliCurrencyFormat($totalBill) }}</span> টাকা
-            জরুরি
+            উপরোক্ত জ্বালানীর মূল্য বাবদ <span class="red">{{ bdtBengaliCurrencyFormat($totalBill) }}</span> টাকা
+            জরুরী
             ভিত্তিতে
-            “সি এস ডি ফিলিং স্টেশন” হিসাব নং <strong>০০০২-০২১০০৩৯৯৭৩</strong>
+            “সি এস ডি ফিলিং স্টেশন” হিসাব নং ০০০২-০২১০০৩৯৯৭৩
             দি ইস্টার্ন ব্যাংক লি. ক্যান্টনমেন্ট শাখা, ঢাকার অনুকূলে
-            <strong>অফিসিয়াল চেক</strong> বা <strong>ব্যাংক ট্রান্সফার</strong> দ্বারা
+            অফিসিয়াল চেক বা ব্যাংক ট্রান্সফার দ্বারা
             প্রদান করার জন্য অনুরোধ করা হলো।
         </li>
 
         <li class="para">
-            বিল প্রতি সাপেক্ষে আগামী <strong>১৫ {{ $bengaliMonths[now()->month] }}
-                {{ formatBengaliNumber(now()->year) }}</strong> তারিখের মধ্যে
-            পরিশোধ করার জন্য অনুরোধ করা হলো। অনুগ্রহ করে চেক গ্রহণের পর
-            প্রাপ্তির রসিদ/আবেদনপত্র প্রেরণ করবেন। অন লাইনে বিল পরিশোধের ক্ষেত্রে
-            ভাউচার নম্বর উল্লেখ করে সি এস ডি ফিলিং স্টেশনকে অবগত করার জন্যও অনুরোধ করা হলো।
+            বিল প্রাপ্তি সাপেক্ষে আগামী ১০ {{ $bengaliMonths[now()->month] }}
+            {{ formatBengaliNumber(now()->year) }} তারিখের মধ্যে
+            পরিশোধ করার জন্য অনুরোধ করা হলো। উল্লেখ্য যে, অবিনিমেয় চেক অবশ্যই আবরণী পত্রের মাধ্যমে প্রদান করতে হবে। অন
+            লাইনে বিল পরিশোধের ক্ষেত্রে পত্রের মাধ্যমে সি এস ডি ফিলিং স্টেশন'কে অবগত করার জন্য অনুরোধ করা হলো।
         </li>
 
-        <li class="para">অনুমুত পূর্বক প্রাপ্তি স্বীকার করবেন।</li>
+        <li class="para">অনুগ্রহ পূর্বক প্রাপ্তি স্বীকার করবেন।</li>
     </ol>
 
     <!-- Signature -->
     <div class="sig">
-        <div class="name">লেফটেন্যান্ট কর্নেল (অব.) হাবিব আব্দুল্লাহ সাঈদ</div>
-        <div class="desig">হেড অব ফিলিং স্টেশন অ্যান্ড মটর পার্টস
+        <div class="name">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</div>
+        <div class="desig">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস
             <br>সি এস ডি ফিলিং স্টেশন
         </div>
     </div>
@@ -438,7 +445,8 @@
         <div class="section">
             <h4>সংযুক্তঃ</h4>
             <ul>
-                <li>জ্বালানী সংগ্রহের কুপন - {{ formatBengaliNumber($totalCoupon) }} টি।</li>
+                <li>জ্বালানী সংগ্রহের কুপন - <span class="red">{{ formatBengaliNumber($totalCoupon) }}</span> টি।
+                </li>
                 <li>বিল সামারী - {{ formatBengaliNumber($pageCount) }} কপি।</li>
             </ul>
         </div>
