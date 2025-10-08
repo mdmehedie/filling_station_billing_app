@@ -251,7 +251,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             sortable: true,
             render: (value) => (
                 <div className="font-medium">
-                    {new Date(value).toLocaleDateString()}
+                    {value}
                 </div>
             )
         },
