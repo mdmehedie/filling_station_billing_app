@@ -177,7 +177,7 @@
     @endforeach
 
     <div class="summary">
-        Total Coupon: {{ $totalCoupon }} <br>
+        Total Coupon: {{ $totalCoupon }} ({{ $repeatedCouponCount }} repeated) <br>
         Total Bill ({{ substr($fuelItems, 0, -3) }}):
         {{ removeLeadingZeros(new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY)->format($totalBill)) }}
     </div>

@@ -55,10 +55,13 @@ class InvoiceService
         $imageData = file_get_contents($imagePath);
         $logo2 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
 
+        // calculate repeated coupon count
+        $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end);
+        // return $repeatedCouponCount;
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -96,7 +99,7 @@ class InvoiceService
         } else {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2'))->render())
+                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -446,5 +449,36 @@ class InvoiceService
                 ->orderBy('updated_at', 'desc')
                 ->paginate(15)
         );
+    }
+
+    /**
+     * Calculate the number of repeated coupons.
+     * Logic: If a coupon (order_no) is used more than 2 times in a single day, it is considered a repeated coupon for that day (counted as 1 for that day).
+     * The function sums up the repeated coupon count for all days in the given period.
+     */
+    function calculateRepeatedCouponCount($start_date, $end_date)
+    {
+        // Get all orders in the date range, grouped by sold_date and order_no
+        $orders = Order::query()
+            ->selectRaw('DATE(sold_date) as sold_date, vehicle_id, COUNT(*) as count')
+            ->whereDate('sold_date', '>=', $start_date)
+            ->whereDate('sold_date', '<=', $end_date)
+            ->groupBy(DB::raw('DATE(sold_date)'), 'vehicle_id')
+            ->get();
+
+        // For each day, count how many coupons (order_no) are repeated more than 2 times
+        $repeatedCouponCount = 0;
+        $groupedByDate = $orders->groupBy('sold_date');
+
+        foreach ($groupedByDate as $date => $ordersForDate) {
+            // For this day, check if any coupon is repeated more than 2 times
+            $repeatedForDay = $ordersForDate->filter(function ($order) {
+                return $order->count > 1;
+            })->count();
+
+            $repeatedCouponCount += $repeatedForDay -1;
+        }
+
+        return $repeatedCouponCount;
     }
 }
