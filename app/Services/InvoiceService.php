@@ -38,6 +38,8 @@ class InvoiceService
         // 4) Structure data by fuel type and vehicle
         [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount] = $this->getInvoiceData($organization_id, $start, $end, $period);
 
+        // return $data;
+
         $organization = Organization::find($organization_id);
         $fileName = $organization->name . '_' . $period->isoFormat('MMMM YYYY');
         $month = $validated['month'];
