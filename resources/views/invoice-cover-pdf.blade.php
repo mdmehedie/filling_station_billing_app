@@ -70,7 +70,6 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            border-bottom: 2px solid #000;
             padding-bottom: 6px;
             margin-bottom: 12px;
         }
@@ -223,7 +222,7 @@
         /* Ensure red text like the screenshot */
         .red {
             color: var(--accent);
-            font-weight: 400;
+            /* font-weight: 400; */
         }
     </style>
 </head>
@@ -403,7 +402,7 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr>,
+                    <tr>
                         <td colspan="4" class="num">মোট টাকা</td>
                         <td class="num red">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
                         <td></td>
@@ -443,7 +442,7 @@
     <!-- Attachments / Copies -->
     <div class="meta-list">
         <div class="section">
-            <h4>সংযুক্তঃ</h4>
+            <span>সংযুক্তঃ</span>
             <ul>
                 <li>জ্বালানী সংগ্রহের কুপন - <span class="red">{{ formatBengaliNumber($totalCoupon) }}</span> টি।
                 </li>
@@ -452,15 +451,15 @@
         </div>
 
         <div class="section">
-            <h4>বিতরণঃ</h4>
+            <span>বিতরণঃ</span>
         </div>
 
         <div class="section">
-            <h4>বহির্গমনঃ</h4>
+            <span>বহির্গমনঃ</span>
         </div>
 
         <div class="section">
-            <h4>কার্যক্রমঃ</h4>
+            <span>কার্যক্রমঃ</span>
             <div class="red">{{ $organization->name_bn }}</div>
         </div>
     </div>
