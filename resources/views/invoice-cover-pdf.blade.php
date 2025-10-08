@@ -334,7 +334,7 @@
 
     <!-- Subject -->
     <div class="subject">
-        <span class="label">বিষয়ঃ</span>
+        <span>বিষয়ঃ</span>
         <span style="text-decoration: underline;">
             সি এস ডি ফিলিং স্টেশন হতে {{ $bengaliMonths[$month] }} {{ $bengaliYear }} মাসে ক্রেডিট ভাউচারের মাধ্যমে
             প্রদত্ত
@@ -403,7 +403,7 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr>
+                    <tr>,
                         <td colspan="4" class="num">মোট টাকা</td>
                         <td class="num red">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
                         <td></td>
