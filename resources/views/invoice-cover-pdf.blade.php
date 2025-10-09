@@ -96,7 +96,7 @@
 
         .date-loc {
             text-align: left;
-            font-size: 10pt;
+            font-size: 11pt;
             font-weight: 400;
         }
 
