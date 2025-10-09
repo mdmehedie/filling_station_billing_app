@@ -457,7 +457,7 @@
     <table style="width: 100%">
         <tbody>
         <tr>
-            <td style="width: 70%">
+            <td style="width: 65%">
 
             </td>
             <td class="sig">
