@@ -36,6 +36,10 @@
             --border: #d9d9d9;
         }
 
+        .text-left{
+            text-align: left;
+        }
+
         /* ====== Header ====== */
         .header {
             display: flex;
@@ -50,6 +54,9 @@
 
         .header-right {
             text-align: right;
+        }
+        .header-left {
+            text-align: left;
         }
 
         .logo {
@@ -88,7 +95,7 @@
         }
 
         .date-loc {
-            text-align: right;
+            text-align: left;
             font-size: 9pt;
             font-weight: 400;
         }
@@ -320,23 +327,41 @@
             return $fuelBnNames[strtolower($fuelName)] ?? $fuelName;
         }
     @endphp
-    <div class="header">
-        <div class="header-right">
-            <div class="brand bn-text">সি এস ডি ফিলিং স্টেশন</div>
-            <div class="brand-sub bn-text">সি এস ডি বাংলাদেশ</div>
-            <div class="brand-sub bn-text">ঢাকা সেনানিবাস</div>
-        </div>
-    </div>
+    <table style="width: 100%">
+        <tbody>
+            <tr>
+                <td style="width: 75%">
 
-    <div class="top-meta">
-        <div class="ref">নথি নং- সি এস ডি/ফিলিং
-            স্টেশন/ক্রেডিট/{{ formatBengaliNumber($month) }}{{ formatBengaliNumber($year % 200) }} /
-            {{ formatBengaliNumber($organization->ucode) }}
-        </div>
-        <div class="date-loc">
-            {{ $bengaliMonths[now()->month] }} {{ formatBengaliNumber(now()->year) }}
-        </div>
-    </div>
+                </td>
+                <td>
+                    <div class="header">
+                        <div class="header-left">
+                            <div class="brand bn-text text-left">সি এস ডি ফিলিং স্টেশন</div>
+                            <div class="brand-sub bn-text text-left">সি এস ডি বাংলাদেশ</div>
+                            <div class="brand-sub bn-text text-left">ঢাকা সেনানিবাস</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="width: 75%">
+                    <div class="ref">নথি নং- সি এস ডি/ফিলিং
+                        স্টেশন/ক্রেডিট/{{ formatBengaliNumber(sprintf('%02d', $month)) }}{{ formatBengaliNumber($year % 200) }}/{{ formatBengaliNumber($organization->ucode) }}
+                    </div>
+                </td>
+                <td>
+                    <div class="date-loc text-left">{{ $bengaliMonths[now()->month] }} {{ formatBengaliNumber(now()->year) }}</div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+{{--    <div class="top-meta">--}}
+{{--        --}}
+{{--        <div class="date-loc text-left">--}}
+{{--            {{ $bengaliMonths[now()->month] }} {{ formatBengaliNumber(now()->year) }}--}}
+{{--        </div>--}}
+{{--    </div>--}}
 
     <div class="subject">
         <span>বিষয়ঃ</span>
@@ -430,19 +455,33 @@
             বিল প্রাপ্তি সাপেক্ষে আগামী ১০ {{ $bengaliMonths[now()->month] }}
             {{ formatBengaliNumber(now()->year) }} তারিখের মধ্যে
             পরিশোধ করার জন্য অনুরোধ করা হলো। উল্লেখ্য যে, অবিনিমেয় চেক অবশ্যই আবরণী পত্রের মাধ্যমে প্রদান করতে হবে। অন
-            লাইনে বিল পরিশোধের ক্ষেত্রে পত্রের মাধ্যমে সি এস ডি ফিলিং স্টেশন'কে অবগত করার জন্য অনুরোধ করা হলো।
+            লাইনে বিল পরিশোধের ক্ষেত্রে পত্রের মাধ্যমে সি এস ডি ফিলিং স্টেশন'কে (চিঠি বা ইমেইলের মাধ্যমে) অবগত করার জন্য অনুরোধ করা হলো।
         </li>
 
         <li class="para">অনুগ্রহ পূর্বক প্রাপ্তি স্বীকার করবেন।</li>
     </ol>
 
     {{--    Signature--}}
-    <div class="sig">
-        <div class="name">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</div>
-        <div class="desig">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস
-            <br>সি এস ডি ফিলিং স্টেশন
-        </div>
-    </div>
+{{--    <div class="sig">--}}
+{{--        <p class="name text-left">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</p>--}}
+{{--        <p class="desig text-left">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস</p>--}}
+{{--        <p class="text-left"> সি এস ডি ফিলিং স্টেশন </p>--}}
+{{--    </div>--}}
+
+    <table style="width: 100%">
+        <tbody>
+        <tr>
+            <td style="width: 60%">
+
+            </td>
+            <td class="sig">
+                <div class="name text-left">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</div>
+                <div class="desig text-left">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস</div>
+                <div class="text-left"> সি এস ডি ফিলিং স্টেশন </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
     {{--    Attachments / Copies--}}
     <div class="meta-list">
@@ -466,6 +505,11 @@
         <div class="section">
             <span>কার্যক্রমঃ</span>
             <div class="red">{{ $organization->name_bn }}</div>
+        </div>
+    </div>
+    <div style="margin-top: 2rem;">
+        <div class="section">
+            <span>ইমেইল: csdfillingstation@gmail.com | ফোন: ০১৭৬৯০৪০৯৪৯</span>
         </div>
     </div>
 </body>
