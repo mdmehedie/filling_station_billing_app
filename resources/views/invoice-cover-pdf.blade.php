@@ -12,7 +12,14 @@
         }
 
         /* Web Bengali font support */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap');
+        /*@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap');*/
+
+        @font-face{
+            font-family:"Noto Sans Bengali";
+            url("NotoSansBengali.woff") format("woff");
+            font-weight:400; font-style:normal; font-display:swap;
+            unicode-range: U+0980-09FF, U+0964-0965; /* Bengali + danda */
+        }
 
         html,
         body {
