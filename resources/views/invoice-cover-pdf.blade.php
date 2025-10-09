@@ -461,17 +461,10 @@
         <li class="para">অনুগ্রহ পূর্বক প্রাপ্তি স্বীকার করবেন।</li>
     </ol>
 
-    {{--    Signature--}}
-{{--    <div class="sig">--}}
-{{--        <p class="name text-left">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</p>--}}
-{{--        <p class="desig text-left">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস</p>--}}
-{{--        <p class="text-left"> সি এস ডি ফিলিং স্টেশন </p>--}}
-{{--    </div>--}}
-
     <table style="width: 100%">
         <tbody>
         <tr>
-            <td style="width: 60%">
+            <td style="width: 70%">
 
             </td>
             <td class="sig">
