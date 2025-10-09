@@ -179,7 +179,7 @@
     <div class="summary">
         Total Coupon: {{ $totalCoupon }} ({{ $repeatedCouponCount }} repeated) <br>
         Total Bill ({{ substr($fuelItems, 0, -3) }}):
-        {{ removeLeadingZeros(new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY)->format($totalBill)) }}
+        {{ removeLeadingZeros((new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY))->format($totalBill)) }}
     </div>
 
     <div class="signatures">
