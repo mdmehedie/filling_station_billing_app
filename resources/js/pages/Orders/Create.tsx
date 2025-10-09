@@ -60,7 +60,7 @@ export default function Create({ organizations, fuels }: Props) {
         const total = orderItems.reduce((sum, item) => sum + item.total_price, 0);
         setTotalOrderAmount(total);
         setData('order_items', orderItems);
-        
+
         // Update used vehicles set
         const usedVehicleIds = new Set(
             orderItems
@@ -68,9 +68,9 @@ export default function Create({ organizations, fuels }: Props) {
                 .map(item => parseInt(item.vehicle_id))
         );
         setUsedVehicles(usedVehicleIds);
-        
+
         // Validate all items
-        const allItemsValid = orderItems.every(item => 
+        const allItemsValid = orderItems.every(item =>
             item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0
         );
         setIsValid(allItemsValid && orderItems.length > 0 && !!data.organization_id);
@@ -83,10 +83,10 @@ export default function Create({ organizations, fuels }: Props) {
     // Stable search handler to prevent re-renders
     const handleSearchChange = useCallback((itemId: string, value: string) => {
         setVehicleSearchTerms(prev => ({ ...prev, [itemId]: value }));
-        
+
         // Reset selected index when search term changes
         setSelectedVehicleIndex(prev => ({ ...prev, [itemId]: 0 }));
-        
+
         // Maintain focus even when input becomes empty
         setTimeout(() => {
             const input = searchInputRefs.current[itemId];
@@ -101,7 +101,7 @@ export default function Create({ organizations, fuels }: Props) {
         // Find the current item index
         const currentItemIndex = orderItems.findIndex(item => item.id === itemId);
         if (currentItemIndex === -1) return;
-        
+
         // Find the fuel select trigger for this item
         const fuelSelectTrigger = document.querySelector(`[data-item-id="${itemId}"] [data-fuel-select]`);
         if (fuelSelectTrigger) {
@@ -124,7 +124,7 @@ export default function Create({ organizations, fuels }: Props) {
     // Add new vehicle and focus its search input
     const addVehicleAndFocus = useCallback(() => {
         if (!data.organization_id) return;
-        
+
         const newItem: OrderItem = {
             id: Date.now().toString(),
             vehicle_id: '',
@@ -133,9 +133,9 @@ export default function Create({ organizations, fuels }: Props) {
             total_price: 0,
             per_ltr_price: 0
         };
-        
+
         setOrderItems(prev => [...prev, newItem]);
-        
+
         // Open the vehicle dropdown and focus search input
         setTimeout(() => {
             setOpenDropdowns(prev => ({ ...prev, [newItem.id]: true }));
@@ -152,7 +152,7 @@ export default function Create({ organizations, fuels }: Props) {
     // Handle keyboard navigation for vehicle selection
     const handleVehicleKeyDown = useCallback((e: React.KeyboardEvent, itemId: string, filteredVehicles: Vehicle[]) => {
         const currentIndex = selectedVehicleIndex[itemId] || 0;
-        
+
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             const nextIndex = Math.min(currentIndex + 1, filteredVehicles.length - 1);
@@ -169,21 +169,21 @@ export default function Create({ organizations, fuels }: Props) {
                 setOrderItems(prev => prev.map(item => {
                     if (item.id === itemId) {
                         const updatedItem = { ...item, vehicle_id: selectedVehicle.id.toString() };
-                        
+
                         // Auto-select the associated fuel for the vehicle
                         if (selectedVehicle.fuel_id) {
                             updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
                             updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
                         }
-                        
+
                         return updatedItem;
                     }
                     return item;
                 }));
-                
+
                 // Close the dropdown after selection
                 setOpenDropdowns(prev => ({ ...prev, [itemId]: false }));
-                
+
                 // Focus the next field (fuel select)
                 focusNextField(itemId);
             }
@@ -216,14 +216,14 @@ export default function Create({ organizations, fuels }: Props) {
 
     const handleOrganizationSelect = (org: Organization | null) => {
         setSelectedOrg(org);
-        
+
         if (org) {
             setData('organization_id', org.id.toString());
             setOrderItems([]);
             setVehicleSearchTerm('');
             setVehicleSearchTerms({});
             setUsedVehicles(new Set()); // Clear used vehicles when organization changes
-            
+
             getAllVehicles((vehicles: Vehicle[]) => {
                 setVehicles(vehicles);
                 // Auto-select first vehicle and its fuel
@@ -269,19 +269,19 @@ export default function Create({ organizations, fuels }: Props) {
         setOrderItems(orderItems.map(item => {
             if (item.id === itemId) {
                 const updatedItem = { ...item, [field]: value };
-                
+
                 // Validate vehicle selection - check if vehicle is already used by another item
                 if (field === 'vehicle_id' && value) {
                     const vehicleId = parseInt(value.toString());
                     const isAlreadyUsed = Array.from(orderItems)
                         .filter(otherItem => otherItem.id !== itemId)
                         .some(otherItem => parseInt(otherItem.vehicle_id) === vehicleId);
-                    
+
                     if (isAlreadyUsed) {
                         alert(`This vehicle is already selected in another order item. Please choose a different vehicle.`);
                         return item; // Don't update if vehicle is already used
                     }
-                    
+
                     // Auto-select the associated fuel for the vehicle
                     const selectedVehicle = vehicles.find(v => v.id === vehicleId);
                     if (selectedVehicle && selectedVehicle.fuel_id) {
@@ -289,7 +289,7 @@ export default function Create({ organizations, fuels }: Props) {
                         updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
                     }
                 }
-                
+
                 // Calculate total price when fuel or quantity changes
                 if (field === 'fuel_id' || field === 'fuel_qty' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
                     const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
@@ -297,7 +297,7 @@ export default function Create({ organizations, fuels }: Props) {
                     const price = fuel?.price || 0;
                     updatedItem.total_price = quantity * price;
                 }
-                
+
                 // Calculate per liter price when fuel or quantity changes
                 if (field === 'fuel_id' || field === 'per_ltr_price' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
                     const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
@@ -319,7 +319,7 @@ export default function Create({ organizations, fuels }: Props) {
                 e.preventDefault();
                 addVehicleAndFocus();
             }
-            
+
             // Alt + Enter - submit form
             if (e.altKey && e.key === 'Enter') {
                 e.preventDefault();
@@ -327,18 +327,18 @@ export default function Create({ organizations, fuels }: Props) {
                     handleSubmit(e as any);
                 }
             }
-            
+
             // Tab navigation between input fields (only when not in search input)
             if (e.key === 'Tab' && !(e.target as Element)?.closest('[data-search-input]')) {
                 e.preventDefault();
                 const focusableElements = document.querySelectorAll(
                     'input:not([disabled]):not([data-search-input]), select:not([disabled]), button:not([disabled])'
                 );
-                
+
                 // Find current element index
                 const currentElement = e.target as HTMLElement;
                 const currentIndex = Array.from(focusableElements).indexOf(currentElement);
-                
+
                 if (e.shiftKey) {
                     // Shift + Tab - go to previous element
                     const newIndex = currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
@@ -357,28 +357,28 @@ export default function Create({ organizations, fuels }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!isValid) {
-            const incompleteItems = orderItems.filter(item => 
+            const incompleteItems = orderItems.filter(item =>
                 !item.vehicle_id || !item.fuel_id || !item.fuel_qty || parseFloat(item.fuel_qty) <= 0
             );
-            
+
             if (incompleteItems.length > 0) {
                 alert(`Please complete all vehicle details. ${incompleteItems.length} item(s) are incomplete.`);
                 return;
             }
-            
+
             if (!data.organization_id) {
                 alert('Please select an organization');
                 return;
             }
-            
+
             if (orderItems.length === 0) {
                 alert('Please add at least one vehicle');
                 return;
             }
         }
-        
+
         post(ordersRoute.store().url, {
             onSuccess: () => {
                 reset();
@@ -507,7 +507,7 @@ export default function Create({ organizations, fuels }: Props) {
                                                         </Button>
                                                     )}
                                                 </div>
-                                        
+
                                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                                     {/* Vehicle */}
                                                     <div className="space-y-1">
@@ -552,27 +552,27 @@ export default function Create({ organizations, fuels }: Props) {
                                                                         }}
                                                                         onKeyDown={(e) => {
                                                                             e.stopPropagation();
-                                                                            
+
                                                                             // Handle Tab to close dropdown and move to next field
                                                                             if (e.key === 'Tab') {
                                                                                 setOpenDropdowns(prev => ({ ...prev, [item.id]: false }));
                                                                                 // Don't prevent default - let Tab work normally
                                                                                 return;
                                                                             }
-                                                                            
+
                                                                             // Get filtered vehicles for this item
                                                                             const filteredVehicles = vehicles.filter(vehicle => {
                                                                                 const isUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
                                                                                 if (isUsed) return false;
-                                                                                
+
                                                                                 const searchTerm = (vehicleSearchTerms[item.id] || '').replace('-', '').toLowerCase();
                                                                                 const nameMatch = vehicle.name?.toLowerCase().includes(searchTerm);
                                                                                 const ucodeMatch = vehicle.ucode?.toLowerCase().includes(searchTerm);
                                                                                 const modelMatch = vehicle.model?.toLowerCase().includes(searchTerm);
-                                                                                
+
                                                                                 return nameMatch || ucodeMatch || modelMatch;
                                                                             });
-                                                                            
+
                                                                             // Handle arrow keys and Enter for navigation
                                                                             if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
                                                                                 handleVehicleKeyDown(e, item.id, filteredVehicles);
@@ -639,8 +639,8 @@ export default function Create({ organizations, fuels }: Props) {
                                                                                     const isCurrentlyUsed = usedVehicles.has(vehicle.id) && parseInt(item.vehicle_id) !== vehicle.id;
                                                                                     const isSelected = selectedVehicleIndex[item.id] === index;
                                                                                     return (
-                                                                                        <SelectItem 
-                                                                                            key={vehicle.id} 
+                                                                                        <SelectItem
+                                                                                            key={vehicle.id}
                                                                                             value={vehicle.id.toString()}
                                                                                             disabled={isCurrentlyUsed}
                                                                                             className={isSelected ? "bg-accent text-accent-foreground" : ""}
@@ -669,6 +669,26 @@ export default function Create({ organizations, fuels }: Props) {
                                                         </Select>
                                                     </div>
 
+                                                    {/* Quantity */}
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs font-medium">Quantity (L)</Label>
+                                                        <Input
+                                                            data-quantity-input="true"
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={item.fuel_qty}
+                                                            onChange={(e) => updateOrderItem(item.id, 'fuel_qty', e.target.value)}
+                                                            onWheel={(e) => e.currentTarget.blur()}
+                                                            onKeyDown={() => {
+                                                                // Let the global keyboard handler manage Ctrl/Cmd + Enter
+                                                                // No need to handle it here to avoid double execution
+                                                            }}
+                                                            placeholder="0"
+                                                            className="h-9 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                                        />
+                                                    </div>
+
                                                     {/* Fuel */}
                                                     <div className="space-y-1">
                                                         <Label className="text-xs font-medium">Fuel</Label>
@@ -694,26 +714,6 @@ export default function Create({ organizations, fuels }: Props) {
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
-                                                    </div>
-
-                                                    {/* Quantity */}
-                                                    <div className="space-y-1">
-                                                        <Label className="text-xs font-medium">Quantity (L)</Label>
-                                                        <Input
-                                                            data-quantity-input="true"
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            value={item.fuel_qty}
-                                                            onChange={(e) => updateOrderItem(item.id, 'fuel_qty', e.target.value)}
-                                                            onWheel={(e) => e.currentTarget.blur()}
-                                                            onKeyDown={(e) => {
-                                                                // Let the global keyboard handler manage Ctrl/Cmd + Enter
-                                                                // No need to handle it here to avoid double execution
-                                                            }}
-                                                            placeholder="0"
-                                                            className="h-9 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                                        />
                                                     </div>
 
                                                     {/* Total */}
@@ -746,8 +746,8 @@ export default function Create({ organizations, fuels }: Props) {
                                         Add Another Vehicle
                                     </Button>
                                     <p className="text-xs text-muted-foreground">
-                                        Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Enter</kbd> in quantity field to add vehicle • 
-                                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Alt+Enter</kbd> to create order • 
+                                        Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Enter</kbd> in quantity field to add vehicle •
+                                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Alt+Enter</kbd> to create order •
                                         <kbd className="px-1 py-0.5 bg-muted rounded text-xs ml-1">Tab</kbd> to navigate fields
                                     </p>
                                 </div>
