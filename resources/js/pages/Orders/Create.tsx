@@ -669,26 +669,6 @@ export default function Create({ organizations, fuels }: Props) {
                                                         </Select>
                                                     </div>
 
-                                                    {/* Quantity */}
-                                                    <div className="space-y-1">
-                                                        <Label className="text-xs font-medium">Quantity (L)</Label>
-                                                        <Input
-                                                            data-quantity-input="true"
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            value={item.fuel_qty}
-                                                            onChange={(e) => updateOrderItem(item.id, 'fuel_qty', e.target.value)}
-                                                            onWheel={(e) => e.currentTarget.blur()}
-                                                            onKeyDown={() => {
-                                                                // Let the global keyboard handler manage Ctrl/Cmd + Enter
-                                                                // No need to handle it here to avoid double execution
-                                                            }}
-                                                            placeholder="0"
-                                                            className="h-9 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                                        />
-                                                    </div>
-
                                                     {/* Fuel */}
                                                     <div className="space-y-1">
                                                         <Label className="text-xs font-medium">Fuel</Label>
@@ -714,6 +694,26 @@ export default function Create({ organizations, fuels }: Props) {
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
+                                                    </div>
+
+                                                    {/* Quantity */}
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs font-medium">Quantity (L)</Label>
+                                                        <Input
+                                                            data-quantity-input="true"
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={item.fuel_qty}
+                                                            onChange={(e) => updateOrderItem(item.id, 'fuel_qty', e.target.value)}
+                                                            onWheel={(e) => e.currentTarget.blur()}
+                                                            onKeyDown={(e) => {
+                                                                // Let the global keyboard handler manage Ctrl/Cmd + Enter
+                                                                // No need to handle it here to avoid double execution
+                                                            }}
+                                                            placeholder="0"
+                                                            className="h-9 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                                        />
                                                     </div>
 
                                                     {/* Total */}
