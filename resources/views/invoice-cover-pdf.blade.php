@@ -24,7 +24,7 @@
         html,
         body {
             font-family: "Noto Sans Bengali", Arial, sans-serif;
-            font-size: 10pt;
+            font-size: 11pt;
             line-height: 1.6;
             color: #111;
         }
@@ -67,13 +67,13 @@
 
         .brand {
             font-weight: 400;
-            font-size: 10pt;
+            font-size: 11pt;
             letter-spacing: .3px;
             margin-bottom: 2px;
         }
 
         .brand-sub {
-            font-size: 9pt;
+            font-size: 10pt;
             color: #000;
             margin: 0;
             line-height: 1.2;
@@ -91,18 +91,18 @@
         .ref {
             font-weight: 400;
             text-align: left;
-            font-size: 9pt;
+            font-size: 10pt;
         }
 
         .date-loc {
             text-align: left;
-            font-size: 9pt;
+            font-size: 10pt;
             font-weight: 400;
         }
 
         /* ====== Subject ====== */
         .subject {
-            font-size: 10pt;
+            font-size: 11pt;
             margin: 8px 0 6px;
         }
 
@@ -154,14 +154,14 @@
             border: 1px solid var(--border);
             padding: 3px 4px;
             vertical-align: middle;
-            font-size: 9pt;
+            font-size: 10pt;
         }
 
         .sheet thead th {
             background: #f5f5f5;
             font-weight: 700;
             text-align: center;
-            font-size: 9pt;
+            font-size: 10pt;
         }
 
         .sheet td.num,
@@ -176,7 +176,7 @@
 
         .sheet tfoot td {
             font-weight: 700;
-            font-size: 9pt;
+            font-size: 10pt;
         }
 
         .muted {
@@ -192,12 +192,12 @@
         .sig .name {
             font-weight: 700;
             margin-top: 30px;
-            font-size: 9pt;
+            font-size: 10pt;
         }
 
         .sig .desig {
             margin-top: 2px;
-            font-size: 9pt;
+            font-size: 10pt;
             font-weight: 400;
         }
 
@@ -212,7 +212,7 @@
 
         .meta-list h4 {
             margin: 6px 0 3px;
-            font-size: 9pt;
+            font-size: 10pt;
             color: #000;
             font-weight: 700;
         }
