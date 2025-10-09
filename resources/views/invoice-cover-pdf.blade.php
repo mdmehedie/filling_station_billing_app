@@ -295,7 +295,8 @@
 
         function bdtBengaliCurrencyFormat($amount)
         {
-            return new NumberFormatter('bn_BD', NumberFormatter::CURRENCY, '৳ #,##,##0.00')->format($amount);
+            $formater = new NumberFormatter('bn_BD', NumberFormatter::CURRENCY, '৳ #,##,##0.00');
+            return $formater->format($amount);
         }
 
         function getFuelBengaliName($fuelName)
@@ -312,7 +313,6 @@
             return $fuelBnNames[strtolower($fuelName)] ?? $fuelName;
         }
     @endphp
-    <!-- Header -->
     <div class="header">
         <div class="header-right">
             <div class="brand bn-text">সি এস ডি ফিলিং স্টেশন</div>
@@ -331,7 +331,6 @@
         </div>
     </div>
 
-    <!-- Subject -->
     <div class="subject">
         <span>বিষয়ঃ</span>
         <span style="text-decoration: underline;">
@@ -342,7 +341,6 @@
         </span>
     </div>
 
-    <!-- Body -->
     <ol class="bn">
         <li class="para">
             আপনাদের চাহিদা অনুযায়ী সি এস ডি ফিলিং স্টেশন হতে {{ $bengaliMonths[$month] }} {{ $bengaliYear }}
@@ -431,7 +429,7 @@
         <li class="para">অনুগ্রহ পূর্বক প্রাপ্তি স্বীকার করবেন।</li>
     </ol>
 
-    <!-- Signature -->
+    {{--    Signature--}}
     <div class="sig">
         <div class="name">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</div>
         <div class="desig">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস
@@ -439,7 +437,7 @@
         </div>
     </div>
 
-    <!-- Attachments / Copies -->
+    {{--    Attachments / Copies--}}
     <div class="meta-list">
         <div class="section">
             <span>সংযুক্তঃ</span>

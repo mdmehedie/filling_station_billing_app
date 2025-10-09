@@ -129,7 +129,6 @@
                 @foreach ($tableHeaders as $header)
                     <th>{{ $header['day'] }} {{ $header['month'] }}</th>
                 @endforeach
-                <!-- Continue until 31-Jul -->
                 <th>Total</th>
             </tr>
             @foreach ($fuel['vehicles'] as $vehicle)
@@ -141,7 +140,6 @@
                         <td>{{ removeLeadingZeros($qty) }}</td>
                     @endforeach
 
-                    <!-- Fill dynamically -->
                     <td>{{ removeLeadingZeros($vehicle['total_qty']) }}</td>
                 </tr>
             @endforeach
@@ -176,10 +174,14 @@
         </table>
     @endforeach
 
+    @php
+        $formatter = new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY);
+    @endphp
+
     <div class="summary">
         Total Coupon: {{ $totalCoupon }} ({{ $repeatedCouponCount }} repeated) <br>
         Total Bill ({{ substr($fuelItems, 0, -3) }}):
-        {{ removeLeadingZeros((new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY))->format($totalBill)) }}
+        {{ removeLeadingZeros($formatter->format($totalBill)) }}
     </div>
 
     <div class="signatures">
