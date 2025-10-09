@@ -24,7 +24,7 @@
         html,
         body {
             font-family: "Noto Sans Bengali", Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 10pt;
             line-height: 1.6;
             color: #111;
         }
@@ -154,14 +154,14 @@
             border: 1px solid var(--border);
             padding: 3px 4px;
             vertical-align: middle;
-            font-size: 8pt;
+            font-size: 9pt;
         }
 
         .sheet thead th {
             background: #f5f5f5;
             font-weight: 700;
             text-align: center;
-            font-size: 8pt;
+            font-size: 9pt;
         }
 
         .sheet td.num,
@@ -176,7 +176,7 @@
 
         .sheet tfoot td {
             font-weight: 700;
-            font-size: 8pt;
+            font-size: 9pt;
         }
 
         .muted {
@@ -197,7 +197,7 @@
 
         .sig .desig {
             margin-top: 2px;
-            font-size: 8pt;
+            font-size: 9pt;
             font-weight: 400;
         }
 
@@ -355,13 +355,6 @@
             </tr>
         </tbody>
     </table>
-
-{{--    <div class="top-meta">--}}
-{{--        --}}
-{{--        <div class="date-loc text-left">--}}
-{{--            {{ $bengaliMonths[now()->month] }} {{ formatBengaliNumber(now()->year) }}--}}
-{{--        </div>--}}
-{{--    </div>--}}
 
     <div class="subject">
         <span>বিষয়ঃ</span>
