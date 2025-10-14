@@ -59,7 +59,7 @@ class InvoiceService
 
         // calculate repeated coupon count
         $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end);
-        // return $repeatedCouponCount;
+
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
@@ -189,12 +189,20 @@ class InvoiceService
                 $vehicleDayData[$fuel][$ucode] = [];
             }
 
-            $vehicleDayData[$fuel][$ucode][$day] = [
-                'qty' => $order['total_qty'],
-                'price' => $order['total_price'],
-                'per_ltr_price' => $order['per_ltr_price'],
-                'order_count' => $order['order_count'],
-            ];
+            // Initialize day if not set
+            if (!isset($vehicleDayData[$fuel][$ucode][$day])) {
+                $vehicleDayData[$fuel][$ucode][$day] = [
+                    'qty' => 0,
+                    'price' => 0,
+                    'per_ltr_price' => $order['per_ltr_price'],
+                    'order_count' => 0,
+                ];
+            }
+
+            // Accumulate values for the same day (in case of multiple orders with same per_ltr_price)
+            $vehicleDayData[$fuel][$ucode][$day]['qty'] += $order['total_qty'];
+            $vehicleDayData[$fuel][$ucode][$day]['price'] += $order['total_price'];
+            $vehicleDayData[$fuel][$ucode][$day]['order_count'] += $order['order_count'];
         }
 
         // Now, fill missing days for each vehicle, and handle per_ltr_price change frequency
@@ -232,10 +240,9 @@ class InvoiceService
                     }
                 }
                 ksort($days, SORT_NUMERIC);
-                $vehicles[$ucode] = $days;
             }
         }
-        unset($vehicles);  // break reference
+        unset($vehicles, $days);  // break reference
 
         // Now, calculate summary data for the invoice
         $totalCoupon = 0;

@@ -19,7 +19,6 @@ import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column } from "@/components/data-table";
 import { currenyFormat } from "@/lib/utils";
 
-
 interface IndexProps {
     months: number[];
     years: number[];
