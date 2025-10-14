@@ -58,7 +58,7 @@ class InvoiceService
         $logo2 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
 
         // calculate repeated coupon count
-        $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end);
+        $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
 
         if ($validated['include_cover']) {
             try {
@@ -392,18 +392,31 @@ class InvoiceService
             ->pluck('id')
             ->toArray();
 
-        // create invoice
-        Invoice::updateOrCreate([
-            'organization_id' => $organization_id,
-            'month' => $period->isoFormat('MMMM'),
-            'year' => $period->year,
-        ], [
-            'total_bill' => $totalBill,
-            'total_coupon' => $totalCoupon,
-            'total_qty' => $totalQty,
-            'page_count' => $pageCount,
-            'order_ids' => $orderIds
-        ]);
+        if (count($orderIds) === 0) {
+            // if prev invoice exists, delete it
+            $prevInvoice = Invoice::query()
+                ->where('organization_id', $organization_id)
+                ->where('month', $period->isoFormat('MMMM'))
+                ->where('year', $period->year)
+                ->first();
+
+            if ($prevInvoice) {
+                $prevInvoice->delete();
+            }
+        } else {
+            // create invoice
+            Invoice::updateOrCreate([
+                'organization_id' => $organization_id,
+                'month' => $period->isoFormat('MMMM'),
+                'year' => $period->year,
+            ], [
+                'total_bill' => $totalBill,
+                'total_coupon' => $totalCoupon,
+                'total_qty' => $totalQty,
+                'page_count' => $pageCount,
+                'order_ids' => $orderIds
+            ]);
+        }
     }
 
     /**
@@ -465,13 +478,14 @@ class InvoiceService
      * Logic: If a coupon (order_no) is used more than 2 times in a single day, it is considered a repeated coupon for that day (counted as 1 for that day).
      * The function sums up the repeated coupon count for all days in the given period.
      */
-    function calculateRepeatedCouponCount($start_date, $end_date)
+    function calculateRepeatedCouponCount($start_date, $end_date, $organization_id)
     {
         // Get all orders in the date range, grouped by sold_date and order_no
         $orders = Order::query()
             ->selectRaw('DATE(sold_date) as sold_date, vehicle_id, COUNT(*) as count')
             ->whereDate('sold_date', '>=', $start_date)
             ->whereDate('sold_date', '<=', $end_date)
+            ->where('organization_id', $organization_id)
             ->groupBy(DB::raw('DATE(sold_date)'), 'vehicle_id')
             ->get();
 
@@ -485,7 +499,7 @@ class InvoiceService
                 return $order->count > 1;
             })->count();
 
-            $repeatedCouponCount += $repeatedForDay -1;
+            $repeatedCouponCount += $repeatedForDay;
         }
 
         return $repeatedCouponCount;
