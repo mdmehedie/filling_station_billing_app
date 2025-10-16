@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2 } from "lucide-react";
+import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing } from "lucide-react";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization, Invoice, PaginatedResponse } from "@/types/response";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
@@ -188,6 +188,71 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         }
     }
 
+    // monthly report modal
+    const [showMonthlyReportModal, setShowMonthlyReportModal] = useState<boolean>(false);
+    const [selectedMonthForReport, setSelectedMonthForReport] = useState<number>(months[0] || 0);
+    const [selectedYearForReport, setSelectedYearForReport] = useState<number>(years[0] || 0);
+    const [selectedOrganizationForReport, setSelectedOrganizationForReport] = useState<Organization | null>(null);
+    const [isDownloadingReport, setIsDownloadingReport] = useState<boolean>(false);
+    const [downloadReportProgress, setDownloadReportProgress] = useState<number>(0);
+
+    const handleMonthlyReportDownload = async () => {
+        setIsDownloadingReport(true);
+        setDownloadReportProgress(0);
+
+        try {
+            if (!selectedOrganizationForReport) {
+                alert('Please select an organization');
+                return;
+            }
+
+            const resp = await axios.post(`/api/reports/monthly-export`, { 
+                month: selectedMonthForReport, 
+                year: selectedYearForReport,
+                organization_id: selectedOrganizationForReport.id
+            }, {
+                responseType: 'blob',
+                withCredentials: true,
+                onDownloadProgress: (e: any) => {
+                    if (e.total) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        setDownloadReportProgress(pct);
+                    }
+                },
+            });
+
+            // Extract filename from Content-Disposition
+            const cd = resp.headers['content-disposition'] || '';
+            const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+                `monthly-report-${selectedMonthForReport}-${selectedYearForReport}-${selectedOrganizationForReport.name}.xlsx`;
+
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            }));
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                alert('No data found for the selected month, year and organization.');
+            } else {
+                alert('An error occurred while downloading the report.');
+            }
+        } finally {
+            setIsDownloadingReport(false);
+            setDownloadReportProgress(0);
+            // clear the form
+            setSelectedOrganizationForReport(null);
+            setSelectedMonthForReport(months[0] || 0);
+            setSelectedYearForReport(years[0] || 0);
+        }
+    }
+
     const columns: Column<Invoice>[] = [
         {
             key: 'month',
@@ -293,6 +358,13 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                         >
                             <FileText className="h-4 w-4" />
                             Generate New Invoice
+                        </Button>
+                        <Button
+                            onClick={() => setShowMonthlyReportModal(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <ChartColumnIncreasing className="h-4 w-4" />
+                            Monthly Report
                         </Button>
                     </div>
                 </div>
@@ -476,6 +548,135 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                         <span>
                                             Download {includeCover ? 'ZIP' : 'PDF'} Invoice
                                         </span>
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Monthly Report Modal */}
+                <Dialog open={showMonthlyReportModal} onOpenChange={setShowMonthlyReportModal}>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <ChartColumnIncreasing className="h-5 w-5" />
+                                Monthly Report
+                            </DialogTitle>
+                            <DialogDescription>
+                                Generate and download monthly Excel report
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-6">
+                            {/* Organization Selection */}
+                            <div className="space-y-2">
+                                <Label className="text-base font-medium">Organization</Label>
+                                <OrganizationSelector
+                                    organizations={organizations}
+                                    selectedOrganization={selectedOrganizationForReport}
+                                    onOrganizationSelect={setSelectedOrganizationForReport}
+                                    placeholder="Select organization..."
+                                />
+                            </div>
+
+                            {/* Month and Year Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-base font-medium">Month</Label>
+                                    <Select
+                                        value={selectedMonthForReport.toString()}
+                                        onValueChange={(value) => setSelectedMonthForReport(Number(value))}
+                                    >
+                                        <SelectTrigger className="h-12">
+                                            <SelectValue placeholder="Select month" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {months.map((month) => (
+                                                <SelectItem key={month} value={month.toString()}>
+                                                    {new Date(0, month - 1).toLocaleString("default", { month: "long" })}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-base font-medium">Year</Label>
+                                    <Select
+                                        value={selectedYearForReport.toString()}
+                                        onValueChange={(value) => setSelectedYearForReport(Number(value))}
+                                    >
+                                        <SelectTrigger className="h-12">
+                                            <SelectValue placeholder="Select year" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {years.map((year) => (
+                                                <SelectItem key={year} value={year.toString()}>
+                                                    {year}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Report Info */}
+                            <div className="text-center text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
+                                <p>
+                                    Organization: <span className="font-medium">
+                                        {selectedOrganizationForReport ? selectedOrganizationForReport.name : 'Not selected'}
+                                    </span>
+                                </p>
+                                <p>
+                                    Period: <span className="font-medium">
+                                        {new Date(0, selectedMonthForReport - 1).toLocaleString("default", { month: "long" })} {selectedYearForReport}
+                                    </span>
+                                </p>
+                                <p className="mt-1">
+                                    Format: <span className="font-medium">Excel (.xlsx)</span>
+                                </p>
+                            </div>
+
+                            {/* Progress Bar */}
+                            {isDownloadingReport && (
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span>Generating report...</span>
+                                        <span>{downloadReportProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-muted rounded-full h-2">
+                                        <div 
+                                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                                            style={{ width: `${downloadReportProgress}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowMonthlyReportModal(false)}
+                                disabled={isDownloadingReport}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleMonthlyReportDownload}
+                                disabled={isDownloadingReport || !selectedMonthForReport || !selectedYearForReport || !selectedOrganizationForReport}
+                                className="flex items-center gap-2"
+                            >
+                                {isDownloadingReport ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Generating... {downloadReportProgress}%</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="h-4 w-4" />
+                                        <span>Download Excel Report</span>
                                     </>
                                 )}
                             </Button>
