@@ -1,6 +1,5 @@
 import AppLayout from "@/layouts/app-layout";
 import { Head, router } from "@inertiajs/react";
-import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column, DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,9 +33,9 @@ export default function Index({ vehicles }: Props) {
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
-        
+
         searchTimeoutRef.current = setTimeout(() => {
-            router.get('/vehicles', { 
+            router.get('/vehicles', {
                 "filter[search]": term,
                 page: 1 // Reset to first page when searching
             }, {
@@ -52,7 +51,7 @@ export default function Index({ vehicles }: Props) {
     };
 
     const handlePageChange = (page: number) => {
-        router.get('/vehicles', { 
+        router.get('/vehicles', {
             page,
             "filter[search]": searchTerm // Preserve search term when changing pages
         }, {
@@ -77,7 +76,7 @@ export default function Index({ vehicles }: Props) {
                 },
                 onError: (errors) => {
                     setDeleteModal({ isOpen: true, vehicle: null, error: Object.values(errors).join(', ') });
-                    
+
                     throw new Error(Object.values(errors).join(', '));
                 }
             });
@@ -139,7 +138,7 @@ export default function Index({ vehicles }: Props) {
             sortable: true,
             render: (value, row) => (
                 <div>
-                    <div className="font-medium">{row.organization.name}</div>
+                    <div className="font-medium">{row.organization.name} ({row.organization.ucode})</div>
                     <div className="text-sm text-muted-foreground">{row.organization.name_bn}</div>
                 </div>
             )
@@ -161,10 +160,10 @@ export default function Index({ vehicles }: Props) {
                     <Button variant="ghost" size="sm" onClick={() => router.visit(vehiclesRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
                         onClick={() => handleDeleteClick(row)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -197,7 +196,7 @@ export default function Index({ vehicles }: Props) {
                             Manage your vehicles and their information
                         </p>
                     </div>
-                    <Button 
+                    <Button
                         onClick={() => router.visit(vehiclesRoute.create().url)}
                         className="flex items-center gap-2"
                     >
@@ -205,7 +204,7 @@ export default function Index({ vehicles }: Props) {
                         Add New Vehicle
                     </Button>
                 </div>
-                
+
                 <DataTable
                     data={vehicles.data}
                     columns={columns}
@@ -232,7 +231,7 @@ export default function Index({ vehicles }: Props) {
                     description={`Are you sure you want to delete this vehicle? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`}
                     itemName={deleteModal.vehicle ? `${deleteModal.vehicle.name || 'Unnamed Vehicle'} (${deleteModal.vehicle.ucode})` : ''}
                 />
-            </div>  
+            </div>
         </AppLayout>
     )
-} 
+}

@@ -105,6 +105,7 @@ export interface Vehicle {
         id: number;
         name: string;
         name_bn: string;
+        ucode: string;
     };
 }
 
