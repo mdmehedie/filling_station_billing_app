@@ -2,8 +2,8 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Request;
 
 class OrderResource extends JsonResource
 {
@@ -23,7 +23,7 @@ class OrderResource extends JsonResource
             'total_price' => $this->total_price,
             'per_ltr_price' => $this->per_ltr_price,
             'sold_date' => $this->sold_date->format('Y-m-d'),
-            'created_at' => $this->created_at->format('Y-m-d'),
+            'created_at' => $this->created_at->format('Y-m-d H:i A'),
             'organization' => [
                 'id' => $this->organization->id,
                 'ucode' => $this->organization->ucode,
@@ -43,6 +43,7 @@ class OrderResource extends JsonResource
                 'type' => $this->fuel->type,
                 'price' => $this->fuel->price,
             ],
+            'creator' => $this->whenLoaded('creator', fn() => new UserResource($this->creator)),
         ];
     }
 }

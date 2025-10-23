@@ -4,12 +4,11 @@ namespace App\Models;
 
 use App\Services\InvoiceService;
 use App\Services\OrderService;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-
     protected $fillable = [
         'user_id',
         'order_no',
@@ -28,6 +27,11 @@ class Order extends Model
         'total_price' => 'decimal:2',
         'per_ltr_price' => 'decimal:2',
     ];
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function organization(): BelongsTo
     {

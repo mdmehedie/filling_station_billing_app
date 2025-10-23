@@ -3,29 +3,28 @@
 namespace App\Services;
 
 use App\Models\Order;
-use Auth;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use \Spatie\Browsershot\Browsershot;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Support\Facades\Auth;
+use \Spatie\Browsershot\Browsershot;
 
 class OrderService
 {
-    function __construct()
-    {
-    }
+    function __construct() {}
 
-    public function orderList($isAll = false)
+    public function orderList($showAll = false)
     {
         return QueryBuilder::for(Order::class)
-            ->with(['organization', 'vehicle', 'fuel'])
+            ->with(['organization', 'vehicle', 'fuel', 'creator'])
             ->defaultSort('-id')
             ->allowedFilters([
                 AllowedFilter::callback('search', function ($query, $value) {
-                    $query->where('id', 'like', "%{$value}%")
+                    $query
+                        ->where('id', 'like', "%{$value}%")
                         ->orWhereHas('organization', function ($query) use ($value) {
                             $query->where('name', 'like', "%{$value}%");
                             $query->orWhere('name_bn', 'like', "%{$value}%");
@@ -52,7 +51,7 @@ class OrderService
             ])
             ->when(Auth::user()->role === 'user', fn($q) => $q->where('user_id', Auth::id()))
             ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
-            ->when($isAll, function ($query) {
+            ->when($showAll, function ($query) {
                 return $query->get();
             }, function ($query) {
                 return $query->paginate(15);

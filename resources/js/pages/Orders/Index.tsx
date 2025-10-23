@@ -208,6 +208,19 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         //     )
         // },
         {
+            key: 'creator',
+            header: 'Creator',
+            sortable: true,
+            render: (value, row) => (
+                <div>
+                    <div className="font-medium">{row.creator.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                        {row.creator.email}
+                    </div>
+                </div>
+            )
+        },
+        {
             key: 'vehicle',
             header: 'Vehicle',
             sortable: true,
@@ -273,6 +286,12 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 month: '2-digit',
                 year: 'numeric'
             })
+        },
+        {
+            key: 'created_at',
+            header: 'Created At',
+            sortable: true,
+            render: (value) => value
         },
         {
             key: 'actions',

@@ -149,6 +149,7 @@ export interface Order {
         type: string;
         price: number;
     };
+    creator: User;
 }
 
 // Generic interface for search and pagination props

@@ -14,6 +14,7 @@ interface OrganizationSelectorProps {
     className?: string;
     onFocus?: () => void;
     onBlur?: () => void;
+    isOpenOnFocus?: boolean;
 }
 
 export default function OrganizationSelector({
@@ -23,9 +24,10 @@ export default function OrganizationSelector({
     placeholder = "Select organization...",
     className,
     onFocus,
-    onBlur
+    onBlur,
+    isOpenOnFocus = false
 }: OrganizationSelectorProps) {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(isOpenOnFocus);
     const [searchValue, setSearchValue] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -102,7 +104,7 @@ export default function OrganizationSelector({
 
     // Handle focus to auto-open dropdown
     const handleFocus = () => {
-        setOpen(true);
+        // setOpen(true);
         // Focus will be handled by useEffect when open changes
         // Don't call onFocus here - only call it after actual selection
     };
