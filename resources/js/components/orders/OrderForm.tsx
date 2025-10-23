@@ -22,6 +22,17 @@ interface OrderFormProps {
 }
 
 export default function OrderForm({ organizations, fuels, onSubmit, processing, errors }: OrderFormProps) {
+    // Helper function to extract order item errors
+    const getOrderItemErrors = (itemIndex: number) => {
+        const itemErrors: any = {};
+        Object.keys(errors).forEach(key => {
+            if (key.startsWith(`order_items.${itemIndex}.`)) {
+                const fieldName = key.replace(`order_items.${itemIndex}.`, '');
+                itemErrors[fieldName] = errors[key];
+            }
+        });
+        return itemErrors;
+    };
     const { data, setData, reset } = useForm<{
         organization_id: string;
         sold_date: string;
@@ -253,6 +264,56 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
         }
     }, []);
 
+    // Update order item function
+    const updateOrderItem = useCallback((itemId: string, field: keyof OrderItemData, value: string | number) => {
+        setOrderItems(prevOrderItems => {
+            return prevOrderItems.map(item => {
+                if (item.id === itemId) {
+                    const updatedItem = { ...item, [field]: value };
+
+                    // Validate vehicle selection - check if vehicle is already used by another item
+                    if (field === 'vehicle_id' && value) {
+                        const vehicleId = parseInt(value.toString());
+                        const isAlreadyUsed = Array.from(prevOrderItems)
+                            .filter(otherItem => otherItem.id !== itemId)
+                            .some(otherItem => parseInt(otherItem.vehicle_id) === vehicleId);
+
+                        if (isAlreadyUsed) {
+                            alert(`This vehicle is already selected in another order item. Please choose a different vehicle.`);
+                            return item;
+                        }
+
+                        // Auto-select the associated fuel for the vehicle
+                        const itemVehicles = vehicles[updatedItem.organization_id] || [];
+                        const selectedVehicle = itemVehicles.find(v => v.id === vehicleId);
+                        if (selectedVehicle && selectedVehicle.fuel_id) {
+                            updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
+                            updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
+                        }
+                    }
+
+                    // Calculate total price when fuel or quantity changes
+                    if (field === 'fuel_id' || field === 'fuel_qty' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
+                        const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
+                        const quantity = parseFloat(updatedItem.fuel_qty) || 0;
+                        const price = fuel?.price || 0;
+                        updatedItem.total_price = quantity * price;
+                    }
+
+                    // Calculate per liter price when fuel or quantity changes
+                    if (field === 'fuel_id' || field === 'per_ltr_price' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
+                        const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
+                        const price = fuel?.price || 0;
+                        updatedItem.per_ltr_price = price;
+                    }
+
+                    return updatedItem;
+                }
+                return item;
+            });
+        });
+    }, [vehicles, fuels]);
+
     // Add new vehicle and focus its search input
     const addVehicleAndFocus = useCallback(() => {
         const newItem: OrderItemData = {
@@ -316,6 +377,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                     currentItem && parseInt(currentItem.vehicle_id) !== selectedVehicle.id;
                 
                 if (!isCurrentlyUsed) {
+                    // Update the vehicle selection
                     setOrderItems(prev => prev.map(item => {
                         if (item.id === itemId) {
                             const updatedItem = { ...item, vehicle_id: selectedVehicle.id.toString() };
@@ -336,7 +398,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                 }
             }
         }
-    }, [selectedVehicleIndex, focusNextField, usedVehicles, orderItems]);
+    }, [selectedVehicleIndex, focusNextField, usedVehicles, orderItems, updateOrderItem]);
 
     // Maintain focus on search input
     useEffect(() => {
@@ -411,54 +473,6 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
         }
     };
 
-    const updateOrderItem = (itemId: string, field: keyof OrderItemData, value: string | number) => {
-        console.log('updateOrderItem called:', { itemId, field, value, type: typeof value });
-        setOrderItems(orderItems.map(item => {
-            if (item.id === itemId) {
-                const updatedItem = { ...item, [field]: value };
-                console.log('Updated item:', updatedItem);
-
-                // Validate vehicle selection - check if vehicle is already used by another item
-                if (field === 'vehicle_id' && value) {
-                    const vehicleId = parseInt(value.toString());
-                    const isAlreadyUsed = Array.from(orderItems)
-                        .filter(otherItem => otherItem.id !== itemId)
-                        .some(otherItem => parseInt(otherItem.vehicle_id) === vehicleId);
-
-                    if (isAlreadyUsed) {
-                        alert(`This vehicle is already selected in another order item. Please choose a different vehicle.`);
-                        return item;
-                    }
-
-                    // Auto-select the associated fuel for the vehicle
-                    const itemVehicles = vehicles[updatedItem.organization_id] || [];
-                    const selectedVehicle = itemVehicles.find(v => v.id === vehicleId);
-                    if (selectedVehicle && selectedVehicle.fuel_id) {
-                        updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
-                        updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
-                    }
-                }
-
-                // Calculate total price when fuel or quantity changes
-                if (field === 'fuel_id' || field === 'fuel_qty' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
-                    const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
-                    const quantity = parseFloat(updatedItem.fuel_qty) || 0;
-                    const price = fuel?.price || 0;
-                    updatedItem.total_price = quantity * price;
-                }
-
-                // Calculate per liter price when fuel or quantity changes
-                if (field === 'fuel_id' || field === 'per_ltr_price' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
-                    const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
-                    const price = fuel?.price || 0;
-                    updatedItem.per_ltr_price = price;
-                }
-
-                return updatedItem;
-            }
-            return item;
-        }));
-    };
 
     // Enhanced keyboard navigation for smooth UX
     useEffect(() => {
@@ -544,7 +558,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                     // Let the dropdown handle arrow keys
                     return;
                 }
-                
+
                 // For closed select fields, open them with arrow keys
                 if (target.hasAttribute('data-organization-trigger') || 
                     target.hasAttribute('data-fuel-select')) {
@@ -676,6 +690,18 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
         <div className="focus-within:outline-none" tabIndex={-1}>
             <form id="order-form" onSubmit={handleSubmit} className="space-y-6">
                 <div className="max-w-7xl mx-auto space-y-6 border rounded-lg p-6">
+                    {/* Global Errors */}
+                    {Object.keys(errors).length > 0 && (
+                        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                            <h4 className="text-sm font-medium text-destructive mb-2">Please fix the following errors:</h4>
+                            <ul className="text-sm text-destructive space-y-1">
+                                {Object.entries(errors).map(([key, value]) => (
+                                    <li key={key}>• {value as string}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* Order Header */}
                     <div className="space-y-6">
                         {/* Sold Date - At the top */}
@@ -776,34 +802,35 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {orderItems.map((item, index) => (
-                                    <OrderItem
-                                        key={item.id}
-                                        item={item}
-                                        index={index}
-                                        organizations={organizations}
-                                        vehicles={vehicles[item.organization_id] || []}
-                                        fuels={fuels}
-                                        usedVehicles={usedVehicles}
-                                        searchTerm={vehicleSearchTerms[item.id] || ''}
-                                        onSearchChange={(value) => handleSearchChange(item.id, value)}
-                                        selectedIndex={selectedVehicleIndex[item.id] || 0}
-                                        onKeyDown={(e, filteredVehicles) => handleVehicleKeyDown(e, item.id, filteredVehicles)}
-                                        isDropdownOpen={openDropdowns[item.id] || false}
-                                        onDropdownOpenChange={(open) => setOpenDropdowns(prev => ({ ...prev, [item.id]: open }))}
-                                        searchInputRef={(() => {
+                                {orderItems.map((item, index) => 
+                                    React.createElement(OrderItem, {
+                                        key: item.id,
+                                        item: item,
+                                        index: index,
+                                        organizations: organizations,
+                                        vehicles: vehicles[item.organization_id] || [],
+                                        fuels: fuels,
+                                        usedVehicles: usedVehicles,
+                                        searchTerm: vehicleSearchTerms[item.id] || '',
+                                        onSearchChange: (value: string) => handleSearchChange(item.id, value),
+                                        selectedIndex: selectedVehicleIndex[item.id] || 0,
+                                        onKeyDown: (e: React.KeyboardEvent, filteredVehicles: any[]) => handleVehicleKeyDown(e, item.id, filteredVehicles),
+                                        isDropdownOpen: openDropdowns[item.id] || false,
+                                        onDropdownOpenChange: (open: boolean) => setOpenDropdowns(prev => ({ ...prev, [item.id]: open })),
+                                        searchInputRef: (() => {
                                             if (!searchInputRefs.current[item.id]) {
                                                 searchInputRefs.current[item.id] = React.createRef<HTMLInputElement | null>();
                                             }
                                             return searchInputRefs.current[item.id]!;
-                                        })()}
-                                        onUpdate={(field, value) => updateOrderItem(item.id, field, value)}
-                                        onRemove={() => removeOrderItem(item.id)}
-                                        onFocusQuantity={() => focusQuantityField(item.id)}
-                                        onOrganizationChange={(orgId) => handleItemOrganizationChange(item.id, orgId)}
-                                        canRemove={true}
-                                    />
-                                ))}
+                                        })(),
+                                        onUpdate: (field: keyof OrderItemData, value: string | number) => updateOrderItem(item.id, field, value),
+                                        onRemove: () => removeOrderItem(item.id),
+                                        onFocusQuantity: () => focusQuantityField(item.id),
+                                        onOrganizationChange: (orgId: string) => handleItemOrganizationChange(item.id, orgId),
+                                        canRemove: true,
+                                        errors: getOrderItemErrors(index)
+                                    })
+                                )}
                             </div>
                         )}
 

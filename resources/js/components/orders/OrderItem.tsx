@@ -35,6 +35,7 @@ interface OrderItemProps {
     onFocusQuantity: () => void;
     onOrganizationChange: (organizationId: string) => void;
     canRemove: boolean;
+    errors: any;
 }
 
 export default function OrderItem({
@@ -55,7 +56,8 @@ export default function OrderItem({
     onRemove,
     onFocusQuantity,
     onOrganizationChange,
-    canRemove
+    canRemove,
+    errors
 }: OrderItemProps) {
     const isComplete = item.organization_id && item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0;
 
@@ -75,44 +77,66 @@ export default function OrderItem({
             />
 
             <div className="flex items-end gap-3 w-full">
-                <OrderItemOrganization
-                    itemId={item.id}
-                    organizationId={item.organization_id}
-                    organizations={organizations}
-                    onOrganizationChange={onOrganizationChange}
-                    onUpdate={onUpdate}
-                />
+                <div className="flex-1 min-w-0">
+                    <OrderItemOrganization
+                        itemId={item.id}
+                        organizationId={item.organization_id}
+                        organizations={organizations}
+                        onOrganizationChange={onOrganizationChange}
+                        onUpdate={onUpdate}
+                    />
+                    {errors.organization_id && (
+                        <p className="text-xs text-destructive mt-1">{errors.organization_id}</p>
+                    )}
+                </div>
 
-                <OrderItemVehicle
-                    itemId={item.id}
-                    vehicleId={item.vehicle_id}
-                    vehicles={vehicles}
-                    usedVehicles={usedVehicles}
-                    searchTerm={searchTerm}
-                    onSearchChange={onSearchChange}
-                    selectedIndex={selectedIndex}
-                    onKeyDown={onKeyDown}
-                    isDropdownOpen={isDropdownOpen}
-                    onDropdownOpenChange={onDropdownOpenChange}
-                    searchInputRef={searchInputRef}
-                    onUpdate={onUpdate}
-                />
+                <div className="flex-1 min-w-0 max-w-[300px]">
+                    <OrderItemVehicle
+                        itemId={item.id}
+                        vehicleId={item.vehicle_id}
+                        vehicles={vehicles}
+                        usedVehicles={usedVehicles}
+                        searchTerm={searchTerm}
+                        onSearchChange={onSearchChange}
+                        selectedIndex={selectedIndex}
+                        onKeyDown={onKeyDown}
+                        isDropdownOpen={isDropdownOpen}
+                        onDropdownOpenChange={onDropdownOpenChange}
+                        searchInputRef={searchInputRef}
+                        onUpdate={onUpdate}
+                    />
+                    {errors.vehicle_id && (
+                        <p className="text-xs text-destructive mt-1">{errors.vehicle_id}</p>
+                    )}
+                </div>
 
-                <OrderItemFuel
-                    fuelId={item.fuel_id}
-                    fuels={fuels}
-                    onUpdate={onUpdate}
-                    onFocusQuantity={onFocusQuantity}
-                />
+                <div className="w-32 min-w-[150px]">
+                    <OrderItemFuel
+                        fuelId={item.fuel_id}
+                        fuels={fuels}
+                        onUpdate={onUpdate}
+                        onFocusQuantity={onFocusQuantity}
+                    />
+                    {errors.fuel_id && (
+                        <p className="text-xs text-destructive mt-1">{errors.fuel_id}</p>
+                    )}
+                </div>
 
-                <OrderItemQuantity
-                    fuelQty={item.fuel_qty}
-                    onUpdate={onUpdate}
-                />
+                <div className="w-24 min-w-[80px]">
+                    <OrderItemQuantity
+                        fuelQty={item.fuel_qty}
+                        onUpdate={onUpdate}
+                    />
+                    {errors.fuel_qty && (
+                        <p className="text-xs text-destructive mt-1">{errors.fuel_qty}</p>
+                    )}
+                </div>
 
-                <OrderItemTotal
-                    totalPrice={item.total_price}
-                />
+                <div className="w-28 min-w-[100px]">
+                    <OrderItemTotal
+                        totalPrice={item.total_price}
+                    />
+                </div>
             </div>
         </div>
     );

@@ -83,12 +83,30 @@ export default function VehicleSelector({
         <div className="space-y-1">
             <Select
                 value={selectedVehicleId}
-                onValueChange={onVehicleSelect}
                 open={isOpen}
                 onOpenChange={onOpenChange}
             >
                 <SelectTrigger className="h-9" tabIndex={0} data-vehicle-select>
-                    <SelectValue placeholder="Select" />
+                    {selectedVehicleId ? (
+                        (() => {
+                            const selectedVehicle = vehicles.find(v => v.id.toString() === selectedVehicleId);
+                            return selectedVehicle ? (
+                                <div className="flex items-center gap-2">
+                                    <Car className="h-3 w-3" />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm">{selectedVehicle.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {selectedVehicle.ucode} • {selectedVehicle.model || 'No model'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <span className="text-muted-foreground">Select</span>
+                            );
+                        })()
+                    ) : (
+                        <span className="text-muted-foreground">Select</span>
+                    )}
                 </SelectTrigger>
                 <SelectContent>
                     <div className="relative p-2 border-b">
@@ -138,21 +156,19 @@ export default function VehicleSelector({
                                 ) : (
                                     filteredVehicles.map((vehicle, index) => {
                                         const isCurrentlyUsed = usedVehicles.has(vehicle.id) && parseInt(selectedVehicleId) !== vehicle.id;
-                                        const isSelected = selectedIndex === index;
+                                        const isKeyboardSelected = selectedIndex === index;
+                                        const isActuallySelected = selectedVehicleId === vehicle.id.toString();
                                         
                                         return (
                                             <div
                                                 key={vehicle.id}
                                                 data-vehicle-item={index}
-                                                className={`px-2 py-2 cursor-pointer transition-colors ${isSelected 
-                                                    ? "bg-blue-100 text-blue-900 font-medium dark:bg-blue-900 dark:text-blue-100" 
-                                                    : "hover:bg-accent/50"
+                                                className={`px-2 py-2 cursor-pointer transition-colors ${isActuallySelected 
+                                                    ? "bg-green-100 text-green-900 font-medium dark:bg-green-900 dark:text-green-100 border-l-4 border-green-500" 
+                                                    : isKeyboardSelected 
+                                                        ? "bg-blue-100 text-blue-900 font-medium dark:bg-blue-900 dark:text-blue-100" 
+                                                        : "hover:bg-accent/50"
                                                     } ${isCurrentlyUsed ? "opacity-50 cursor-not-allowed" : ""}`}
-                                                style={{
-                                                    backgroundColor: isSelected ? '#dbeafe' : undefined,
-                                                    color: isSelected ? '#1e3a8a' : undefined,
-                                                    fontWeight: isSelected ? '600' : undefined
-                                                }}
                                                 onClick={() => {
                                                     if (!isCurrentlyUsed) {
                                                         onVehicleSelect(vehicle.id.toString());
@@ -171,9 +187,17 @@ export default function VehicleSelector({
                                                                     (Already used)
                                                                 </span>
                                                             )}
+                                                            {isActuallySelected && (
+                                                                <span className="ml-2 text-green-600 font-medium">
+                                                                    ✓ Selected
+                                                                </span>
+                                                            )}
                                                         </span>
                                                     </div>
-                                                    {isSelected && (
+                                                    {isActuallySelected && (
+                                                        <div className="w-2 h-2 bg-green-600 rounded-full ml-auto"></div>
+                                                    )}
+                                                    {!isActuallySelected && isKeyboardSelected && (
                                                         <div className="w-2 h-2 bg-blue-600 rounded-full ml-auto"></div>
                                                     )}
                                                 </div>

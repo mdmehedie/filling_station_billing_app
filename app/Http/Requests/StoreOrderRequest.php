@@ -22,9 +22,9 @@ class StoreOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => 'required|exists:organizations,id',
             'sold_date' => 'required|date',
             'order_items' => 'required|array',
+            'order_items.*.organization_id' => 'required|exists:organizations,id',
             'order_items.*.vehicle_id' => 'required|exists:vehicles,id',
             'order_items.*.fuel_id' => 'required|exists:fuels,id',
             'order_items.*.fuel_qty' => 'required|numeric',

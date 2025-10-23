@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\FuelResource;
@@ -17,18 +16,20 @@ use App\Models\Vehicle;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-
+use App;
 
 class OrderController extends Controller
 {
-    function __construct(private OrderService $orderService)
-    {
+    function __construct(
+        private OrderService $orderService
+    ) {
         //
     }
+
     /**
-     * 
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -67,9 +68,10 @@ class OrderController extends Controller
             foreach ($validated['order_items'] as $item) {
                 $orderData = $validated;
                 unset($orderData['order_items']);
+                $orderData['organization_id'] = $item['organization_id'];
                 $orderData['fuel_id'] = $item['fuel_id'];
                 $orderData['fuel_qty'] = $item['fuel_qty'];
-                $orderData['user_id'] = auth()->user()->id;
+                $orderData['user_id'] = Auth::id();
                 $orderData['vehicle_id'] = $item['vehicle_id'];
                 $orderData['per_ltr_price'] = $item['per_ltr_price'];
                 $orderData['total_price'] = $item['total_price'];

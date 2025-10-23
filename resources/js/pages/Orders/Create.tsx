@@ -10,23 +10,44 @@ import KeyboardShortcutsGuide from "@/components/KeyboardShortcutsGuide";
 import { Organization } from "@/types/response";
 import { Fuel as FuelType } from "@/types/response";
 import { draftCache } from "@/lib/draftCache";
+import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 interface Props {
     organizations: Organization[];
     fuels: FuelType[];
 }
 
+
+interface OrderItemData {
+    organization_id: string;
+    vehicle_id: string;
+    fuel_id: string;
+    fuel_qty: string;
+    total_price: number;
+    per_ltr_price: number;
+}
+
 export default function Create({ organizations, fuels }: Props) {
-    const { post, processing, errors, reset } = useForm();
+    // const { post, processing, errors, reset, setData, data } = useForm<{
+    //     sold_date: string;
+    //     order_items: OrderItemData[];
+    // }>({
+    //     sold_date: new Date().toISOString().split('T')[0],
+    //     order_items: []
+    // });
+
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<any>({});
 
     const handleSubmit = (formData: any) => {
-        post(ordersRoute.store().url, {
-            ...formData,
+        setProcessing(true);
+        router.post(ordersRoute.store().url, formData, {
             onSuccess: () => {
-                // Clear draft cache for this specific date on successful submission
-                if (formData.sold_date) {
-                    draftCache.clearDraftForDate(formData.sold_date);
-                }
-                reset();
+                setProcessing(false);
+            },
+            onError: (errors) => {
+                setErrors(errors);
+                setProcessing(false);
             }
         });
     };

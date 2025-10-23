@@ -37,7 +37,6 @@ export default function OrderItemVehicle({
                 itemId={itemId}
                 selectedVehicleId={vehicleId}
                 onVehicleSelect={(value) => {
-                    console.log('Vehicle selected:', value, 'Type:', typeof value);
                     onUpdate('vehicle_id', value);
                     onDropdownOpenChange(false);
                 }}
