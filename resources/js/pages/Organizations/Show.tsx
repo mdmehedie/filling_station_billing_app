@@ -220,7 +220,7 @@ export default function Show({ organization }: Props) {
                                     <User className="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="font-medium">{organization.user.name}</h3>
+                                    <h3 className="font-medium">{organization.user?.name}</h3>
                                     <p className="text-sm text-muted-foreground">{organization.user.email}</p>
                                 </div>
                             </div>

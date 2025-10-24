@@ -25,8 +25,8 @@ class UpdateVehicleRequest extends FormRequest
             'fuel_id' => 'required|exists:fuels,id',
             'organization_id' => 'required|exists:organizations,id',
             'ucode' => 'required|string|max:255|unique:vehicles,ucode,' . $this->vehicle->id,
-            'name' => 'sometimes|string|max:255',
-            'model' => 'sometimes|string|max:255',
+            'name' => 'sometimes|max:255',
+            'model' => 'sometimes|max:255',
             'type' => 'required|string|max:255',
         ];
     }

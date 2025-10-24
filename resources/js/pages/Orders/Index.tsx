@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit, Trash2, Eye, Download, Filter, X, Plus } from "lucide-react";
+import { Edit, Trash2, Eye, Download, Filter, X, Plus, ShoppingCart, DollarSign, Calendar, TrendingUp, Truck, Car } from "lucide-react";
 import { Order, PaginatedResponse, Fuel, Vehicle } from "@/types/response";
 import { BreadcrumbItem, SharedData } from "@/types";
 import { dashboard } from "@/routes";
@@ -58,7 +58,12 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             per_page: 0,
             to: 0,
             total: 0
-        }
+        },
+        stats: {
+            total_vehicles: 0,
+            total_quantity: 0,
+            total_sales: 0,
+        },
     });
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -348,6 +353,75 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                         <Plus className="h-4 w-4" />
                         Add New Order
                     </Button>
+                </div>
+
+                {/* Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Total Orders
+                            </CardTitle>
+                            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{orders.meta.total}</div>
+                            <p className="text-xs text-muted-foreground">
+                                All orders based on filter
+                            </p>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Total Quantity
+                            </CardTitle>
+                            <Truck className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {orders.stats?.total_quantity} (L)
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Total quantity based on filter
+                            </p>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Total Sales
+                            </CardTitle>
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {currenyFormat(orders.stats?.total_sales ?? 0)} (৳)
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Total sales based on filter
+                            </p>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Total Vehicles
+                            </CardTitle>
+                            <Car className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {orders.stats?.total_vehicles ?? 0}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Total vehicles based on filter
+                            </p>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Filters Section */}

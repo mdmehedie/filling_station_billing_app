@@ -42,7 +42,7 @@ class OrderController extends Controller
 
     public function orderList(Request $request)
     {
-        return OrderResource::collection($this->orderService->orderList());
+        return ($this->orderService->orderList());
     }
 
     /**

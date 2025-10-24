@@ -2,23 +2,25 @@
 
 namespace App\Services;
 
+use App\Http\Resources\OrderCollection;
 use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
-use Illuminate\Support\Facades\Auth;
 use \Spatie\Browsershot\Browsershot;
 
 class OrderService
 {
     function __construct() {}
 
-    public function orderList($showAll = false)
+    public function orderList()
     {
-        return QueryBuilder::for(Order::class)
+        $query = QueryBuilder::for(Order::class)
             ->with(['organization', 'vehicle', 'fuel', 'creator'])
             ->defaultSort('-id')
             ->allowedFilters([
@@ -50,12 +52,21 @@ class OrderService
                 }),
             ])
             ->when(Auth::user()->role === 'user', fn($q) => $q->where('user_id', Auth::id()))
-            ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at'])
-            ->when($showAll, function ($query) {
-                return $query->get();
-            }, function ($query) {
-                return $query->paginate(15);
-            });
+            ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at']);
+
+        $statsQuery = (clone $query)->getEloquentBuilder();
+        $stats = $statsQuery->select([
+            DB::raw('COUNT(DISTINCT vehicle_id) as total_vehicles'),
+            DB::raw('SUM(fuel_qty) as total_quantity'),
+            DB::raw('SUM(total_price) as total_sales'),
+        ])->first();
+
+        return (new OrderCollection($query->paginate(15)))
+            ->additional(['stats' => [
+                'total_vehicles' => $stats->total_vehicles ?? 0,
+                'total_quantity' => $stats->total_quantity ?? 0,
+                'total_sales' => $stats->total_sales ?? 0,
+            ]]);
     }
 
     public function generatOrderNo()

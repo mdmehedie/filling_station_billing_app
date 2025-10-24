@@ -81,6 +81,11 @@ export interface PaginatedResponse<T> {
         per_page: number
         to: number
         total: number
+    },
+    stats?: {
+        total_vehicles: number;
+        total_quantity: number;
+        total_sales: number;
     }
 }
 

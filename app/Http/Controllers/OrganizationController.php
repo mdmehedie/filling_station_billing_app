@@ -11,6 +11,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OrganizationController extends Controller
 {
@@ -54,7 +55,7 @@ class OrganizationController extends Controller
     public function store(StoreOrganizationRequest $request)
     {
         $data = $request->validated();
-        $data['user_id'] = auth()->id();
+        $data['user_id'] = Auth::id();
 
         $organization = Organization::create($data);
         return redirect()->route('organizations.index')->with('success', "Organization {$organization->name} created successfully");
@@ -66,7 +67,7 @@ class OrganizationController extends Controller
     public function show(Organization $organization)
     {
         return inertia('Organizations/Show', [
-            'organization' => OrganizationResource::make($organization)
+            'organization' => OrganizationResource::make($organization->load('user'))
         ]);
     }
 
