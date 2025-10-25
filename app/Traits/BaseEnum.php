@@ -15,12 +15,12 @@ trait BaseEnum
         return ucfirst(strtolower(self::from($value)->name));
     }
 
-    static function getValueByName(string $nameToLowerOrUppercase): string
+    static function getValueByName(string $nameToLowerOrUppercase): string | null | int
     {
         $name = strtoupper($nameToLowerOrUppercase);
         return optional(array_values(array_filter(self::cases(), function ($item) use ($name) {
             return $item->name == $name;
-        })))[0]->value;
+        })))[0]?->value;
     }
 
     /**
