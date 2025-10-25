@@ -14,11 +14,13 @@ class Invoice extends Model
         'total_bill',
         'total_qty',
         'total_coupon',
-        'order_ids'
+        'order_ids',
+        'fuel_breakdown'
     ];
 
     protected $casts = [
-        'order_ids' => 'array'
+        'order_ids' => 'array',
+        'fuel_breakdown' => 'array'
     ];
 
     public function organization()

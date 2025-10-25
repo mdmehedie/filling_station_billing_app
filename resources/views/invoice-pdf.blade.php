@@ -93,6 +93,9 @@
 </head>
 
 <body>
+    @php
+        $formatter = new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY);
+    @endphp
 
     <div class="header">
         <div class="logo-container">
@@ -168,15 +171,11 @@
             </tr>
             <tr>
                 <td colspan="34" style="text-align:left;">Total Bill.
-                    <strong>{{ removeLeadingZeros($fuel['total_price']) }} Tk</strong>
+                    <strong>{{ removeLeadingZeros($formatter->format($fuel['total_price'])) }}</strong>
                 </td>
             </tr>
         </table>
     @endforeach
-
-    @php
-        $formatter = new \NumberFormatter('en_BD', \NumberFormatter::CURRENCY);
-    @endphp
 
     <div class="summary">
         Total Coupon: {{ $totalCoupon }} ({{ $repeatedCouponCount }} repeated) <br>

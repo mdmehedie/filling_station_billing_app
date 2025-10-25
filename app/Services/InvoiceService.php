@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Exports\InvoiceExport;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Organization;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Browsershot\Browsershot;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -414,7 +416,17 @@ class InvoiceService
                 'total_coupon' => $totalCoupon,
                 'total_qty' => $totalQty,
                 'page_count' => $pageCount,
-                'order_ids' => $orderIds
+                'order_ids' => $orderIds,
+                'fuel_breakdown' => array_map(function ($fuel) use ($totalBill, $totalCoupon, $totalQty) {
+                    return [
+                        'fuel_name' => $fuel['fuel_name'],
+                        'total_qty' => $fuel['total_qty'],
+                        'total_price' => $fuel['total_price'],
+                        'total_coupon' => array_reduce($fuel['vehicles'], function ($carry, $vehicle) {
+                            return $carry + $vehicle['order_count'];
+                        }, 0),
+                    ];
+                }, $data)
             ]);
         }
     }
@@ -503,5 +515,16 @@ class InvoiceService
         }
 
         return $repeatedCouponCount;
+    }
+
+    function monthlyExport($validated)
+    {
+        $month = $validated['month'];
+        $year = $validated['year'];
+
+        $monthName = date('F', mktime(0, 0, 0, $month, 1));
+        $filename = "Bill-Summary-{$monthName}-{$year}.xlsx";
+
+        return Excel::download(new InvoiceExport($month, $year), $filename, \Maatwebsite\Excel\Excel::XLSX);
     }
 }

@@ -20,7 +20,7 @@ import axios from "axios";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization } from "@/types/response";
-import { currenyFormat } from "@/lib/utils";
+import { currenyFormat, numberFormat } from "@/lib/utils";
 
 export default function Index({ fuels }: { fuels: Fuel[] }) {
     const { auth } = usePage().props;
@@ -381,7 +381,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {orders.stats?.total_quantity} (L)
+                                {numberFormat(orders.stats?.total_quantity ?? 0)} (L)
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Total quantity based on filter
@@ -398,7 +398,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {currenyFormat(orders.stats?.total_sales ?? 0)} (৳)
+                                {numberFormat(orders.stats?.total_sales ?? 0)} 
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Total sales based on filter

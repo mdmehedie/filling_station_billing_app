@@ -38,6 +38,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('api/orders', [OrderController::class, 'orderList']);
     Route::get('api/vehicles', [VehicleController::class, 'getAllVehicles']);
     Route::get('api/organizations', [OrganizationController::class, 'getAllOrganizations']);
+    Route::post('api/reports/monthly-export', [InvoiceController::class, 'monthlyExport']);
 });
 
 require __DIR__ . '/settings.php';

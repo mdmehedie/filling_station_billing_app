@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'is_active' => CheckUserStatusMiddleware::class,
             'is_admin' => CheckUserRoleMiddleware::class,
+            'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         ]);
 
         $middleware->web(append: [

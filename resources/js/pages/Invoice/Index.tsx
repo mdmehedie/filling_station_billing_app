@@ -192,7 +192,6 @@ export default function Index({ months, years, organizations, invoices }: IndexP
     const [showMonthlyReportModal, setShowMonthlyReportModal] = useState<boolean>(false);
     const [selectedMonthForReport, setSelectedMonthForReport] = useState<number>(months[0] || 0);
     const [selectedYearForReport, setSelectedYearForReport] = useState<number>(years[0] || 0);
-    const [selectedOrganizationForReport, setSelectedOrganizationForReport] = useState<Organization | null>(null);
     const [isDownloadingReport, setIsDownloadingReport] = useState<boolean>(false);
     const [downloadReportProgress, setDownloadReportProgress] = useState<number>(0);
 
@@ -201,15 +200,10 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         setDownloadReportProgress(0);
 
         try {
-            if (!selectedOrganizationForReport) {
-                alert('Please select an organization');
-                return;
-            }
 
             const resp = await axios.post(`/api/reports/monthly-export`, { 
                 month: selectedMonthForReport, 
                 year: selectedYearForReport,
-                organization_id: selectedOrganizationForReport.id
             }, {
                 responseType: 'blob',
                 withCredentials: true,
@@ -225,7 +219,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
             const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
-                `monthly-report-${selectedMonthForReport}-${selectedYearForReport}-${selectedOrganizationForReport.name}.xlsx`;
+                `monthly-report-${selectedMonthForReport}-${selectedYearForReport}.xlsx`;
 
             const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
                 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
@@ -247,7 +241,6 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             setIsDownloadingReport(false);
             setDownloadReportProgress(0);
             // clear the form
-            setSelectedOrganizationForReport(null);
             setSelectedMonthForReport(months[0] || 0);
             setSelectedYearForReport(years[0] || 0);
         }
@@ -569,17 +562,6 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                         </DialogHeader>
                         
                         <div className="space-y-6">
-                            {/* Organization Selection */}
-                            <div className="space-y-2">
-                                <Label className="text-base font-medium">Organization</Label>
-                                <OrganizationSelector
-                                    organizations={organizations}
-                                    selectedOrganization={selectedOrganizationForReport}
-                                    onOrganizationSelect={setSelectedOrganizationForReport}
-                                    placeholder="Select organization..."
-                                />
-                            </div>
-
                             {/* Month and Year Selection */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -624,11 +606,6 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             {/* Report Info */}
                             <div className="text-center text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
                                 <p>
-                                    Organization: <span className="font-medium">
-                                        {selectedOrganizationForReport ? selectedOrganizationForReport.name : 'Not selected'}
-                                    </span>
-                                </p>
-                                <p>
                                     Period: <span className="font-medium">
                                         {new Date(0, selectedMonthForReport - 1).toLocaleString("default", { month: "long" })} {selectedYearForReport}
                                     </span>
@@ -665,7 +642,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             </Button>
                             <Button
                                 onClick={handleMonthlyReportDownload}
-                                disabled={isDownloadingReport || !selectedMonthForReport || !selectedYearForReport || !selectedOrganizationForReport}
+                                disabled={isDownloadingReport || !selectedMonthForReport || !selectedYearForReport}
                                 className="flex items-center gap-2"
                             >
                                 {isDownloadingReport ? (
