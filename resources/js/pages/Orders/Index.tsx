@@ -71,12 +71,14 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
     const [isFullForm, setisFullForm] = useState(false);
     const [isFullQuantity, setisFullQuantity] = useState(false);
+    const [isFullTotalOrder, setisFullTotalOrder] = useState(false);
+    const [isFullTotalVehicle, setisFullTotalVehicle] = useState(false);
 
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
         });
-        
+
         // Load filter options
         getAllOrganizations((response: any[]) => {
             setOrganizations(response || []);
@@ -367,79 +369,92 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{orders.meta.total}</div>
-                            <p className="text-xs text-muted-foreground">
-                                All orders based on filter
-                            </p>
+                            <div className="text-2xl font-bold">
+                                {isFullTotalOrder ? orders.meta.total : numberFormat(orders.meta.total ?? 0)}
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">
+                                    All orders based on filter
+                                </p>
+                                <Switch
+                                    checked={isFullTotalOrder}
+                                    onChange={setisFullTotalOrder}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
+                                    }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullTotalOrder ? 'translate-x-4' : 'translate-x-0.5'
+                                        }`}
+                                    />
+                                </Switch>
+                            </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 Total Quantity
                             </CardTitle>
                             <div className="flex items-center gap-2">
-                                <Label htmlFor="full-form" className="text-sm font-medium">
-                                    <span className="text-xs font-semibold">Short</span>
-                                </Label>
-                                <Switch 
-                                    checked={isFullQuantity}
-                                    onChange={setisFullQuantity}
-                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullQuantity ? 'translate-x-4' : 'translate-x-0.5'
-                                            }`}
-                                    />
-                                </Switch>
-                                <span className="text-xs font-semibold">Full</span>
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
                                 {isFullQuantity ? orders.stats?.total_quantity : numberFormat(orders.stats?.total_quantity ?? 0)} (L)
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Total quantity based on filter
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">
+                                    Total quantity based on filter
+                                </p>
+                                <Switch
+                                    checked={isFullQuantity}
+                                    onChange={setisFullQuantity}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
+                                    }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullQuantity ? 'translate-x-4' : 'translate-x-0.5'
+                                        }`}
+                                    />
+                                </Switch>
+                            </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
                                 Total Sales
                             </CardTitle>
                             <div className="flex items-center gap-2">
-                                <Label htmlFor="full-form" className="text-sm font-medium">
-                                    <span className="text-xs font-semibold">Short</span>
-                                </Label>
-                                <Switch 
-                                    checked={isFullForm}
-                                    onChange={setisFullForm}
-                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullForm ? 'bg-blue-600' : 'bg-gray-300'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullForm ? 'translate-x-4' : 'translate-x-0.5'
-                                            }`}
-                                    />
-                                </Switch>
-                                <span className="text-xs font-semibold">Full</span>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {isFullForm ? orders.stats?.total_sales : numberFormat(orders.stats?.total_sales ?? 0)} (৳)
+                                ৳{isFullForm ? orders.stats?.total_sales : numberFormat(orders.stats?.total_sales ?? 0)}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Total sales based on filter
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">
+                                    Total sales based on filter
+                                </p>
+                                <Switch
+                                    checked={isFullForm}
+                                    onChange={setisFullForm}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullForm ? 'bg-blue-600' : 'bg-gray-300'
+                                    }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullForm ? 'translate-x-4' : 'translate-x-0.5'
+                                        }`}
+                                    />
+                                </Switch>
+                            </div>
                         </CardContent>
                     </Card>
-                    
+
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
@@ -449,11 +464,24 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {orders.stats?.total_vehicles ?? 0}
+                                {isFullTotalVehicle ? orders.stats?.total_vehicles : numberFormat(orders.stats?.total_vehicles ?? 0)}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                Total vehicles based on filter
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">
+                                    Total vehicles based on filter
+                                </p>
+                                <Switch
+                                    checked={isFullTotalVehicle}
+                                    onChange={setisFullTotalVehicle}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
+                                    }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullTotalVehicle ? 'translate-x-4' : 'translate-x-0.5'
+                                        }`}
+                                    />
+                                </Switch>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -519,24 +547,24 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         <Label htmlFor="vehicle-filter" className="text-sm font-medium">
                                             Vehicle
                                         </Label>
-                                        <Select 
-                                            value={selectedVehicle} 
+                                        <Select
+                                            value={selectedVehicle}
                                             onValueChange={setSelectedVehicle}
                                             disabled={!selectedOrganization || vehicles.length === 0}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder={
-                                                    !selectedOrganization 
-                                                        ? "Select an organization first" 
-                                                        : vehicles.length === 0 
-                                                            ? "No vehicles found" 
+                                                    !selectedOrganization
+                                                        ? "Select an organization first"
+                                                        : vehicles.length === 0
+                                                            ? "No vehicles found"
                                                             : "All Vehicles"
                                                 } />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <div className="p-2">
-                                                    <Input 
-                                                        placeholder="Search vehicles..." 
+                                                    <Input
+                                                        placeholder="Search vehicles..."
                                                         className="h-8"
                                                         value={vehicleSearchTerm}
                                                         onChange={(e) => setVehicleSearchTerm(e.target.value)}
@@ -544,7 +572,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                                 </div>
                                                 <SelectItem value="all">All Vehicles</SelectItem>
                                                 {vehicles
-                                                    .filter(vehicle => 
+                                                    .filter(vehicle =>
                                                         vehicle.name?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
                                                         vehicle.ucode?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
                                                         (vehicle.model && vehicle.model.toLowerCase().includes(vehicleSearchTerm.toLowerCase()))
