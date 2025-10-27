@@ -379,7 +379,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                 <Switch
                                     checked={isFullTotalOrder}
                                     onChange={setisFullTotalOrder}
-                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullTotalOrder ? 'bg-blue-600' : 'bg-gray-300'
                                     }`}
                                 >
                                     <span
@@ -473,7 +473,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                 <Switch
                                     checked={isFullTotalVehicle}
                                     onChange={setisFullTotalVehicle}
-                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullTotalVehicle ? 'bg-blue-600' : 'bg-gray-300'
                                     }`}
                                 >
                                     <span
