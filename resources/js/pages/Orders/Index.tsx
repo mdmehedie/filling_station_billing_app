@@ -21,6 +21,7 @@ import DeleteConfirmation from "@/components/DeleteConfirmation";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization } from "@/types/response";
 import { currenyFormat, numberFormat } from "@/lib/utils";
+import { Switch } from "@headlessui/react";
 
 export default function Index({ fuels }: { fuels: Fuel[] }) {
     const { auth } = usePage().props;
@@ -68,7 +69,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
-    
+    const [isFullForm, setisFullForm] = useState(false);
+    const [isFullQuantity, setisFullQuantity] = useState(false);
 
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
@@ -377,11 +379,27 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                             <CardTitle className="text-sm font-medium">
                                 Total Quantity
                             </CardTitle>
-                            <Truck className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="full-form" className="text-sm font-medium">
+                                    <span className="text-xs font-semibold">Short</span>
+                                </Label>
+                                <Switch 
+                                    checked={isFullQuantity}
+                                    onChange={setisFullQuantity}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullQuantity ? 'translate-x-4' : 'translate-x-0.5'
+                                            }`}
+                                    />
+                                </Switch>
+                                <span className="text-xs font-semibold">Full</span>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {numberFormat(orders.stats?.total_quantity ?? 0)} (L)
+                                {isFullQuantity ? orders.stats?.total_quantity : numberFormat(orders.stats?.total_quantity ?? 0)} (L)
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Total quantity based on filter
@@ -394,11 +412,27 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                             <CardTitle className="text-sm font-medium">
                                 Total Sales
                             </CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex items-center gap-2">
+                                <Label htmlFor="full-form" className="text-sm font-medium">
+                                    <span className="text-xs font-semibold">Short</span>
+                                </Label>
+                                <Switch 
+                                    checked={isFullForm}
+                                    onChange={setisFullForm}
+                                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullForm ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullForm ? 'translate-x-4' : 'translate-x-0.5'
+                                            }`}
+                                    />
+                                </Switch>
+                                <span className="text-xs font-semibold">Full</span>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {numberFormat(orders.stats?.total_sales ?? 0)} 
+                                {isFullForm ? orders.stats?.total_sales : numberFormat(orders.stats?.total_sales ?? 0)} (৳)
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Total sales based on filter
