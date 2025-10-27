@@ -39,7 +39,7 @@ export default function VehicleSelector({
 
         const searchTermLower = searchTerm.replace('-', '').toLowerCase();
         const nameMatch = vehicle.name?.toLowerCase().includes(searchTermLower);
-        const ucodeMatch = vehicle.ucode?.toLowerCase().includes(searchTermLower);
+        const ucodeMatch = vehicle.ucode.replace('-', '').toLowerCase().includes(searchTermLower);
         const modelMatch = vehicle.model?.toLowerCase().includes(searchTermLower);
 
         return nameMatch || ucodeMatch || modelMatch;
