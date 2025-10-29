@@ -120,11 +120,7 @@ export default function OrganizationSelector({
     return (
         <div className={cn("space-y-2", className)}>
             <Popover open={open} onOpenChange={(isOpen) => {
-                // Only allow opening, not closing via this handler
-                if (isOpen) {
-                    setOpen(true);
-                }
-                // Don't close automatically - only close via handleSelection or Escape
+                setOpen(isOpen);
             }}>
                 <PopoverTrigger asChild>
                     <Button

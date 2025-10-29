@@ -359,36 +359,38 @@ export function DataTable<T extends Record<string, any>>({
                 )}
                 
                 {showPagination && totalPages > 1 && (
-                    serverSidePagination && (responseData?.meta.links || paginationLinks) ? (
-                        <LaravelPagination
-                            links={responseData?.meta.links || paginationLinks || []}
-                            currentPage={currentPageToUse}
-                            lastPage={totalPages}
-                            onPageChange={handlePageChange}
-                        />
-                    ) : (
-                        <Pagination>
-                            <PaginationContent>
-                                <PaginationItem>
-                                    <PaginationPrevious
-                                        size="default"
-                                        onClick={() => handlePageChange(Math.max(1, currentPageToUse - 1))}
-                                        className={currentPageToUse === 1 ? "pointer-events-none opacity-50" : ""}
-                                    />
-                                </PaginationItem>
-                    
-                                {renderPaginationItems()}
-                    
-                                <PaginationItem>
-                                    <PaginationNext
-                                        size="default"
-                                        onClick={() => handlePageChange(Math.min(totalPages, currentPageToUse + 1))}
-                                        className={currentPageToUse === totalPages ? "pointer-events-none opacity-50" : ""}
-                                    />
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
-                    )
+                    <div className="flex justify-end">
+                        {serverSidePagination && (responseData?.meta.links || paginationLinks) ? (
+                            <LaravelPagination
+                                links={responseData?.meta.links || paginationLinks || []}
+                                currentPage={currentPageToUse}
+                                lastPage={totalPages}
+                                onPageChange={handlePageChange}
+                            />
+                        ) : (
+                            <Pagination>
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            size="default"
+                                            onClick={() => handlePageChange(Math.max(1, currentPageToUse - 1))}
+                                            className={currentPageToUse === 1 ? "pointer-events-none opacity-50" : ""}
+                                        />
+                                    </PaginationItem>
+                        
+                                    {renderPaginationItems()}
+                        
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            size="default"
+                                            onClick={() => handlePageChange(Math.min(totalPages, currentPageToUse + 1))}
+                                            className={currentPageToUse === totalPages ? "pointer-events-none opacity-50" : ""}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

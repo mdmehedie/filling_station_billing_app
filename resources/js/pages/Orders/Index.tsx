@@ -1,7 +1,6 @@
 import AppLayout from "@/layouts/app-layout";
 import { Head, router, usePage } from "@inertiajs/react";
-import { DataTableWrapper } from "@/components/data-table-wrapper";
-import { Column } from "@/components/data-table";
+import { DataTable, Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -380,11 +379,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                     checked={isFullTotalOrder}
                                     onChange={setisFullTotalOrder}
                                     className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullTotalOrder ? 'bg-blue-600' : 'bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     <span
                                         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullTotalOrder ? 'translate-x-4' : 'translate-x-0.5'
-                                        }`}
+                                            }`}
                                     />
                                 </Switch>
                             </div>
@@ -412,11 +411,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                     checked={isFullQuantity}
                                     onChange={setisFullQuantity}
                                     className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullQuantity ? 'bg-blue-600' : 'bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     <span
                                         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullQuantity ? 'translate-x-4' : 'translate-x-0.5'
-                                        }`}
+                                            }`}
                                     />
                                 </Switch>
                             </div>
@@ -444,11 +443,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                     checked={isFullForm}
                                     onChange={setisFullForm}
                                     className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullForm ? 'bg-blue-600' : 'bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     <span
                                         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullForm ? 'translate-x-4' : 'translate-x-0.5'
-                                        }`}
+                                            }`}
                                     />
                                 </Switch>
                             </div>
@@ -474,11 +473,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                     checked={isFullTotalVehicle}
                                     onChange={setisFullTotalVehicle}
                                     className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isFullTotalVehicle ? 'bg-blue-600' : 'bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     <span
                                         className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isFullTotalVehicle ? 'translate-x-4' : 'translate-x-0.5'
-                                        }`}
+                                            }`}
                                     />
                                 </Switch>
                             </div>
@@ -638,11 +637,18 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     )}
                 </Card>
 
-                <DataTableWrapper
-                    response={orders!}
+                <DataTable
+                    data={orders!.data}
                     columns={columns}
                     searchable={true}
                     searchPlaceholder="Search orders..."
+                    serverSidePagination={true}
+                    showPagination={true}
+                    currentPage={orders!.meta.current_page}
+                    lastPage={orders!.meta.last_page}
+                    from={orders!.meta.from}
+                    to={orders!.meta.to}
+                    total={orders!.meta.total}
                     onPageChange={handlePageChange}
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
