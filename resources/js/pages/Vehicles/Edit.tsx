@@ -13,6 +13,7 @@ import { dashboard } from "@/routes";
 import vehiclesRoute from "@/routes/vehicles";
 import { useState, useEffect } from "react";
 import { Organization, Fuel as FuelType, Vehicle } from "@/types/response";
+import OrganizationSelector from "@/components/OrganizationSelector";
 
 interface FormData {
     fuel_id: string;
@@ -60,10 +61,9 @@ export default function Edit({ vehicle, organizations, fuels }: Props) {
         });
     };
 
-    const handleOrganizationChange = (value: string) => {
-        const org = organizations.find(o => o.id.toString() === value);
-        setSelectedOrganization(org || null);
-        setData('organization_id', value);
+    const handleOrganizationSelect = (organization: Organization | null) => {
+        setSelectedOrganization(organization);
+        setData('organization_id', organization ? organization.id.toString() : '');
     };
 
     const handleFuelChange = (value: string) => {
@@ -213,23 +213,12 @@ export default function Edit({ vehicle, organizations, fuels }: Props) {
                                     <Label htmlFor="organization_id" className="text-sm font-medium">
                                         Organization <span className="text-destructive">*</span>
                                     </Label>
-                                    <Select value={data.organization_id} onValueChange={handleOrganizationChange}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select organization" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {organizations.map((org) => (
-                                                <SelectItem key={org.id} value={org.id.toString()}>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{org.name}</span>
-                                                        {org.name_bn && (
-                                                            <span className="text-sm text-muted-foreground">{org.name_bn}</span>
-                                                        )}
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <OrganizationSelector
+                                        organizations={organizations}
+                                        selectedOrganization={selectedOrganization}
+                                        onOrganizationSelect={handleOrganizationSelect}
+                                        placeholder="Select organization..."
+                                    />
                                     {errors.organization_id && (
                                         <p className="text-sm text-destructive">{errors.organization_id}</p>
                                     )}
