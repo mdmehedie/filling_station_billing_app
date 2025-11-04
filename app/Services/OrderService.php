@@ -61,7 +61,7 @@ class OrderService
             DB::raw('SUM(total_price) as total_sales'),
         ])->first();
 
-        return (new OrderCollection($query->paginate(5)))
+        return (new OrderCollection($query->paginate(15)))
             ->additional(['stats' => [
                 'total_vehicles' => $stats->total_vehicles ?? 0,
                 'total_quantity' => $stats->total_quantity ?? 0,
