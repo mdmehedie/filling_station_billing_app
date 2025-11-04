@@ -10,17 +10,17 @@ interface OrderSummaryProps {
 }
 
 export default function OrderSummary({ orderItems, totalOrderAmount, isValid }: OrderSummaryProps) {
-    const completeItems = orderItems.filter(item => 
+    const completeItems = orderItems.filter(item =>
         item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0
     ).length;
 
-    const totalQuantity = orderItems.reduce((sum, item) => 
+    const totalQuantity = orderItems.reduce((sum, item) =>
         sum + parseFloat(item.fuel_qty || '0'), 0
     );
 
     return (
-        <div className={`border rounded-lg p-4 max-w-4xl mx-auto transition-all duration-200 ${isValid 
-                ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' 
+        <div className={`border rounded-lg p-4 max-w-4xl mx-auto transition-all duration-200 ${isValid
+                ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
                 : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
             }`}>
             <div className="flex items-center justify-between">
@@ -38,7 +38,7 @@ export default function OrderSummary({ orderItems, totalOrderAmount, isValid }: 
                     <div className="text-sm">
                         <span className="text-muted-foreground">Total: </span>
                         <span className="font-medium">
-                            {totalQuantity.toFixed(1)}L
+                            {totalQuantity.toFixed(2)}L
                         </span>
                     </div>
                 </div>
