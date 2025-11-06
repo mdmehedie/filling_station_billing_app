@@ -43,7 +43,7 @@ class InvoiceService
         // return $data;
 
         $organization = Organization::find($organization_id);
-        $fileName = $organization->name . '_' . $period->isoFormat('MMMM YYYY');
+        $fileName = $organization->ucode . '_' . $organization->name . '_' . $period->isoFormat('MMMM YYYY');
         $month = $validated['month'];
         $year = $validated['year'];
 
