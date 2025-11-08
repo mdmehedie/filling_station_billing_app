@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Browsershot\Browsershot;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class InvoiceService
@@ -181,7 +182,7 @@ class InvoiceService
         foreach ($orders as $order) {
             $fuel = $order['fuel_name'];
             $ucode = $order['ucode'];
-            $day = (string) intval($order['sold_day']);  // day as string to match tableHeaders
+            $day = (string)intval($order['sold_day']);  // day as string to match tableHeaders
 
             if (!isset($vehicleDayData[$fuel])) {
                 $vehicleDayData[$fuel] = [];
@@ -214,7 +215,7 @@ class InvoiceService
                 $perLtrPriceByDay = [];
                 foreach ($days as $day => $info) {
                     if ($info['per_ltr_price'] > 0) {
-                        $perLtrPriceByDay[(int) $day] = $info['per_ltr_price'];
+                        $perLtrPriceByDay[(int)$day] = $info['per_ltr_price'];
                     }
                 }
                 ksort($perLtrPriceByDay);
@@ -222,7 +223,7 @@ class InvoiceService
                 // Fill missing days and assign correct per_ltr_price
                 $lastPerLtrPrice = 0;
                 foreach (range(1, $period->daysInMonth) as $d) {
-                    $dStr = (string) $d;
+                    $dStr = (string)$d;
                     if (isset($perLtrPriceByDay[$d])) {
                         $lastPerLtrPrice = $perLtrPriceByDay[$d];
                     }
@@ -267,7 +268,7 @@ class InvoiceService
                 foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
                     foreach ($days as $day => $info) {
                         if ($info['per_ltr_price'] > 0) {
-                            $priceChangeDays[(int) $day] = $info['per_ltr_price'];
+                            $priceChangeDays[(int)$day] = $info['per_ltr_price'];
                         }
                     }
                 }
@@ -474,13 +475,19 @@ class InvoiceService
                     AllowedFilter::callback('search', function ($query, $value) {
                         $query
                             ->where('id', 'like', "%{$value}%")
+                            ->orWhere('month', 'like', "%{$value}%")
                             ->orWhereHas('organization', function ($query) use ($value) {
-                                $query->where('name', 'like', "%{$value}%");
+                                $query->where('ucode', 'like', "%{$value}%");
+                                $query->orWhere('name', 'like', "%{$value}%");
                                 $query->orWhere('name_bn', 'like', "%{$value}%");
                             });
                     }),
                 ])
-                ->orderBy('updated_at', 'desc')
+                ->allowedSorts([
+                    AllowedSort::field('month'),
+                    AllowedSort::field('year'),
+                ])
+                ->defaultSort('-year', '-month')
                 ->paginate(15)
         );
     }
