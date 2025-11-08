@@ -38,8 +38,11 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
 
         // Get all invoices for the specified month and year
         $invoices = Invoice::with(['organization'])
+            ->join('organizations', 'invoices.organization_id', '=', 'organizations.id')
             ->where('month', $monthName)
             ->where('year', $this->year)
+            ->orderBy('organizations.ucode')
+            ->select('invoices.*')
             ->get();
 
         $data = collect();
