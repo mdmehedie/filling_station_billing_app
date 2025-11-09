@@ -38,10 +38,10 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
 
         // Get all invoices for the specified month and year
         $invoices = Invoice::with(['organization'])
+            ->join('organizations', 'invoices.organization_id', '=', 'organizations.id')
             ->where('month', $monthName)
             ->where('year', $this->year)
-            ->join('organizations', 'invoices.organization_id', '=', 'organizations.id')
-            ->orderBy('organizations.ucode', 'asc')
+            ->orderBy('organizations.ucode')
             ->select('invoices.*')
             ->get();
 
@@ -92,8 +92,7 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
             $totalCoupons = $dieselCoupons + $octaneCoupons;
 
             $rowData = [
-                // 'serial_no' => $index + 1,
-                'serial_no' => $invoice->organization->ucode ?? '',
+                'organization_code' => $invoice->organization->ucode ?? '',
                 'org_name_en' => $invoice->organization->name ?? '',
                 'org_name_bn' => $invoice->organization->name_bn ?? '',
                 'diesel_bill' => $dieselBill,
@@ -209,7 +208,7 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
         foreach ($data as $index => $row) {
             $currentRow = $startRow + $index;
 
-            $sheet->setCellValue('A' . $currentRow, $row['serial_no']);
+            $sheet->setCellValue('A' . $currentRow, $row['organization_code']);
             $sheet->setCellValue('B' . $currentRow, $row['org_name_en']);
             $sheet->setCellValue('C' . $currentRow, $row['org_name_bn']);
             $sheet->setCellValue('D' . $currentRow, $row['diesel_bill']);
@@ -285,7 +284,7 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
         $sheet->getRowDimension(8)->setRowHeight(25);  // Column indicators
 
         // Row 6: Group headers
-        $sheet->setCellValue('A6', 'Code');
+        $sheet->setCellValue('A6', 'Organization Code');
         $sheet->mergeCells('A6:A8');  // Merge with rows below
 
         $sheet->setCellValue('B6', 'Name of the Organization');
