@@ -15,6 +15,7 @@ export interface DataTableWrapperProps<T> {
     onRowClick?: (row: T) => void
     showPagination?: boolean
     onPageChange?: (page: number) => void
+    onPageSizeChange?: (pageSize: number) => void
     onSearchChange?: (search: string) => void
     searchValue?: string
     statusText?: string
@@ -33,6 +34,7 @@ export function DataTableWrapper<T extends Record<string, any>>({
     onRowClick,
     showPagination = true,
     onPageChange,
+    onPageSizeChange,
     onSearchChange,
     searchValue = "",
     statusText,
@@ -54,6 +56,7 @@ export function DataTableWrapper<T extends Record<string, any>>({
             // Pass the new response structure
             responseData={response}
             onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
             onSearchChange={onSearchChange}
             searchValue={searchValue}
             statusText={statusText || `Showing ${response.meta.from} to ${response.meta.to} of ${response.meta.total} items`}

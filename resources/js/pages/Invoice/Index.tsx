@@ -4,7 +4,7 @@ import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
 import invoiceRoute from "@/routes/invoices";
 import axios from "axios";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -246,7 +246,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         }
     }
 
-    const columns: Column<Invoice>[] = [
+    const columns: Column<Invoice>[] = useMemo(() => [
         {
             key: 'month',
             header: 'Month',
@@ -330,7 +330,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 </div>
             )
         }
-    ];
+    ], []);
     
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

@@ -488,7 +488,7 @@ class InvoiceService
                     AllowedSort::field('year'),
                 ])
                 ->defaultSort('-year', '-month')
-                ->paginate(15)
+                ->paginate(intval(request()->get('per_page', 15)))
         );
     }
 

@@ -130,4 +130,21 @@ class OrderController extends Controller
             return redirect()->route('orders.index')->with('error', "Order {$order->id} cannot be deleted because it is associated with a vehicle");
         }
     }
+
+    public function destroyMultiple(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:orders,id',
+        ]);
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['ids'] as $id) {
+                $order = Order::find($id);
+                $order->delete();
+            }
+        });
+        return response()->json([
+            'message' => 'Orders deleted successfully',
+        ], 200);
+    }
 }

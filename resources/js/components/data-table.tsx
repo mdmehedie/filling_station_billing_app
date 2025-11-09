@@ -337,27 +337,29 @@ export function DataTable<T extends Record<string, any>>({
                                 {startItem}-{endItem} of {totalItems}
                             </span>
                         )}
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">
-                                Show:
-                            </span>
-                            <Select value={currentPageSize.toString()} onValueChange={handlePageSizeChange}>
-                                <SelectTrigger className="w-20">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {pageSizeOptions.map(size => (
-                                        <SelectItem key={size} value={size.toString()}>
-                                            {size}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {onPageSizeChange && pageSizeOptions && pageSizeOptions.length > 0 && (
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                    Show:
+                                </span>
+                                <Select value={currentPageSize.toString()} onValueChange={handlePageSizeChange}>
+                                    <SelectTrigger className="w-20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {pageSizeOptions.map(size => (
+                                            <SelectItem key={size} value={size.toString()}>
+                                                {size}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
-            {!searchable && (
+            {!searchable && onPageSizeChange && pageSizeOptions && pageSizeOptions.length > 0 && (
                 <div className="flex items-center justify-end">
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-muted-foreground whitespace-nowrap">

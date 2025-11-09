@@ -10,7 +10,7 @@ import DeleteConfirmation from "@/components/DeleteConfirmation";
 import { BreadcrumbItem } from "@/types";
 import organizationsRoute from "@/routes/organizations";
 import { dashboard } from "@/routes";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 
 interface Props {
     organizations: PaginatedResponse<Organization>;
@@ -88,7 +88,7 @@ export default function Index({ organizations }: Props) {
         setDeleteModal({ isOpen: false, organization: null, error: null });
     };
 
-    const columns: Column<Organization>[] = [
+    const columns: Column<Organization>[] = useMemo(() => [
         {
             header: 'Org ID',
             key: 'ucode',
@@ -189,7 +189,7 @@ export default function Index({ organizations }: Props) {
                 </div>
             )
         }
-    ];
+    ], []);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -239,6 +239,7 @@ export default function Index({ organizations }: Props) {
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
                     statusText={`Showing ${organizations.meta.from} to ${organizations.meta.to} of ${organizations.meta.total} organizations`}
+                    responseData={organizations}
                 />
 
                 <DeleteConfirmation

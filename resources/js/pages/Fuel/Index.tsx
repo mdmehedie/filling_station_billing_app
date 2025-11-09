@@ -9,7 +9,7 @@ import { Fuel, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import fuelsRoute from "@/routes/fuels";
 import { dashboard } from "@/routes";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 
 interface Props {
@@ -88,7 +88,7 @@ export default function Index({ fuels }: Props) {
         setDeleteModal({ isOpen: false, fuel: null, error: null });
     };
 
-    const columns: Column<Fuel>[] = [
+    const columns: Column<Fuel>[] = useMemo(() => [
         {
             key: 'name',
             header: 'Fuel Name',
@@ -140,7 +140,7 @@ export default function Index({ fuels }: Props) {
                 </div>
             )
         }
-    ];
+    ], []);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {

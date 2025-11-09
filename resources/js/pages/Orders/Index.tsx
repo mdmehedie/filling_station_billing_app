@@ -13,7 +13,7 @@ import { Order, PaginatedResponse, Fuel, Vehicle } from "@/types/response";
 import { BreadcrumbItem, SharedData } from "@/types";
 import { dashboard } from "@/routes";
 import ordersRoute from "@/routes/orders";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { orderList, getAllOrganizations, getAllVehicles } from "@/lib/api";
 import axios from "axios";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
@@ -41,6 +41,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         order: null,
     });
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isInitialLoadRef = useRef(true);
     const [orders, setOrders] = useState<PaginatedResponse<Order>>({
         data: [],
         links: {
@@ -78,9 +79,10 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
-            // Update page size from response - use API default if available
-            if (response.meta?.per_page) {
+            // Update page size from response only on initial load
+            if (isInitialLoadRef.current && response.meta?.per_page) {
                 setPageSize(response.meta.per_page);
+                isInitialLoadRef.current = false;
             }
         });
 
@@ -89,13 +91,6 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             setOrganizations(response || []);
         });
     }, []);
-
-    // Sync page size from API response when orders change
-    useEffect(() => {
-        if (orders?.meta?.per_page && orders.meta.per_page !== pageSize) {
-            setPageSize(orders.meta.per_page);
-        }
-    }, [orders?.meta?.per_page]);
 
     // Load vehicles when organization changes
     useEffect(() => {
@@ -126,7 +121,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 per_page: pageSize
             });
         }, 500);
-    }, [startDate, endDate, selectedOrganization, selectedVehicle, selectedFuel, pageSize]);
+    }, [pageSize]);
 
     const handleSearchChange = (search: string) => {
         setSearchTerm(search);
@@ -148,7 +143,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         });
     };
 
-    const handlePageSizeChange = (newPageSize: number) => {
+    const handlePageSizeChange = useCallback((newPageSize: number) => {
         setPageSize(newPageSize);
         // Reset to first page when changing page size
         orderList((response: PaginatedResponse<Order>) => {
@@ -163,7 +158,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             page: 1,
             per_page: newPageSize
         });
-    };
+    }, [searchTerm, startDate, endDate, selectedOrganization, selectedVehicle, selectedFuel]);
 
     const handleFilterChange = () => {
         orderList((response: PaginatedResponse<Order>) => {
@@ -243,6 +238,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         setSelectedOrderIds(selectedIds.map(id => Number(id)));
     };
 
+    const handleOrganizationSelect = useCallback((org: Organization | null) => {
+        setSelectedOrganization(org);
+        setSelectedVehicle('all'); // Reset vehicle selection when organization changes
+    }, []);
+
     const handleBulkDelete = () => {
         if (selectedOrderIds.length === 0) return;
         
@@ -256,12 +256,12 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     const handleBulkDeleteConfirm = () => {
         if (selectedOrderIds.length === 0) return;
 
-        // Delete all selected orders
-        const deletePromises = selectedOrderIds.map(id =>
-            axios.delete(ordersRoute.destroy(id).url)
-        );
-
-        Promise.all(deletePromises)
+        // Use the bulk delete endpoint
+        axios.delete('/orders', {
+            data: {
+                ids: selectedOrderIds
+            }
+        })
             .then(() => {
                 setSelectedOrderIds([]);
                 setDeleteModal({ isOpen: false, order: null, error: null });
@@ -272,20 +272,26 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     "filter[search]": searchTerm,
                     "filter[start_date]": startDate,
                     "filter[end_date]": endDate,
+                    "filter[organization_id]": selectedOrganization ? selectedOrganization.id.toString() : "",
+                    "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
+                    "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
                     page: 1,
                     per_page: pageSize
                 });
             })
-            .catch((errors) => {
+            .catch((error) => {
+                const errorMessage = error.response?.data?.message || 
+                    error.response?.data?.error || 
+                    'Failed to delete orders. Please try again.';
                 setDeleteModal({
                     isOpen: true,
                     order: null,
-                    error: 'Failed to delete some orders. Please try again.',
+                    error: errorMessage,
                 });
             });
     };
 
-    const columns: Column<Order>[] = [
+    const columns: Column<Order>[] = useMemo(() => [
         // {
         //     key: 'id',
         //     header: 'Order ID',
@@ -405,7 +411,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 </div>
             )
         }
-    ];
+    ], [auth]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -616,10 +622,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         <OrganizationSelector
                                             organizations={organizations}
                                             selectedOrganization={selectedOrganization}
-                                            onOrganizationSelect={(org) => {
-                                                setSelectedOrganization(org);
-                                                setSelectedVehicle('all'); // Reset vehicle selection when organization changes
-                                            }}
+                                            onOrganizationSelect={handleOrganizationSelect}
                                             placeholder="All Organizations"
                                         />
                                     </div>

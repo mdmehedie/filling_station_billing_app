@@ -9,7 +9,7 @@ import { User, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import usersRoute from "@/routes/users";
 import { dashboard } from "@/routes";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
@@ -115,7 +115,7 @@ export default function Index({ users }: Props) {
         }
     };
 
-    const columns: Column<User>[] = [
+    const columns: Column<User>[] = useMemo(() => [
         {
             key: 'name',
             header: 'User',
@@ -261,7 +261,7 @@ export default function Index({ users }: Props) {
                 </div>
             )
         }
-    ];
+    ], [updatingUsers]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -301,6 +301,7 @@ export default function Index({ users }: Props) {
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
                     statusText={`Showing ${users.meta.from} to ${users.meta.to} of ${users.meta.total} users`}
+                    responseData={users}
                 />
             </div>  
         </AppLayout>

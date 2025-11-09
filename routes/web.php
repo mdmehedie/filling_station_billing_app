@@ -26,7 +26,9 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
     Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('orders/{order}/show', [OrderController::class, 'show'])->name('orders.show');
+    // edit, update, destroy
     Route::resource('orders', OrderController::class)->except(['index', 'create', 'store', 'show'])->middleware('is_admin');
+    Route::delete('orders', [OrderController::class, 'destroyMultiple'])->middleware('is_admin');
 
     Route::resource('users', UserController::class)->middleware('is_admin');
 

@@ -8,7 +8,7 @@ import { Vehicle, PaginatedResponse } from "@/types/response";
 import { BreadcrumbItem } from "@/types";
 import vehiclesRoute from "@/routes/vehicles";
 import { dashboard } from "@/routes";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 
 interface Props {
@@ -87,7 +87,7 @@ export default function Index({ vehicles }: Props) {
         setDeleteModal({ isOpen: false, vehicle: null, error: null });
     };
 
-    const columns: Column<Vehicle>[] = [
+    const columns: Column<Vehicle>[] = useMemo(() => [
         {
             key: 'ucode',
             header: 'Vehicle Code',
@@ -171,7 +171,7 @@ export default function Index({ vehicles }: Props) {
                 </div>
             )
         }
-    ];
+    ], []);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -221,6 +221,7 @@ export default function Index({ vehicles }: Props) {
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
                     statusText={`Showing ${vehicles.meta.from} to ${vehicles.meta.to} of ${vehicles.meta.total} vehicles`}
+                    responseData={vehicles}
                 />
 
                 <DeleteConfirmation

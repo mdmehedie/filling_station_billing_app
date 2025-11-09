@@ -15,7 +15,7 @@ class FuelController extends Controller
     public function index()
     {
         return inertia('Fuel/Index', [
-            'fuels' => FuelResource::collection(Fuel::paginate(15))
+            'fuels' => FuelResource::collection(Fuel::paginate(intval(request()->get('per_page', 15))))
         ]);
     }
 
