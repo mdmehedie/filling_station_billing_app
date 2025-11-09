@@ -40,16 +40,12 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
         $invoices = Invoice::with(['organization'])
             ->where('month', $monthName)
             ->where('year', $this->year)
+            ->join('organizations', 'invoices.organization_id', '=', 'organizations.id')
+            ->orderBy('organizations.ucode', 'asc')
+            ->select('invoices.*')
             ->get();
 
         $data = collect();
-
-        // Debug: Log invoice processing
-        Log::info('Processing invoices for export', [
-            'invoices_count' => $invoices->count(),
-            'month_name' => $monthName,
-            'year' => $this->year
-        ]);
 
         foreach ($invoices as $index => $invoice) {
             // Initialize fuel breakdown values
@@ -96,7 +92,8 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
             $totalCoupons = $dieselCoupons + $octaneCoupons;
 
             $rowData = [
-                'serial_no' => $index + 1,
+                // 'serial_no' => $index + 1,
+                'serial_no' => $invoice->organization->ucode ?? '',
                 'org_name_en' => $invoice->organization->name ?? '',
                 'org_name_bn' => $invoice->organization->name_bn ?? '',
                 'diesel_bill' => $dieselBill,
@@ -288,7 +285,7 @@ class InvoiceExport implements FromCollection, WithStyles, WithColumnWidths, Wit
         $sheet->getRowDimension(8)->setRowHeight(25);  // Column indicators
 
         // Row 6: Group headers
-        $sheet->setCellValue('A6', 'S/No');
+        $sheet->setCellValue('A6', 'Code');
         $sheet->mergeCells('A6:A8');  // Merge with rows below
 
         $sheet->setCellValue('B6', 'Name of the Organization');
