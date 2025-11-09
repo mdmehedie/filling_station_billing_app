@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit, Trash2, Eye, Download, Filter, X, Plus, ShoppingCart, DollarSign, Calendar, TrendingUp, Truck, Car } from "lucide-react";
+import { Edit, Trash2, Eye, Download, Filter, X, Plus, ShoppingCart, DollarSign, Calendar, TrendingUp, Truck, Car, Loader2 } from "lucide-react";
 import { Order, PaginatedResponse, Fuel, Vehicle } from "@/types/response";
 import { BreadcrumbItem, SharedData } from "@/types";
 import { dashboard } from "@/routes";
@@ -75,6 +75,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     const [isFullTotalVehicle, setisFullTotalVehicle] = useState(false);
     const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
     const [pageSize, setPageSize] = useState(15);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
@@ -291,6 +292,77 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             });
     };
 
+    // Check if any filters are active
+    const hasActiveFilters = useMemo(() => {
+        return !!(
+            searchTerm ||
+            startDate ||
+            endDate ||
+            selectedOrganization ||
+            (selectedVehicle && selectedVehicle !== 'all') ||
+            (selectedFuel && selectedFuel !== 'all')
+        );
+    }, [searchTerm, startDate, endDate, selectedOrganization, selectedVehicle, selectedFuel]);
+
+    const handleExport = async () => {
+        if (!hasActiveFilters || isExporting) return;
+        
+        setIsExporting(true);
+        
+        try {
+            const params = new URLSearchParams();
+            
+            if (searchTerm) {
+                params.append('filter[search]', searchTerm);
+            }
+            if (startDate) {
+                params.append('filter[start_date]', startDate);
+            }
+            if (endDate) {
+                params.append('filter[end_date]', endDate);
+            }
+            if (selectedOrganization) {
+                params.append('filter[organization_id]', selectedOrganization.id.toString());
+            }
+            if (selectedVehicle && selectedVehicle !== 'all') {
+                params.append('filter[vehicle_id]', selectedVehicle);
+            }
+            if (selectedFuel && selectedFuel !== 'all') {
+                params.append('filter[fuel_id]', selectedFuel);
+            }
+
+            const url = `/api/orders/export${params.toString() ? '?' + params.toString() : ''}`;
+            
+            // Use fetch to download the file so we can handle loading state
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin', // Include cookies for session-based auth
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Export failed');
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `Orders-Report-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (error) {
+            console.error('Export error:', error);
+            // You could add a toast notification here if needed
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const columns: Column<Order>[] = useMemo(() => [
         // {
         //     key: 'id',
@@ -436,13 +508,15 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                             Manage and track all fuel orders
                         </p>
                     </div>
-                    <Button
-                        onClick={() => router.visit(ordersRoute.create().url)}
-                        className="flex items-center gap-2"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Add New Order
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => router.visit(ordersRoute.create().url)}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Add New Order
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Overview Cards */}
@@ -700,13 +774,26 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                             Apply Filters
                                         </Button>
                                         <Button
-                                            variant="outline"
+                                            variant="default"
+                                            onClick={handleExport}
+                                            disabled={!hasActiveFilters || isExporting}
+                                            className="flex items-center gap-2"
+                                        >
+                                            {isExporting ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Download className="h-4 w-4" />
+                                            )}
+                                            Export Excel
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
                                             onClick={clearFilters}
                                             className="flex items-center gap-2"
                                         >
                                             <X className="h-4 w-4" />
                                             Clear All
-                                        </Button>
+                                        </Button>   
                                     </div>
                                     <div className="text-sm text-muted-foreground flex items-center">
                                         {startDate && endDate && (

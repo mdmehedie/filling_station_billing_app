@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\OrderExport;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\FuelResource;
@@ -19,6 +20,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 use App;
 
 class OrderController extends Controller
@@ -146,5 +148,26 @@ class OrderController extends Controller
         return response()->json([
             'message' => 'Orders deleted successfully',
         ], 200);
+    }
+
+    public function export(Request $request)
+    {
+        $filters = [
+            'search' => $request->input('filter.search'),
+            'start_date' => $request->input('filter.start_date'),
+            'end_date' => $request->input('filter.end_date'),
+            'organization_id' => $request->input('filter.organization_id'),
+            'vehicle_id' => $request->input('filter.vehicle_id'),
+            'fuel_id' => $request->input('filter.fuel_id'),
+        ];
+
+        // Remove empty filters
+        $filters = array_filter($filters, function ($value) {
+            return !empty($value);
+        });
+
+        $filename = 'Orders-Report-' . date('Y-m-d-His') . '.xlsx';
+
+        return Excel::download(new OrderExport($filters), $filename, \Maatwebsite\Excel\Excel::XLSX);
     }
 }
