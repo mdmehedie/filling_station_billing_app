@@ -72,10 +72,16 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
     const [isFullQuantity, setisFullQuantity] = useState(false);
     const [isFullTotalOrder, setisFullTotalOrder] = useState(false);
     const [isFullTotalVehicle, setisFullTotalVehicle] = useState(false);
+    const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+    const [pageSize, setPageSize] = useState(15);
 
     useEffect(() => {
         orderList((response: PaginatedResponse<Order>) => {
             setOrders(response);
+            // Update page size from response - use API default if available
+            if (response.meta?.per_page) {
+                setPageSize(response.meta.per_page);
+            }
         });
 
         // Load filter options
@@ -83,6 +89,13 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             setOrganizations(response || []);
         });
     }, []);
+
+    // Sync page size from API response when orders change
+    useEffect(() => {
+        if (orders?.meta?.per_page && orders.meta.per_page !== pageSize) {
+            setPageSize(orders.meta.per_page);
+        }
+    }, [orders?.meta?.per_page]);
 
     // Load vehicles when organization changes
     useEffect(() => {
@@ -109,10 +122,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 setOrders(response);
             }, {
                 "filter[search]": term,
-                page: 1 // Reset to first page when searching
+                page: 1, // Reset to first page when searching
+                per_page: pageSize
             });
         }, 500);
-    }, [startDate, endDate, selectedOrganization, selectedVehicle, selectedFuel]);
+    }, [startDate, endDate, selectedOrganization, selectedVehicle, selectedFuel, pageSize]);
 
     const handleSearchChange = (search: string) => {
         setSearchTerm(search);
@@ -129,7 +143,25 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             "filter[organization_id]": selectedOrganization ? selectedOrganization.id.toString() : "",
             "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
             "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
-            page: page
+            page: page,
+            per_page: pageSize
+        });
+    };
+
+    const handlePageSizeChange = (newPageSize: number) => {
+        setPageSize(newPageSize);
+        // Reset to first page when changing page size
+        orderList((response: PaginatedResponse<Order>) => {
+            setOrders(response);
+        }, {
+            "filter[search]": searchTerm,
+            "filter[start_date]": startDate,
+            "filter[end_date]": endDate,
+            "filter[organization_id]": selectedOrganization ? selectedOrganization.id.toString() : "",
+            "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
+            "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
+            page: 1,
+            per_page: newPageSize
         });
     };
 
@@ -143,7 +175,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             "filter[organization_id]": selectedOrganization ? selectedOrganization.id.toString() : "",
             "filter[vehicle_id]": selectedVehicle === "all" ? "" : selectedVehicle,
             "filter[fuel_id]": selectedFuel === "all" ? "" : selectedFuel,
-            page: 1
+            page: 1,
+            per_page: pageSize
         });
     };
 
@@ -164,7 +197,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             "filter[organization_id]": '',
             "filter[vehicle_id]": '',
             "filter[fuel_id]": '',
-            page: 1
+            page: 1,
+            per_page: pageSize
         });
     };
 
@@ -188,7 +222,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                         "filter[search]": searchTerm,
                         "filter[start_date]": startDate,
                         "filter[end_date]": endDate,
-                        page: 1
+                        page: 1,
+                        per_page: pageSize
                     });
                 },
                 onError: (errors) => {
@@ -202,6 +237,52 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
 
     const handleDeleteCancel = () => {
         setDeleteModal({ isOpen: false, order: null, error: null });
+    };
+
+    const handleSelectionChange = (selectedIds: (string | number)[]) => {
+        setSelectedOrderIds(selectedIds.map(id => Number(id)));
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedOrderIds.length === 0) return;
+        
+        setDeleteModal({
+            isOpen: true,
+            order: null,
+            error: null,
+        });
+    };
+
+    const handleBulkDeleteConfirm = () => {
+        if (selectedOrderIds.length === 0) return;
+
+        // Delete all selected orders
+        const deletePromises = selectedOrderIds.map(id =>
+            axios.delete(ordersRoute.destroy(id).url)
+        );
+
+        Promise.all(deletePromises)
+            .then(() => {
+                setSelectedOrderIds([]);
+                setDeleteModal({ isOpen: false, order: null, error: null });
+                // Refresh the orders list after successful deletion
+                orderList((response: PaginatedResponse<Order>) => {
+                    setOrders(response);
+                }, {
+                    "filter[search]": searchTerm,
+                    "filter[start_date]": startDate,
+                    "filter[end_date]": endDate,
+                    page: 1,
+                    per_page: pageSize
+                });
+            })
+            .catch((errors) => {
+                setDeleteModal({
+                    isOpen: true,
+                    order: null,
+                    error: 'Failed to delete some orders. Please try again.',
+                });
+            });
     };
 
     const columns: Column<Order>[] = [
@@ -637,6 +718,39 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     )}
                 </Card>
 
+                {/* Bulk Actions Bar */}
+                {selectedOrderIds.length > 0 && (
+                    <Card className="bg-muted/50">
+                        <CardContent className="flex items-center justify-between py-3">
+                            <div className="text-sm font-medium">
+                                {selectedOrderIds.length} order{selectedOrderIds.length !== 1 ? 's' : ''} selected
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {(auth as any).user?.role === 'admin' && (
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={handleBulkDelete}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete Selected
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setSelectedOrderIds([])}
+                                    className="flex items-center gap-2"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Clear Selection
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <DataTable
                     data={orders!.data}
                     columns={columns}
@@ -650,18 +764,34 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     to={orders!.meta.to}
                     total={orders!.meta.total}
                     onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
                     onSearchChange={handleSearchChange}
                     searchValue={searchTerm}
                     statusText={`Showing ${orders!.meta.from} to ${orders!.meta.to} of ${orders!.meta.total} orders`}
+                    enableSelection={true}
+                    selectedRows={selectedOrderIds}
+                    onSelectionChange={handleSelectionChange}
+                    getRowId={(row) => row.id}
+                    responseData={orders!}
+                    pageSize={pageSize}
+                    pageSizeOptions={[15, 50, 100, 200, 400, 500]}
                 />
 
                 <DeleteConfirmation
                     isOpen={deleteModal.isOpen}
                     onClose={handleDeleteCancel}
-                    onConfirm={handleDeleteConfirm}
-                    title="Delete Order"
-                    description={`Are you sure you want to delete this order? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`}
-                    itemName={deleteModal.order ? `Order #${deleteModal.order.id.toString().padStart(4, '0')}` : ''}
+                    onConfirm={deleteModal.order ? handleDeleteConfirm : handleBulkDeleteConfirm}
+                    title={deleteModal.order ? "Delete Order" : "Delete Selected Orders"}
+                    description={
+                        deleteModal.order
+                            ? `Are you sure you want to delete this order? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`
+                            : `Are you sure you want to delete ${selectedOrderIds.length} order${selectedOrderIds.length !== 1 ? 's' : ''}? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`
+                    }
+                    itemName={
+                        deleteModal.order
+                            ? `Order #${deleteModal.order.id.toString().padStart(4, '0')}`
+                            : `${selectedOrderIds.length} selected order${selectedOrderIds.length !== 1 ? 's' : ''}`
+                    }
                 />
             </div>
         </AppLayout>

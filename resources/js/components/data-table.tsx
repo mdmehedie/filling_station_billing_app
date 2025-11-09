@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
     Table,
     TableBody,
@@ -20,6 +20,7 @@ import { LaravelPagination } from '@/components/laravel-pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Search, ChevronDown, ChevronUp } from 'lucide-react'
 import { DataTableProps } from "@/types/response";
 
@@ -39,8 +40,8 @@ export function DataTable<T extends Record<string, any>>({
     searchable = true,
     searchPlaceholder = "Search...",
     searchFields,
-    pageSize = 10,
-    pageSizeOptions = [5, 10, 20, 50, 100],
+    pageSize = 15,
+    pageSizeOptions = [15, 50, 100, 200, 400, 500],
     className,
     emptyMessage = "No data available",
     onRowClick,
@@ -54,11 +55,17 @@ export function DataTable<T extends Record<string, any>>({
     to,
     total,
     onPageChange,
+    onPageSizeChange,
     onSearchChange,
     searchValue = "",
     statusText,
     // New response structure props
     responseData,
+    // Selection props
+    enableSelection = false,
+    getRowId = (row: T) => (row as any).id,
+    selectedRows = [],
+    onSelectionChange,
 }: DataTableProps<T>) {
     const [searchTerm, setSearchTerm] = useState(searchValue)
     const [currentPageLocal, setCurrentPageLocal] = useState(1)
@@ -67,6 +74,7 @@ export function DataTable<T extends Record<string, any>>({
         key: keyof T | string | null
         direction: 'asc' | 'desc'
     }>({ key: null, direction: 'asc' })
+    const [internalSelectedRows, setInternalSelectedRows] = useState<(string | number)[]>(selectedRows)
 
     // Filter data based on search term (only for client-side)
     const filteredData = useMemo(() => {
@@ -157,9 +165,70 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     const handlePageSizeChange = (newPageSize: string) => {
-        setItemsPerPage(Number(newPageSize))
+        const size = Number(newPageSize)
+        setItemsPerPage(size)
         setCurrentPageLocal(1)
+        
+        // Call the callback for server-side pagination
+        if (serverSidePagination && onPageSizeChange) {
+            onPageSizeChange(size)
+        }
     }
+
+    // Get current page size - prioritize API response for server-side pagination
+    const currentPageSize = serverSidePagination 
+        ? (responseData?.meta.per_page ?? pageSize)
+        : itemsPerPage
+
+    // Sync internal selected rows with prop
+    useEffect(() => {
+        if (selectedRows !== undefined) {
+            setInternalSelectedRows(selectedRows)
+        }
+    }, [selectedRows])
+
+    // Handle row selection
+    const handleRowSelect = (row: T, checked: boolean) => {
+        const rowId = getRowId(row)
+        let newSelection: (string | number)[]
+        
+        if (checked) {
+            newSelection = [...internalSelectedRows, rowId]
+        } else {
+            newSelection = internalSelectedRows.filter(id => id !== rowId)
+        }
+        
+        setInternalSelectedRows(newSelection)
+        onSelectionChange?.(newSelection)
+    }
+
+    // Handle select all
+    const handleSelectAll = (checked: boolean) => {
+        let newSelection: (string | number)[]
+        const visibleRowIds = paginatedData.map(row => getRowId(row))
+        
+        if (checked || isIndeterminate) {
+            // Select all visible rows (merge with existing selection)
+            newSelection = [...new Set([...internalSelectedRows, ...visibleRowIds])]
+        } else {
+            // Deselect all visible rows
+            const visibleRowIdsSet = new Set(visibleRowIds)
+            newSelection = internalSelectedRows.filter(id => !visibleRowIdsSet.has(id))
+        }
+        
+        setInternalSelectedRows(newSelection)
+        onSelectionChange?.(newSelection)
+    }
+
+    // Check if all visible rows are selected
+    const isAllSelected = paginatedData.length > 0 && paginatedData.every(row => 
+        internalSelectedRows.includes(getRowId(row))
+    )
+
+    // Check if some (but not all) visible rows are selected
+    const isIndeterminate = paginatedData.some(row => 
+        internalSelectedRows.includes(getRowId(row))
+    ) && !isAllSelected
 
     const renderPaginationItems = () => {
         const items = []
@@ -262,12 +331,17 @@ export function DataTable<T extends Record<string, any>>({
                             className="pl-8"
                         />
                     </div>
-                    {!serverSidePagination && (
-                        <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
+                        {!serverSidePagination && (
                             <span className="text-sm text-muted-foreground">
                                 {startItem}-{endItem} of {totalItems}
                             </span>
-                            <Select value={itemsPerPage.toString()} onValueChange={handlePageSizeChange}>
+                        )}
+                        <div className="flex items-center space-x-2">
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                Show:
+                            </span>
+                            <Select value={currentPageSize.toString()} onValueChange={handlePageSizeChange}>
                                 <SelectTrigger className="w-20">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -280,7 +354,28 @@ export function DataTable<T extends Record<string, any>>({
                                 </SelectContent>
                             </Select>
                         </div>
-                    )}
+                    </div>
+                </div>
+            )}
+            {!searchable && (
+                <div className="flex items-center justify-end">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            Show:
+                        </span>
+                        <Select value={currentPageSize.toString()} onValueChange={handlePageSizeChange}>
+                            <SelectTrigger className="w-20">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {pageSizeOptions.map(size => (
+                                    <SelectItem key={size} value={size.toString()}>
+                                        {size}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             )}
 
@@ -289,6 +384,15 @@ export function DataTable<T extends Record<string, any>>({
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            {enableSelection && (
+                                <TableHead className="w-12">
+                                    <Checkbox
+                                        checked={isAllSelected}
+                                        onCheckedChange={handleSelectAll}
+                                        className={isIndeterminate ? "opacity-75" : ""}
+                                    />
+                                </TableHead>
+                            )}
                             {columns.map((column, index) => (
                                 <TableHead
                                     key={index}
@@ -321,26 +425,49 @@ export function DataTable<T extends Record<string, any>>({
                     <TableBody>
                         {paginatedData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                <TableCell colSpan={columns.length + (enableSelection ? 1 : 0)} className="h-24 text-center">
                                     {emptyMessage}
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            paginatedData.map((row, rowIndex) => (
-                                <TableRow
-                                    key={rowIndex}
-                                    className={onRowClick ? "cursor-pointer" : ""}
-                                    onClick={() => onRowClick?.(row)}
-                                >
-                                    {columns.map((column, colIndex) => (
-                                        <TableCell key={colIndex} className={column.className}>
-                                            {column.render
-                                                ? column.render(row[column.key as keyof T], row)
-                                                : String(row[column.key as keyof T] || '')}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
+                            paginatedData.map((row, rowIndex) => {
+                                const rowId = getRowId(row)
+                                const isSelected = internalSelectedRows.includes(rowId)
+                                
+                                return (
+                                    <TableRow
+                                        key={rowIndex}
+                                        className={onRowClick ? "cursor-pointer" : ""}
+                                        onClick={(e) => {
+                                            // Don't trigger row click if clicking on checkbox
+                                            if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                                                return
+                                            }
+                                            onRowClick?.(row)
+                                        }}
+                                        data-selected={isSelected}
+                                    >
+                                        {enableSelection && (
+                                            <TableCell 
+                                                className="w-12"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={(checked) => handleRowSelect(row, checked as boolean)}
+                                                />
+                                            </TableCell>
+                                        )}
+                                        {columns.map((column, colIndex) => (
+                                            <TableCell key={colIndex} className={column.className}>
+                                                {column.render
+                                                    ? column.render(row[column.key as keyof T], row)
+                                                    : String(row[column.key as keyof T] || '')}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                )
+                            })
                         )}
                     </TableBody>
                 </Table>

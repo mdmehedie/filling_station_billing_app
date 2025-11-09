@@ -27,15 +27,17 @@ class VehicleController extends Controller
             ->defaultSort('-id')
             ->allowedFilters([
                 AllowedFilter::callback('search', function ($query, $value) {
-                    $query->where('name', 'like', "%{$value}%")
+                    $query
+                        ->where('name', 'like', "%{$value}%")
                         ->orWhere('ucode', 'like', "%{$value}%")
                         ->orWhereHas('organization', function ($query) use ($value) {
-                            $query->where('name', 'like', "%{$value}%")
+                            $query
+                                ->where('name', 'like', "%{$value}%")
                                 ->orWhere('name_bn', 'like', "%{$value}%");
                         });
                 }),
             ])
-            ->paginate(15);
+            ->paginate(intval(request()->get('per_page', 15)));
 
         return inertia('Vehicles/Index', [
             'vehicles' => VehicleResource::collection($vehicles)
@@ -123,6 +125,5 @@ class VehicleController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('vehicles.index')->with('error', "Vehicle {$vehicle->name} cannot be deleted because it is associated with an order");
         }
-
     }
 }

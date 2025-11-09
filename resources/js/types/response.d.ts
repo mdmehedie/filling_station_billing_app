@@ -54,11 +54,17 @@ export interface DataTableProps<T> {
     to?: number
     total?: number
     onPageChange?: (page: number) => void
+    onPageSizeChange?: (pageSize: number) => void
     onSearchChange?: (search: string) => void
     searchValue?: string
     statusText?: string
     // New response structure props
     responseData?: PaginatedResponse<T>
+    // Selection props
+    enableSelection?: boolean
+    getRowId?: (row: T) => string | number
+    selectedRows?: (string | number)[]
+    onSelectionChange?: (selectedIds: (string | number)[]) => void
 }
 
 export interface Links {

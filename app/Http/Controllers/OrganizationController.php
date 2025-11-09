@@ -4,14 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
-use App\Models\Organization;
 use App\Http\Resources\OrganizationResource;
-use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
+use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class OrganizationController extends Controller
 {
@@ -23,16 +23,18 @@ class OrganizationController extends Controller
         return inertia('Organizations/Index', [
             'organizations' => OrganizationResource::collection(
                 QueryBuilder::for(Organization::class)
-                ->with('user')
-                ->orderBy('id', 'desc')
-                ->allowedFilters([
-                    AllowedFilter::callback('search', function ($query, $value) {
-                        $query->where('ucode', 'like', "%{$value}%")
-                            ->orWhere('name', 'like', "%{$value}%")
-                            ->orWhere('name_bn', 'like', "%{$value}%");
-                    })
-                ])
-            ->paginate(15))
+                    ->with('user')
+                    ->orderBy('id', 'desc')
+                    ->allowedFilters([
+                        AllowedFilter::callback('search', function ($query, $value) {
+                            $query
+                                ->where('ucode', 'like', "%{$value}%")
+                                ->orWhere('name', 'like', "%{$value}%")
+                                ->orWhere('name_bn', 'like', "%{$value}%");
+                        })
+                    ])
+                    ->paginate(intval(request()->get('per_page', 15)))
+            )
         ]);
     }
 
@@ -90,7 +92,8 @@ class OrganizationController extends Controller
 
         $organization->update($data);
 
-        return redirect()->route('organizations.show', $organization)
+        return redirect()
+            ->route('organizations.show', $organization)
             ->with('success', "Organization {$organization->name} updated successfully");
     }
 
@@ -99,15 +102,15 @@ class OrganizationController extends Controller
      */
     public function destroy(Organization $organization)
     {
-        if($organization->logo){
+        if ($organization->logo) {
             Storage::delete('organizations/' . $organization->logo);
         }
 
-        if($organization->vehicles_count > 0){
+        if ($organization->vehicles_count > 0) {
             throw ValidationException::withMessages(['error' => "Organization has {$organization->vehicles_count} vehicles"]);
         }
 
-        if($organization->orders_count > 0){
+        if ($organization->orders_count > 0) {
             throw ValidationException::withMessages(['error' => "Organization has {$organization->orders_count} orders"]);
         }
 
