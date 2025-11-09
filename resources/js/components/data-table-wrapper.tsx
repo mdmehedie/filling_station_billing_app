@@ -19,6 +19,11 @@ export interface DataTableWrapperProps<T> {
     onSearchChange?: (search: string) => void
     searchValue?: string
     statusText?: string
+    // Selection props
+    enableSelection?: boolean
+    getRowId?: (row: T) => string | number
+    selectedRows?: (string | number)[]
+    onSelectionChange?: (selectedIds: (string | number)[]) => void
 }
 
 export function DataTableWrapper<T extends Record<string, any>>({
@@ -38,6 +43,11 @@ export function DataTableWrapper<T extends Record<string, any>>({
     onSearchChange,
     searchValue = "",
     statusText,
+    // Selection props
+    enableSelection = false,
+    getRowId = (row: T) => (row as any).id,
+    selectedRows = [],
+    onSelectionChange,
 }: DataTableWrapperProps<T>) {
     return (
         <DataTable
@@ -60,6 +70,11 @@ export function DataTableWrapper<T extends Record<string, any>>({
             onSearchChange={onSearchChange}
             searchValue={searchValue}
             statusText={statusText || `Showing ${response.meta.from} to ${response.meta.to} of ${response.meta.total} items`}
+            // Selection props
+            enableSelection={enableSelection}
+            getRowId={getRowId}
+            selectedRows={selectedRows}
+            onSelectionChange={onSelectionChange}
         />
     )
 }

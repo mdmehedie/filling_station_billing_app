@@ -182,7 +182,7 @@ class InvoiceService
         foreach ($orders as $order) {
             $fuel = $order['fuel_name'];
             $ucode = $order['ucode'];
-            $day = (string)intval($order['sold_day']);  // day as string to match tableHeaders
+            $day = (string) intval($order['sold_day']);  // day as string to match tableHeaders
 
             if (!isset($vehicleDayData[$fuel])) {
                 $vehicleDayData[$fuel] = [];
@@ -215,7 +215,7 @@ class InvoiceService
                 $perLtrPriceByDay = [];
                 foreach ($days as $day => $info) {
                     if ($info['per_ltr_price'] > 0) {
-                        $perLtrPriceByDay[(int)$day] = $info['per_ltr_price'];
+                        $perLtrPriceByDay[(int) $day] = $info['per_ltr_price'];
                     }
                 }
                 ksort($perLtrPriceByDay);
@@ -223,7 +223,7 @@ class InvoiceService
                 // Fill missing days and assign correct per_ltr_price
                 $lastPerLtrPrice = 0;
                 foreach (range(1, $period->daysInMonth) as $d) {
-                    $dStr = (string)$d;
+                    $dStr = (string) $d;
                     if (isset($perLtrPriceByDay[$d])) {
                         $lastPerLtrPrice = $perLtrPriceByDay[$d];
                     }
@@ -268,7 +268,7 @@ class InvoiceService
                 foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
                     foreach ($days as $day => $info) {
                         if ($info['per_ltr_price'] > 0) {
-                            $priceChangeDays[(int)$day] = $info['per_ltr_price'];
+                            $priceChangeDays[(int) $day] = $info['per_ltr_price'];
                         }
                     }
                 }
@@ -483,11 +483,13 @@ class InvoiceService
                             });
                     }),
                 ])
+                ->join('organizations', 'invoices.organization_id', '=', 'organizations.id')
                 ->allowedSorts([
                     AllowedSort::field('month'),
                     AllowedSort::field('year'),
                 ])
                 ->defaultSort('-year', '-month')
+                ->orderBy('organizations.ucode', 'asc')
                 ->paginate(intval(request()->get('per_page', 15)))
         );
     }

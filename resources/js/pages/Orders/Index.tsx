@@ -1,6 +1,7 @@
 import AppLayout from "@/layouts/app-layout";
 import { Head, router, usePage } from "@inertiajs/react";
-import { DataTable, Column } from "@/components/data-table";
+import { DataTableWrapper } from "@/components/data-table-wrapper";
+import { Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -841,18 +842,11 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     </Card>
                 )}
 
-                <DataTable
-                    data={orders!.data}
+                <DataTableWrapper
+                    response={orders!}
                     columns={columns}
                     searchable={true}
                     searchPlaceholder="Search orders..."
-                    serverSidePagination={true}
-                    showPagination={true}
-                    currentPage={orders!.meta.current_page}
-                    lastPage={orders!.meta.last_page}
-                    from={orders!.meta.from}
-                    to={orders!.meta.to}
-                    total={orders!.meta.total}
                     onPageChange={handlePageChange}
                     onPageSizeChange={handlePageSizeChange}
                     onSearchChange={handleSearchChange}
@@ -862,7 +856,6 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     selectedRows={selectedOrderIds}
                     onSelectionChange={handleSelectionChange}
                     getRowId={(row) => row.id}
-                    responseData={orders!}
                     pageSize={pageSize}
                     pageSizeOptions={[15, 50, 100, 200, 400, 500]}
                 />
