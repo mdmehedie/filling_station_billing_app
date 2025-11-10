@@ -24,6 +24,7 @@ class OrderResource extends JsonResource
             'per_ltr_price' => $this->per_ltr_price,
             'sold_date' => $this->sold_date->format('Y-m-d'),
             'created_at' => $this->created_at->format('Y-m-d H:i A'),
+            'updated_at' => $this->updated_at->format('Y-m-d H:i A'),
             'organization' => [
                 'id' => $this->organization->id,
                 'ucode' => $this->organization->ucode,

@@ -247,7 +247,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
 
     const handleBulkDelete = () => {
         if (selectedOrderIds.length === 0) return;
-        
+
         setDeleteModal({
             isOpen: true,
             order: null,
@@ -282,8 +282,8 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 });
             })
             .catch((error) => {
-                const errorMessage = error.response?.data?.message || 
-                    error.response?.data?.error || 
+                const errorMessage = error.response?.data?.message ||
+                    error.response?.data?.error ||
                     'Failed to delete orders. Please try again.';
                 setDeleteModal({
                     isOpen: true,
@@ -307,12 +307,12 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
 
     const handleExport = async () => {
         if (!hasActiveFilters || isExporting) return;
-        
+
         setIsExporting(true);
-        
+
         try {
             const params = new URLSearchParams();
-            
+
             if (searchTerm) {
                 params.append('filter[search]', searchTerm);
             }
@@ -333,7 +333,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             }
 
             const url = `/api/orders/export${params.toString() ? '?' + params.toString() : ''}`;
-            
+
             // Use fetch to download the file so we can handle loading state
             const response = await fetch(url, {
                 method: 'GET',
@@ -458,6 +458,12 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
         {
             key: 'created_at',
             header: 'Created At',
+            sortable: true,
+            render: (value) => value
+        },
+        {
+            key: 'updated_at',
+            header: 'Updated At',
             sortable: true,
             render: (value) => value
         },
@@ -794,7 +800,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                         >
                                             <X className="h-4 w-4" />
                                             Clear All
-                                        </Button>   
+                                        </Button>
                                     </div>
                                     <div className="text-sm text-muted-foreground flex items-center">
                                         {startDate && endDate && (

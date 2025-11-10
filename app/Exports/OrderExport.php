@@ -97,6 +97,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
                 'creator_name' => $order->creator->name ?? '',
                 'creator_email' => $order->creator->email ?? '',
                 'created_at' => $order->created_at ? $order->created_at->format('d/m/Y H:i:s') : '',
+                'updated_at' => $order->updated_at ? $order->updated_at->format('d/m/Y H:i:s') : '',
             ];
 
             $data->push($rowData);
@@ -124,6 +125,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
             'N' => 20,  // Creator Name
             'O' => 25,  // Creator Email
             'P' => 20,  // Created At
+            'Q' => 20,  // Updated At
         ];
     }
 
@@ -160,18 +162,18 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
 
         // Add CSD Filling Station header
         $sheet->setCellValue('A1', 'CSD Filling Station');
-        $sheet->mergeCells('A1:P1');
+        $sheet->mergeCells('A1:Q1');
         $sheet->getStyle('A1')->getFont()->setSize(16)->setBold(true);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $sheet->setCellValue('A2', 'Cantonment, Dhaka-1206');
-        $sheet->mergeCells('A2:P2');
+        $sheet->mergeCells('A2:Q2');
         $sheet->getStyle('A2')->getFont()->setSize(12);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Add Orders Report title
         $sheet->setCellValue('A3', 'Orders Report');
-        $sheet->mergeCells('A3:P3');
+        $sheet->mergeCells('A3:Q3');
         $sheet->getStyle('A3')->getFont()->setSize(18)->setBold(true);
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -179,7 +181,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
         $filterInfo = $this->getFilterInfo();
         if ($filterInfo) {
             $sheet->setCellValue('A4', $filterInfo);
-            $sheet->mergeCells('A4:P4');
+            $sheet->mergeCells('A4:Q4');
             $sheet->getStyle('A4')->getFont()->setSize(12);
             $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
@@ -240,6 +242,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
             $sheet->setCellValue('N' . $currentRow, $row['creator_name']);
             $sheet->setCellValue('O' . $currentRow, $row['creator_email']);
             $sheet->setCellValue('P' . $currentRow, $row['created_at']);
+            $sheet->setCellValue('Q' . $currentRow, $row['updated_at']);
         }
 
         // Add summary row
@@ -268,7 +271,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
         }
 
         // Style all rows from header to data (including summary)
-        $fullRange = 'A' . $headerRow . ':P' . $lastRow;
+        $fullRange = 'A' . $headerRow . ':Q' . $lastRow;
         $sheet
             ->getStyle($fullRange)
             ->getBorders()
@@ -277,7 +280,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
 
         // Ensure bottom borders are visible for all rows
         for ($row = $headerRow; $row <= $lastRow; $row++) {
-            $rowRange = 'A' . $row . ':P' . $row;
+            $rowRange = 'A' . $row . ':Q' . $row;
             $sheet
                 ->getStyle($rowRange)
                 ->getBorders()
@@ -337,6 +340,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
             'N' => 'Creator Name',
             'O' => 'Creator Email',
             'P' => 'Created At',
+            'Q' => 'Updated At',
         ];
 
         foreach ($headers as $col => $header) {
@@ -344,7 +348,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
         }
 
         // Style headers
-        $headerRange = 'A' . $headerRow . ':P' . $headerRow;
+        $headerRange = 'A' . $headerRow . ':Q' . $headerRow;
         $sheet->getStyle($headerRange)->getFont()->setBold(true);
         $sheet->getStyle($headerRange)->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('000000'));
         $sheet->getStyle($headerRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -394,7 +398,7 @@ class OrderExport implements FromCollection, WithStyles, WithColumnWidths, WithE
             $rightLogo->setPath($rightLogoPath);
             $rightLogo->setHeight(50);
             $rightLogo->setWidth(50);
-            $rightLogo->setCoordinates('P1');
+            $rightLogo->setCoordinates('Q1');
             $rightLogo->setOffsetX(-60);  // Negative offset to position from right
             $rightLogo->setOffsetY(5);
             $rightLogo->setWorksheet($sheet);
