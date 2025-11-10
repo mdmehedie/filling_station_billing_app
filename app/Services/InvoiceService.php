@@ -474,8 +474,8 @@ class InvoiceService
                 ->allowedFilters([
                     AllowedFilter::callback('search', function ($query, $value) {
                         $query
-                            ->where('id', 'like', "%{$value}%")
-                            ->orWhere('month', 'like', "%{$value}%")
+                            ->where('invoices.id', 'like', "%{$value}%")
+                            ->orWhere('invoices.month', 'like', "%{$value}%")
                             ->orWhereHas('organization', function ($query) use ($value) {
                                 $query->where('ucode', 'like', "%{$value}%");
                                 $query->orWhere('name', 'like', "%{$value}%");

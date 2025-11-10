@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\InvoiceService;
 use App\Services\OrderService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
@@ -64,6 +65,15 @@ class Order extends Model
         });
 
         self::updated(function (Order $order) use ($invoiceService) {
+            // if year or month is changed, regenerate the previous month's or year's invoice
+            if (Carbon::parse($order->sold_date)->format('Y') !== Carbon::parse($order->getOriginal('sold_date'))->format('Y')) {
+                $invoiceService->generateMonthlyInvoice(sold_date: $order->getOriginal('sold_date'), organization_id: $order->organization_id);
+            }
+
+            if (Carbon::parse($order->sold_date)->format('m') !== Carbon::parse($order->getOriginal('sold_date'))->format('m')) {
+                $invoiceService->generateMonthlyInvoice(sold_date: $order->getOriginal('sold_date'), organization_id: $order->organization_id);
+            }
+
             $invoiceService->generateMonthlyInvoice(sold_date: $order->sold_date, organization_id: $order->organization_id);
         });
 
