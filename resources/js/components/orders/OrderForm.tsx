@@ -11,7 +11,7 @@ import OrderItem from "./OrderItem";
 import OrderSummary from "./OrderSummary";
 import DraftManager from "./DraftManager";
 
-interface OrderItemData extends DraftOrderItem { }
+type OrderItemData = DraftOrderItem;
 
 interface OrderFormProps {
     organizations: Organization[];
@@ -64,14 +64,14 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             setOrderItems([]);
             setAvailableDraftDates([]);
             setHasDraftForDate(false);
-            
+
             // Add new empty item
             const newItem: OrderItemData = {
                 id: Date.now().toString(),
                 organization_id: '',
                 vehicle_id: '',
-                fuel_id: '',
                 fuel_qty: '',
+                fuel_id: '',
                 total_price: 0,
                 per_ltr_price: 0
             };
@@ -80,20 +80,20 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             // Clear current date's draft
             setOrderItems([]);
             setHasDraftForDate(false);
-            
+
             // Add new empty item
             const newItem: OrderItemData = {
                 id: Date.now().toString(),
                 organization_id: '',
                 vehicle_id: '',
-                fuel_id: '',
                 fuel_qty: '',
+                fuel_id: '',
                 total_price: 0,
                 per_ltr_price: 0
             };
             setOrderItems([newItem]);
         }
-        
+
         // Reload available draft dates
         setAvailableDraftDates(draftCache.getDraftDates());
     };
@@ -109,21 +109,21 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
         if (dateInputRef.current) {
             dateInputRef.current.focus();
         }
-        
+
         // Clean up expired drafts on component mount
         draftCache.cleanupExpiredDrafts();
-        
+
         // Load available draft dates
         setAvailableDraftDates(draftCache.getDraftDates());
-        
+
         // Add initial empty item if no items exist
         if (orderItems.length === 0) {
             const newItem: OrderItemData = {
                 id: Date.now().toString(),
                 organization_id: '',
                 vehicle_id: '',
-                fuel_id: '',
                 fuel_qty: '',
+                fuel_id: '',
                 total_price: 0,
                 per_ltr_price: 0
             };
@@ -137,7 +137,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             const draft = draftCache.loadDraftForDate(data.sold_date);
             if (draft) {
                 setOrderItems(draft.order_items);
-                
+
                 // Load vehicles for each organization in the draft
                 const uniqueOrgIds = [...new Set(draft.order_items.map(item => item.organization_id))];
                 uniqueOrgIds.forEach(orgId => {
@@ -145,28 +145,28 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                         setVehicles(prev => ({ ...prev, [orgId]: vehicles }));
                     }, { organization_id: orgId });
                 });
-                
+
                 setHasDraftForDate(true);
                 setIsDraftLoaded(true);
             } else {
                 setHasDraftForDate(false);
                 setIsDraftLoaded(true);
-                
+
                 // If no draft exists and no items, add a new empty item
                 if (orderItems.length === 0) {
                     const newItem: OrderItemData = {
                         id: Date.now().toString(),
                         organization_id: '',
                         vehicle_id: '',
-                        fuel_id: '',
                         fuel_qty: '',
+                        fuel_id: '',
                         total_price: 0,
                         per_ltr_price: 0
                     };
                     setOrderItems([newItem]);
                 }
             }
-            
+
             // Update available draft dates
             setAvailableDraftDates(draftCache.getDraftDates());
         }
@@ -244,15 +244,29 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
         }, 0);
     }, []);
 
-    // Focus next field after vehicle selection
+    // Focus next field after vehicle selection - go directly to quantity if fuel is auto-selected
     const focusNextField = useCallback((itemId: string) => {
-        const fuelSelectTrigger = document.querySelector(`[data-item-id="${itemId}"] [data-fuel-select]`);
-        if (fuelSelectTrigger) {
-            setTimeout(() => {
-                (fuelSelectTrigger as HTMLElement)?.focus();
-            }, 100);
+        // Get the current item to check if fuel is already selected
+        const currentItem = orderItems.find(item => item.id === itemId);
+
+        if (currentItem && currentItem.fuel_id) {
+            // If fuel is already selected (auto-selected), go directly to quantity field
+            const quantityInput = document.querySelector(`[data-item-id="${itemId}"] [data-quantity-input]`);
+            if (quantityInput) {
+                setTimeout(() => {
+                    (quantityInput as HTMLElement)?.focus();
+                }, 100);
+            }
+        } else {
+            // If fuel is not selected, focus on fuel selector
+            const fuelSelectTrigger = document.querySelector(`[data-item-id="${itemId}"] [data-fuel-select]`);
+            if (fuelSelectTrigger) {
+                setTimeout(() => {
+                    (fuelSelectTrigger as HTMLElement)?.focus();
+                }, 100);
+            }
         }
-    }, []);
+    }, [orderItems]);
 
     // Focus quantity field after fuel selection
     const focusQuantityField = useCallback((itemId: string) => {
@@ -289,6 +303,24 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                         if (selectedVehicle && selectedVehicle.fuel_id) {
                             updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
                             updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
+
+                            // Schedule focus to quantity field after fuel is auto-selected
+                            setTimeout(() => {
+                                const quantityInput = document.querySelector(`[data-item-id="${itemId}"] [data-quantity-input]`);
+                                if (quantityInput) {
+                                    (quantityInput as HTMLElement)?.focus();
+                                }
+                            }, 150);
+                        }
+                    }
+
+                    // Auto-select fuel when quantity is entered but fuel is not selected
+                    if (field === 'fuel_qty' && value && !updatedItem.fuel_id && updatedItem.vehicle_id) {
+                        const itemVehicles = vehicles[updatedItem.organization_id] || [];
+                        const selectedVehicle = itemVehicles.find(v => v.id === parseInt(updatedItem.vehicle_id));
+                        if (selectedVehicle && selectedVehicle.fuel_id) {
+                            updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
+                            updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
                         }
                     }
 
@@ -303,8 +335,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                     // Calculate per liter price when fuel or quantity changes
                     if (field === 'fuel_id' || field === 'per_ltr_price' || (field === 'vehicle_id' && updatedItem.fuel_id)) {
                         const fuel = fuels.find(f => f.id.toString() === updatedItem.fuel_id);
-                        const price = fuel?.price || 0;
-                        updatedItem.per_ltr_price = price;
+                        updatedItem.per_ltr_price = fuel?.price || 0;
                     }
 
                     return updatedItem;
@@ -320,8 +351,8 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             id: Date.now().toString(),
             organization_id: '',
             vehicle_id: '',
-            fuel_id: '',
             fuel_qty: '',
+            fuel_id: '',
             total_price: 0,
             per_ltr_price: 0
         };
@@ -346,7 +377,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             e.preventDefault();
             const nextIndex = Math.min(currentIndex + 1, filteredVehicles.length - 1);
             setSelectedVehicleIndex(prev => ({ ...prev, [itemId]: nextIndex }));
-            
+
             // Scroll the selected item into view
             setTimeout(() => {
                 const selectedElement = document.querySelector(`[data-item-id="${itemId}"] [data-vehicle-dropdown] [data-vehicle-item="${nextIndex}"]`);
@@ -358,7 +389,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             e.preventDefault();
             const prevIndex = Math.max(currentIndex - 1, 0);
             setSelectedVehicleIndex(prev => ({ ...prev, [itemId]: prevIndex }));
-            
+
             // Scroll the selected item into view
             setTimeout(() => {
                 const selectedElement = document.querySelector(`[data-item-id="${itemId}"] [data-vehicle-dropdown] [data-vehicle-item="${prevIndex}"]`);
@@ -370,31 +401,16 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             e.preventDefault();
             if (filteredVehicles.length > 0 && currentIndex < filteredVehicles.length) {
                 const selectedVehicle = filteredVehicles[currentIndex];
-                
+
                 // Get the current item to check if this vehicle is already selected
                 const currentItem = orderItems.find(item => item.id === itemId);
-                const isCurrentlyUsed = usedVehicles.has(selectedVehicle.id) && 
+                const isCurrentlyUsed = usedVehicles.has(selectedVehicle.id) &&
                     currentItem && parseInt(currentItem.vehicle_id) !== selectedVehicle.id;
-                
+
                 if (!isCurrentlyUsed) {
-                    // Update the vehicle selection
-                    setOrderItems(prev => prev.map(item => {
-                        if (item.id === itemId) {
-                            const updatedItem = { ...item, vehicle_id: selectedVehicle.id.toString() };
-
-                            // Auto-select the associated fuel for the vehicle
-                            if (selectedVehicle.fuel_id) {
-                                updatedItem.fuel_id = selectedVehicle.fuel_id.toString();
-                                updatedItem.per_ltr_price = selectedVehicle.fuel ? selectedVehicle.fuel.price : 0;
-                            }
-
-                            return updatedItem;
-                        }
-                        return item;
-                    }));
-
+                    // Update the vehicle selection using the centralized function
+                    updateOrderItem(itemId, 'vehicle_id', selectedVehicle.id.toString());
                     setOpenDropdowns(prev => ({ ...prev, [itemId]: false }));
-                    focusNextField(itemId);
                 }
             }
         }
@@ -434,7 +450,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             per_ltr_price: 0
         };
         setOrderItems([...orderItems, newItem]);
-        
+
         // Focus on the new item's organization field and auto-open it
         setTimeout(() => {
             const newOrgSelector = document.querySelector(`[data-item-id="${newItem.id}"] [data-organization-trigger]`) as HTMLElement;
@@ -448,7 +464,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
     const removeOrderItem = (itemId: string) => {
         const newItems = orderItems.filter(item => item.id !== itemId);
         setOrderItems(newItems);
-        
+
         // If no items left, add a new empty item
         if (newItems.length === 0) {
             const newItem: OrderItemData = {
@@ -461,7 +477,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                 per_ltr_price: 0
             };
             setOrderItems([newItem]);
-            
+
             // Focus on the new item's organization field and auto-open it
             setTimeout(() => {
                 const newOrgSelector = document.querySelector(`[data-item-id="${newItem.id}"] [data-organization-trigger]`) as HTMLElement;
@@ -484,14 +500,14 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
             }
 
             const target = e.target as HTMLElement;
-            const isInDropdown = target.closest('[role="listbox"]') || 
-                target.closest('[role="combobox"]') || 
+            const isInDropdown = target.closest('[role="listbox"]') ||
+                target.closest('[role="combobox"]') ||
                 target.closest('[data-radix-popper-content-wrapper]') ||
                 target.closest('[data-organization-selector]') ||
                 target.closest('[data-organization-dropdown]') ||
                 target.hasAttribute('data-search-input') ||
                 target.closest('[data-search-input]');
-            
+
             // Skip all global keyboard handling for search inputs
             if (target.hasAttribute('data-search-input')) {
                 return;
@@ -560,7 +576,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                 }
 
                 // For closed select fields, open them with arrow keys
-                if (target.hasAttribute('data-organization-trigger') || 
+                if (target.hasAttribute('data-organization-trigger') ||
                     target.hasAttribute('data-fuel-select')) {
                     e.preventDefault();
                     target.click();
@@ -589,24 +605,24 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                 // Handle quantity input - add new item and focus on next organization
                 if (target.hasAttribute('data-quantity-input')) {
                     e.preventDefault();
-                    
+
                     // Find the current item's index
                     const currentItemElement = target.closest('[data-item-id]');
                     const currentItemId = currentItemElement?.getAttribute('data-item-id');
                     const currentItem = orderItems.find(item => item.id === currentItemId);
                     const currentItemIndex = orderItems.findIndex(item => item.id === currentItemId);
-                    
+
                     // Check if this is the last item
                     const isLastItem = currentItemIndex === orderItems.length - 1;
-                    
+
                     // Check if current item is complete
-                    const isItemComplete = currentItem && 
-                        currentItem.organization_id && 
-                        currentItem.vehicle_id && 
-                        currentItem.fuel_id && 
-                        currentItem.fuel_qty && 
+                    const isItemComplete = currentItem &&
+                        currentItem.organization_id &&
+                        currentItem.vehicle_id &&
+                        currentItem.fuel_id &&
+                        currentItem.fuel_qty &&
                         parseFloat(currentItem.fuel_qty) > 0;
-                    
+
                     // If it's the last item and complete, always add new item
                     if (isLastItem && isItemComplete) {
                         // Add new item
@@ -620,7 +636,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                             per_ltr_price: 0
                         };
                         setOrderItems([...orderItems, newItem]);
-                        
+
                         // Focus on the new item's organization field
                         setTimeout(() => {
                             const newOrgSelector = document.querySelector(`[data-item-id="${newItem.id}"] [data-organization-trigger]`) as HTMLElement;
@@ -679,10 +695,10 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Clear draft cache for this date when submitting
         draftCache.clearDraftForDate(data.sold_date);
-        
+
         onSubmit(data);
     };
 
@@ -750,8 +766,8 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                             <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
                                 <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                 <p className="text-sm">
-                                    {hasDraftForDate 
-                                        ? "Draft loaded for this date" 
+                                    {hasDraftForDate
+                                        ? "Draft loaded for this date"
                                         : "No vehicles added yet"
                                     }
                                 </p>
@@ -771,7 +787,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                                         <p className="mb-2">Available drafts for other dates:</p>
                                         <div className="flex flex-wrap gap-1 justify-center">
                                             {availableDraftDates.slice(0, 3).map(date => (
-                                                <span 
+                                                <span
                                                     key={date}
                                                     className="px-2 py-1 bg-muted rounded text-xs"
                                                 >
@@ -802,7 +818,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {orderItems.map((item, index) => 
+                                {orderItems.map((item, index) =>
                                     React.createElement(OrderItem, {
                                         key: item.id,
                                         item: item,
@@ -814,7 +830,7 @@ export default function OrderForm({ organizations, fuels, onSubmit, processing, 
                                         searchTerm: vehicleSearchTerms[item.id] || '',
                                         onSearchChange: (value: string) => handleSearchChange(item.id, value),
                                         selectedIndex: selectedVehicleIndex[item.id] || 0,
-                                        onKeyDown: (e: React.KeyboardEvent, filteredVehicles: any[]) => handleVehicleKeyDown(e, item.id, filteredVehicles),
+                                        onKeyDown: (e: React.KeyboardEvent, filteredVehicles: Vehicle[]) => handleVehicleKeyDown(e, item.id, filteredVehicles),
                                         isDropdownOpen: openDropdowns[item.id] || false,
                                         onDropdownOpenChange: (open: boolean) => setOpenDropdowns(prev => ({ ...prev, [item.id]: open })),
                                         searchInputRef: (() => {

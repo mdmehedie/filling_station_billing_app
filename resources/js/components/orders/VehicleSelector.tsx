@@ -1,8 +1,8 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectTrigger } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search, Car } from "lucide-react";
 import { Vehicle } from "@/types/response";
-import { useRef, useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 interface VehicleSelectorProps {
     itemId: string;
@@ -20,7 +20,6 @@ interface VehicleSelectorProps {
 }
 
 export default function VehicleSelector({
-    itemId,
     selectedVehicleId,
     onVehicleSelect,
     vehicles,
@@ -158,21 +157,20 @@ export default function VehicleSelector({
                                         const isCurrentlyUsed = usedVehicles.has(vehicle.id) && parseInt(selectedVehicleId) !== vehicle.id;
                                         const isKeyboardSelected = selectedIndex === index;
                                         const isActuallySelected = selectedVehicleId === vehicle.id.toString();
-                                        
+
                                         return (
                                             <div
                                                 key={vehicle.id}
                                                 data-vehicle-item={index}
-                                                className={`px-2 py-2 cursor-pointer transition-colors ${isActuallySelected 
-                                                    ? "bg-green-100 text-green-900 font-medium dark:bg-green-900 dark:text-green-100 border-l-4 border-green-500" 
-                                                    : isKeyboardSelected 
-                                                        ? "bg-blue-100 text-blue-900 font-medium dark:bg-blue-900 dark:text-blue-100" 
+                                                className={`px-2 py-2 cursor-pointer transition-colors ${isActuallySelected
+                                                    ? "bg-green-100 text-green-900 font-medium dark:bg-green-900 dark:text-green-100 border-l-4 border-green-500"
+                                                    : isKeyboardSelected
+                                                        ? "bg-blue-100 text-blue-900 font-medium dark:bg-blue-900 dark:text-blue-100"
                                                         : "hover:bg-accent/50"
                                                     } ${isCurrentlyUsed ? "opacity-50 cursor-not-allowed" : ""}`}
                                                 onClick={() => {
                                                     if (!isCurrentlyUsed) {
                                                         onVehicleSelect(vehicle.id.toString());
-                                                        onOpenChange(false);
                                                     }
                                                 }}
                                             >

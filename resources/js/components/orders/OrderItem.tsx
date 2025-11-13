@@ -62,10 +62,10 @@ export default function OrderItem({
     const isComplete = item.organization_id && item.vehicle_id && item.fuel_id && item.fuel_qty && parseFloat(item.fuel_qty) > 0;
 
     return (
-        <div 
-            data-item-id={item.id} 
-            className={`border rounded-lg p-4 bg-card transition-all duration-200 ${!isComplete 
-                ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' 
+        <div
+            data-item-id={item.id}
+            className={`border rounded-lg p-4 bg-card transition-all duration-200 ${!isComplete
+                ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20'
                 : 'border-green-200 bg-green-50/30 dark:border-green-800 dark:bg-green-950/20'
                 }`}
         >

@@ -1,15 +1,16 @@
 import { Label } from "@/components/ui/label";
 import VehicleSelector from "./VehicleSelector";
+import { Vehicle } from "@/types/response";
 
 interface OrderItemVehicleProps {
     itemId: string;
     vehicleId: string;
-    vehicles: any[];
+    vehicles: Vehicle[];
     usedVehicles: Set<number>;
     searchTerm: string;
     onSearchChange: (value: string) => void;
     selectedIndex: number;
-    onKeyDown: (e: React.KeyboardEvent, filteredVehicles: any[]) => void;
+    onKeyDown: (e: React.KeyboardEvent, filteredVehicles: Vehicle[]) => void;
     isDropdownOpen: boolean;
     onDropdownOpenChange: (open: boolean) => void;
     searchInputRef: React.RefObject<HTMLInputElement | null>;
