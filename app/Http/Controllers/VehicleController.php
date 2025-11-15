@@ -32,7 +32,8 @@ class VehicleController extends Controller
                         ->orWhere('ucode', 'like', "%{$value}%")
                         ->orWhereHas('organization', function ($query) use ($value) {
                             $query
-                                ->where('name', 'like', "%{$value}%")
+                                ->where('ucode', 'like', "%{$value}%")
+                                ->orWhere('name', 'like', "%{$value}%")
                                 ->orWhere('name_bn', 'like', "%{$value}%");
                         });
                 }),
