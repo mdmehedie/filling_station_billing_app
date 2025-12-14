@@ -240,8 +240,8 @@
                 <br>Manager<br>CSD Filling Station
             </div>
             <div class="sign-box">
-                <strong>Lt Col Habib Abdullah Sayeed</strong>
-                <br>Head of Filling Station & Motor Parts
+                <strong>Lt Col Md. Akhtaruzzaman (Retd)</strong>
+                <br>Head of CSD Filling Station
             </div>
         </div>
     </div>

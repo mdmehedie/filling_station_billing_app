@@ -457,13 +457,13 @@
     <table style="width: 100%">
         <tbody>
         <tr>
-            <td style="width: 65%">
+            <td style="width: 60%">
 
             </td>
             <td class="sig">
-                <div class="name text-left">লেঃ কর্নেল হাবিব আব্দুল্লাহ সাঈদ</div>
-                <div class="desig text-left">হেড অব ফিলিং স্টেশন এন্ড মটর পার্টস</div>
-                <div class="text-left"> সি এস ডি ফিলিং স্টেশন </div>
+                <div class="name text-left">লেঃ কর্নেল মোঃ আখতারুজ্জামান (অবঃ)</div>
+                <div class="desig text-left">হেড অব সি এস ডি ফিলিং স্টেশন</div>
+{{--                <div class="text-left"> সি এস ডি ফিলিং স্টেশন </div>--}}
             </td>
         </tr>
         </tbody>
