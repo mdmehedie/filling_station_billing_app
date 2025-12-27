@@ -3,7 +3,7 @@ FROM php:8.3-fpm
 # Set working directory
 WORKDIR /var/www/html
 
-# Install system dependencies in a single layer with cleanup
+# Install system dependencies and Node.js in a single layer
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -17,6 +17,8 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
     unzip \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) pdo_mysql mbstring exif pcntl bcmath gd zip \
     && apt-get clean \
@@ -25,65 +27,27 @@ RUN apt-get update && apt-get install -y \
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create storage directories early
-RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache} \
-    /var/www/html/storage/logs \
-    /var/www/html/bootstrap/cache
+# Create storage directories
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
 # Copy composer files first for better layer caching
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies (this layer will be cached if composer files don't change)
+# Install PHP dependencies (cached if composer files don't change)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --no-autoloader
 
-# Copy package files for Node dependencies
+# Copy package files for Node dependencies (cached if package files don't change)
 COPY package*.json ./
+RUN npm ci
 
-# Build frontend assets in a multi-stage approach
-FROM node:20-alpine AS node-builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-
-# Continue with main image
-FROM php:8.3-fpm
-WORKDIR /var/www/html
-
-# Install only runtime dependencies
-RUN apt-get update && apt-get install -y \
-    libonig-dev \
-    libxml2-dev \
-    nginx \
-    supervisor \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pdo_mysql mbstring exif pcntl bcmath gd zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Get Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Create directories
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
-
-# Copy composer files and install dependencies
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --no-autoloader
-
-# Copy application files (use .dockerignore to exclude unnecessary files)
+# Copy application files needed for build
 COPY --chown=www-data:www-data . .
 
-# Copy built assets from node-builder stage
-COPY --from=node-builder /app/public/build ./public/build
-
-# Finalize composer installation
-RUN composer dump-autoload --optimize --classmap-authoritative
+# Finalize composer and build assets
+RUN composer dump-autoload --optimize --classmap-authoritative \
+    && npm run build \
+    && rm -rf node_modules package-lock.json \
+    && npm cache clean --force
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
