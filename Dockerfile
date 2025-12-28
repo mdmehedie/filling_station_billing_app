@@ -53,9 +53,9 @@ COPY --chown=www-data:www-data . .
 
 # Finalize composer and build assets
 RUN composer dump-autoload --optimize --classmap-authoritative \
-    && npm run build \
-    && rm -rf node_modules package-lock.json \
-    && npm cache clean --force
+    && npm run build 
+    # && rm -rf node_modules package-lock.json \
+    # && npm cache clean --force
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
