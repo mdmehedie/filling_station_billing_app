@@ -18,8 +18,10 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
     unzip \
-    fonts-noto-sans-bengali \
-    fonts-noto-serif-bengali \
+    fonts-lohit-beng-bengali \
+    fonts-lohit-beng-assamese \
+    fonts-beng \
+    fonts-beng-extra \
     fontconfig \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
