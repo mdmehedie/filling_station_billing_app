@@ -57,6 +57,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Configure Chromium for Docker environment
+ENV CHROME_BIN=/usr/bin/chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -79,8 +84,6 @@ COPY --chown=www-data:www-data . .
 # Finalize composer and build assets
 RUN composer dump-autoload --optimize --classmap-authoritative \
     && npm run build 
-    # && rm -rf node_modules package-lock.json \
-    # && npm cache clean --force
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \

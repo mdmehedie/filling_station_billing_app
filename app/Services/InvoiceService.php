@@ -66,7 +66,15 @@ class InvoiceService
         if ($validated['include_cover']) {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
+                $invoicePdf = Browsershot::setChromiumOptions([
+        'args' => [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer'
+        ]
+    ])->html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
@@ -76,7 +84,15 @@ class InvoiceService
                     ->pdf();
 
                 // Generate cover PDF with Browsershot for perfect Bengali support
-                $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render())
+                $coverPdf = Browsershot::setChromiumOptions([
+        'args' => [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer'
+        ]
+    ])->html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render())
                     ->format('A4')
                     ->margins(10, 10, 10, 10)
                     ->showBackground()
@@ -104,7 +120,15 @@ class InvoiceService
         } else {
             try {
                 // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
+                $invoicePdf = Browsershot::setChromiumOptions([
+        'args' => [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-software-rasterizer'
+        ]
+    ])->html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
                     ->format('Legal')
                     ->landscape()
                     ->margins(0, 0, 0, 0)
