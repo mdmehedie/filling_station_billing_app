@@ -1,5 +1,5 @@
 import AppLayout from "@/layouts/app-layout";
-import { Head, router, usePage } from "@inertiajs/react";
+import { Head, router, usePage, Link } from "@inertiajs/react";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -472,11 +472,15 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
             header: 'Actions',
             render: (value, row) => (
                 <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm" onClick={() => router.visit(ordersRoute.show(row.id).url)}>
-                        <Eye className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href={ordersRoute.show(row.id).url}>
+                            <Eye className="h-4 w-4" />
+                        </Link>
                     </Button>
-                    <Button variant="ghost" size="sm" hidden={(auth as any).user?.role !== 'admin'} onClick={() => router.visit(ordersRoute.edit(row.id).url)}>
-                        <Edit className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" hidden={(auth as any).user?.role !== 'admin'} asChild>
+                        <Link href={ordersRoute.edit(row.id).url}>
+                            <Edit className="h-4 w-4" />
+                        </Link>
                     </Button>
                     <Button
                         hidden={(auth as any).user?.role !== 'admin'}
@@ -517,11 +521,13 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
-                            onClick={() => router.visit(ordersRoute.create().url)}
+                            asChild
                             className="flex items-center gap-2"
                         >
-                            <Plus className="h-4 w-4" />
-                            Add New Order
+                            <Link href={ordersRoute.create().url}>
+                                <Plus className="h-4 w-4" />
+                                Add New Order
+                            </Link>
                         </Button>
                     </div>
                 </div>
