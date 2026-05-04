@@ -7,8 +7,8 @@ use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Organization;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Browsershot\Browsershot;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -17,7 +17,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class InvoiceService
 {
-    function __construct()
+    public function __construct()
     {
         //
     }
@@ -25,7 +25,7 @@ class InvoiceService
     /**
      * Start date, end date, period
      */
-    function findOutStartEndPeriod($month, $year)
+    public function findOutStartEndPeriod($month, $year)
     {
         $period = Carbon::create($year, $month, 1);
         $start = $period->copy()->startOfMonth();
@@ -34,7 +34,7 @@ class InvoiceService
         return [$start, $end, $period];
     }
 
-    function exportPdf($validated, $organization_id)
+    public function exportPdf($validated, $organization_id)
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($validated['month'], $validated['year']);
 
@@ -44,7 +44,7 @@ class InvoiceService
         // return $data;
 
         $organization = Organization::find($organization_id);
-        $fileName = $organization->ucode . '_' . $organization->name . '_' . $period->isoFormat('MMMM YYYY');
+        $fileName = $organization->ucode.'_'.$organization->name.'_'.$period->isoFormat('MMMM YYYY');
         $month = $validated['month'];
         $year = $validated['year'];
 
@@ -52,13 +52,13 @@ class InvoiceService
         $imagePath = public_path('default/csd-logo.png');
         $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
         $imageData = file_get_contents($imagePath);
-        $logo1 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+        $logo1 = 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
 
         // logo rendering for right side
         $imagePath = public_path('default/logo.jpeg');
         $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
         $imageData = file_get_contents($imagePath);
-        $logo2 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+        $logo2 = 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
 
         // calculate repeated coupon count
         $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
@@ -72,7 +72,10 @@ class InvoiceService
                         'disable-setuid-sandbox',
                         'disable-dev-shm-usage',
                         'disable-gpu',
-                        'disable-software-rasterizer'
+                        'disable-software-rasterizer',
+                        'disable-crash-reporter', // Fixes the crashpad_handler error
+                        'user-data-dir=/tmp/chromium-profile', // Gives it a place to work
+                        'headless',
                     ])
                     ->format('Legal')
                     ->landscape()
@@ -89,7 +92,10 @@ class InvoiceService
                         'disable-setuid-sandbox',
                         'disable-dev-shm-usage',
                         'disable-gpu',
-                        'disable-software-rasterizer'
+                        'disable-software-rasterizer',
+                        'disable-crash-reporter', // Fixes the crashpad_handler error
+                        'user-data-dir=/tmp/chromium-profile', // Gives it a place to work
+                        'headless',
                     ])
                     ->format('Legal')
                     ->landscape()
@@ -103,13 +109,13 @@ class InvoiceService
             }
 
             // Create a zip file in memory
-            $zipFileName = $fileName . '-invoice-with-cover.zip';
-            $zip = new \ZipArchive();
+            $zipFileName = $fileName.'-invoice-with-cover.zip';
+            $zip = new \ZipArchive;
             $tmpFile = tempnam(sys_get_temp_dir(), 'zip');
 
             if ($zip->open($tmpFile, \ZipArchive::CREATE) === true) {
-                $zip->addFromString($fileName . '-invoice.pdf', $invoicePdf);
-                $zip->addFromString($fileName . '-cover.pdf', $coverPdf);
+                $zip->addFromString($fileName.'-invoice.pdf', $invoicePdf);
+                $zip->addFromString($fileName.'-cover.pdf', $coverPdf);
                 $zip->close();
 
                 return response()->download($tmpFile, $zipFileName)->deleteFileAfterSend(true);
@@ -125,7 +131,10 @@ class InvoiceService
                         'disable-setuid-sandbox',
                         'disable-dev-shm-usage',
                         'disable-gpu',
-                        'disable-software-rasterizer'
+                        'disable-software-rasterizer',
+                        'disable-crash-reporter', // Fixes the crashpad_handler error
+                        'user-data-dir=/tmp/chromium-profile', // Gives it a place to work
+                        'headless',
                     ])
                     ->format('Legal')
                     ->landscape()
@@ -137,7 +146,7 @@ class InvoiceService
 
                 return response($invoicePdf, 200, [
                     'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'attachment; filename="' . $fileName . '-invoice.pdf' . '"'
+                    'Content-Disposition' => 'attachment; filename="'.$fileName.'-invoice.pdf'.'"',
                 ]);
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
@@ -148,7 +157,7 @@ class InvoiceService
     /**
      * Fetch and structure invoice data
      */
-    function getInvoiceData($organization_id, $start, $end, $period)
+    public function getInvoiceData($organization_id, $start, $end, $period)
     {
         // Build table headers for each day of the month
         $tableHeaders = [];
@@ -206,16 +215,16 @@ class InvoiceService
             $ucode = $order['ucode'];
             $day = (string) intval($order['sold_day']);  // day as string to match tableHeaders
 
-            if (!isset($vehicleDayData[$fuel])) {
+            if (! isset($vehicleDayData[$fuel])) {
                 $vehicleDayData[$fuel] = [];
             }
 
-            if (!isset($vehicleDayData[$fuel][$ucode])) {
+            if (! isset($vehicleDayData[$fuel][$ucode])) {
                 $vehicleDayData[$fuel][$ucode] = [];
             }
 
             // Initialize day if not set
-            if (!isset($vehicleDayData[$fuel][$ucode][$day])) {
+            if (! isset($vehicleDayData[$fuel][$ucode][$day])) {
                 $vehicleDayData[$fuel][$ucode][$day] = [
                     'qty' => 0,
                     'price' => 0,
@@ -249,7 +258,7 @@ class InvoiceService
                     if (isset($perLtrPriceByDay[$d])) {
                         $lastPerLtrPrice = $perLtrPriceByDay[$d];
                     }
-                    if (!isset($days[$dStr])) {
+                    if (! isset($days[$dStr])) {
                         $days[$dStr] = [
                             'qty' => 0,
                             'price' => 0,
@@ -326,13 +335,13 @@ class InvoiceService
                 }
 
                 // Ensure the first range always starts from 1
-                if (!empty($ranges) && $ranges[0]['start'] !== 1) {
+                if (! empty($ranges) && $ranges[0]['start'] !== 1) {
                     $ranges[0]['start'] = 1;
                 }
 
                 // Format as "1-7": 121, "8-31": 110, etc. (dynamic, not static)
                 foreach ($ranges as $range) {
-                    $label = $range['start'] . '-' . $range['end'];
+                    $label = $range['start'].'-'.$range['end'];
                     // Format price as string with 2 decimals
                     $perLtrPriceRanges[$label] = number_format($range['per_ltr_price'], 2, '.', '');
                 }
@@ -404,7 +413,7 @@ class InvoiceService
      * 5) Calculate total bill, total coupon, total quantity
      * 6) Calculate page count based on data
      */
-    function generateMonthlyInvoice($sold_date, $organization_id)
+    public function generateMonthlyInvoice($sold_date, $organization_id)
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($sold_date->month, $sold_date->year);
         [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount] = $this->getInvoiceData($organization_id, $start, $end, $period);
@@ -421,7 +430,7 @@ class InvoiceService
             // if prev invoice exists, delete it
             $prevInvoice = Invoice::query()
                 ->where('organization_id', $organization_id)
-                ->where('month', $period->isoFormat('MMMM'))
+                ->where('month', $period->format('F'))
                 ->where('year', $period->year)
                 ->first();
 
@@ -432,7 +441,7 @@ class InvoiceService
             // create invoice
             Invoice::updateOrCreate([
                 'organization_id' => $organization_id,
-                'month' => $period->isoFormat('MMMM'),
+                'month' => $period->format('F'),
                 'year' => $period->year,
             ], [
                 'total_bill' => $totalBill,
@@ -440,7 +449,7 @@ class InvoiceService
                 'total_qty' => $totalQty,
                 'page_count' => $pageCount,
                 'order_ids' => $orderIds,
-                'fuel_breakdown' => array_map(function ($fuel) use ($totalBill, $totalCoupon, $totalQty) {
+                'fuel_breakdown' => array_map(function ($fuel) {
                     return [
                         'fuel_name' => $fuel['fuel_name'],
                         'total_qty' => $fuel['total_qty'],
@@ -449,7 +458,7 @@ class InvoiceService
                             return $carry + $vehicle['order_count'];
                         }, 0),
                     ];
-                }, $data)
+                }, $data),
             ]);
         }
     }
@@ -488,7 +497,7 @@ class InvoiceService
         return max(1, $totalPages);
     }
 
-    function invoiceList()
+    public function invoiceList()
     {
         return InvoiceResource::collection(
             QueryBuilder::for(Invoice::class)
@@ -521,7 +530,7 @@ class InvoiceService
      * Logic: If a coupon (order_no) is used more than 2 times in a single day, it is considered a repeated coupon for that day (counted as 1 for that day).
      * The function sums up the repeated coupon count for all days in the given period.
      */
-    function calculateRepeatedCouponCount($start_date, $end_date, $organization_id)
+    public function calculateRepeatedCouponCount($start_date, $end_date, $organization_id)
     {
         // Get all orders in the date range, grouped by sold_date and order_no
         $orders = Order::query()
@@ -548,7 +557,7 @@ class InvoiceService
         return $repeatedCouponCount;
     }
 
-    function monthlyExport($validated)
+    public function monthlyExport($validated)
     {
         $month = $validated['month'];
         $year = $validated['year'];

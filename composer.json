@@ -9,17 +9,17 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
+        "ext-intl": "*",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
         "maatwebsite/excel": "^3.1",
-        "predis/predis": "^3.2",
+        "predis/predis": "^3.4",
         "spatie/browsershot": "^5.0",
-        "spatie/laravel-query-builder": "^6.3",
-        "ext-intl": "*"
+        "spatie/laravel-query-builder": "^6.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

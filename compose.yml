@@ -1,0 +1,91 @@
+services:
+  fs.app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        WWWGROUP: '${WWWGROUP}' # mac : 20 , linux : 1000
+    image: 'fs/app:${APP_IMAGE_TAG:-latest}'
+    container_name: fs.app
+    environment:
+      APP_ENV: '${APP_ENV:-production}'
+      APP_DEBUG: '${APP_DEBUG:-false}'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '127.0.0.1:${APP_PORT:-3211}:8888'
+    networks:
+      - fs-prod
+    restart: always
+    cap_add:
+      - SYS_ADMIN
+    shm_size: '2gb'
+    depends_on:
+      - mysql
+      - valkey
+  mysql:
+    image: 'mariadb:12.1.2'
+    container_name: fs.mysql
+    ports:
+      - '${FORWARD_DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MYSQL_EXTRA_OPTIONS: '${MYSQL_EXTRA_OPTIONS:-}'
+    volumes:
+      - 'fs-mysql-prod:/var/lib/mysql'
+    networks:
+      - fs-prod
+    restart: always
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - '-p${DB_PASSWORD}'
+      retries: 3
+      timeout: 5s
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    container_name: fs.phpmyadmin
+    ports:
+      - '127.0.0.1:8181:80'
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+    networks:
+      - fs-prod
+    depends_on:
+      - mysql
+  valkey:
+    image: 'valkey/valkey:alpine'
+    container_name: fs.valkey
+    # ports:
+    #   - "${FORWARD_VALKEY_PORT:-6379}:6379"
+    environment:
+      VALKEY_PASSWORD: '${REDIS_PASSWORD}'
+    volumes:
+      - 'fs-valkey-prod:/data'
+    networks:
+      - fs-prod
+    restart: always
+    healthcheck:
+      test:
+        - CMD
+        - valkey-cli
+        - ping
+      retries: 3
+      timeout: 5s
+networks:
+  fs-prod:
+    driver: bridge
+volumes:
+  fs-mysql-prod:
+    driver: local
+  fs-valkey-prod:
+    driver: local

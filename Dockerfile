@@ -27,7 +27,10 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     ca-certificates \
     fonts-liberation \
-    libasound2 \
+    libglib2.0-0t64 \
+    libexpat1 \
+    libfontconfig1 \
+    libasound2t64 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libatspi2.0-0 \
@@ -47,7 +50,7 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     libu2f-udev \
     libvulkan1 \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && apt-get install -y chromium \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -82,15 +85,16 @@ RUN npm ci
 COPY --chown=www-data:www-data . .
 
 # Finalize composer and build assets
-RUN composer dump-autoload --optimize --classmap-authoritative \
-    && npm run build 
+RUN git config --global --add safe.directory /var/www/html \
+    && composer dump-autoload --optimize --classmap-authoritative \
+    && npm run build
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 # Remove .env file if exists
-RUN rm -f .env
+# RUN rm -f .env
 
 # Nginx configuration
 COPY <<'EOF' /etc/nginx/sites-available/default
@@ -203,5 +207,8 @@ EOF
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
+
+ENV DOTNET_EnableCrashReport=0
+ENV CHROMIUM_FLAGS="--disable-crash-reporter"
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
