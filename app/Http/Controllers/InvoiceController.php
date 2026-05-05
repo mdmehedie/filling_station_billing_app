@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 use setasign\Fpdi\Fpdi;
-use \Spatie\Browsershot\Browsershot;
 
 class InvoiceController extends Controller
 {
