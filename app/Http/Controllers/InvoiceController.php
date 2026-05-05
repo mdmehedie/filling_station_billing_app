@@ -6,14 +6,10 @@ use App\Models\Order;
 use App\Models\Organization;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Carbon;
-use setasign\Fpdi\Fpdi;
 
 class InvoiceController extends Controller
 {
-    function __construct(
+    public function __construct(
         private InvoiceService $invoiceService
     ) {}
 
@@ -23,16 +19,16 @@ class InvoiceController extends Controller
         $months = Order::query()
             ->selectRaw('EXTRACT(MONTH FROM sold_date) AS month')
             ->distinct()
-            ->orderBy('month')
+            ->orderBy('month', 'asc')
             ->pluck('month');
 
         $years = Order::query()
             ->selectRaw('EXTRACT(YEAR FROM sold_date) AS year')
             ->distinct()
-            ->orderBy('year')
+            ->orderBy('year', 'asc')
             ->pluck('year');
 
-        $organizations = Organization::select('id', 'name', 'name_bn', 'ucode')->get();
+        $organizations = Organization::select(['id', 'name', 'name_bn', 'ucode'])->get();
 
         return inertia('Invoice/Index', [
             'months' => $months,

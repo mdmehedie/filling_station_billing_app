@@ -388,34 +388,13 @@
                         $serial = 0;
                     @endphp
                     @foreach ($data as $index => $item)
-                        @php
-                            $indexStart = 0;
-                        @endphp
-                        @foreach ($item['per_ltr_price_ranges'] as $range => $price)
-                            @php
-                                $indexs =
-                                    array_reduce(explode('-', $range), function ($carry, $item) {
-                                        return (int) $item - (int) $carry;
-                                    }) + 1;
-
-                                $totalBillOfRange = 0;
-                                $totalQtyOfRange = 0;
-                                foreach ($item['vehicles'] as $vehicle) {
-                                    for ($i = $indexStart; $i < $indexs; $i++) {
-                                        $totalBillOfRange += $vehicle['quantities'][$i] * $price;
-                                        $totalQtyOfRange += $vehicle['quantities'][$i];
-                                    }
-                                }
-                                $indexStart += $indexs;
-                            @endphp
+                        @foreach ($item['per_ltr_price_ranges'] as $range => $rangeData)
                             <tr>
                                 <td class="center">{{ $letterOrder[$serial] }}।</td>
                                 <td>{{ getFuelBengaliName($item['fuel_name']) }}</td>
-                                <td class="num red">{{ bdtBengaliCurrencyFormat($totalQtyOfRange) }}
-                                </td>
-                                <td class="num">{{ bdtBengaliCurrencyFormat($price) }}</td>
-                                <td class="num red">
-                                    {{ bdtBengaliCurrencyFormat($totalBillOfRange) }}</td>
+                                <td class="num red">{{ formatBengaliNumber(number_format($rangeData['total_qty'], 2)) }}</td>
+                                <td class="num">{{ bdtBengaliCurrencyFormat($rangeData['price']) }}</td>
+                                <td class="num red">{{ bdtBengaliCurrencyFormat($rangeData['total_bill']) }}</td>
                                 <td class="center">—</td>
                             </tr>
                             @php

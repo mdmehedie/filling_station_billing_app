@@ -18,6 +18,7 @@ import { Organization, Invoice, PaginatedResponse } from "@/types/response";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column } from "@/components/data-table";
 import { currenyFormat } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface IndexProps {
     months: number[];
@@ -36,6 +37,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
     const [downloadProgress, setDownloadProgress] = useState<number>(0);
     const [showGenerateModal, setShowGenerateModal] = useState<boolean>(false);
+    const { toast } = useToast();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -54,14 +56,23 @@ export default function Index({ months, years, organizations, invoices }: IndexP
 
         try {
             if (!selectedOrganization) {
-                alert('Please select an organization');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Please select an organization",
+                });
                 return;
             }
 
-            const resp = await axios.post(`/api/invoices/${selectedOrganization.id}/export`, { 
-                month: selectedMonth, 
+            toast({
+                title: "Downloading...",
+                description: `Preparing invoice for ${selectedOrganization.name}...`,
+            });
+
+            const resp = await axios.post(`/api/invoices/${selectedOrganization.id}/export`, {
+                month: selectedMonth,
                 year: selectedYear,
-                include_cover: includeCover 
+                include_cover: includeCover
             }, {
                 responseType: 'blob',
                 withCredentials: true,
@@ -76,11 +87,11 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
                 `${includeCover ? 'invoice-with-cover' : 'invoice'}-${selectedMonth}-${selectedYear}.${includeCover ? 'zip' : 'pdf'}`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
-                type: includeCover ? 'application/zip' : 'application/pdf' 
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: includeCover ? 'application/zip' : 'application/pdf'
             }));
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -89,9 +100,18 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             a.click();
             a.remove();
             URL.revokeObjectURL(blobUrl);
+
+            toast({
+                title: "Success",
+                description: "Invoice downloaded successfully",
+            });
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 404) {
-                alert('No invoice found for the selected month and organization.');
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No invoice found for the selected month and organization.",
+                });
             }
         } finally {
             setIsDownloading(false);
@@ -109,9 +129,9 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
-        
+
         searchTimeoutRef.current = setTimeout(() => {
-            router.get('/invoices', { 
+            router.get('/invoices', {
                 "filter[search]": term,
                 page: 1 // Reset to first page when searching
             }, {
@@ -127,7 +147,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
     };
 
     const handlePageChange = (page: number) => {
-        router.get('/invoices', { 
+        router.get('/invoices', {
             page,
             "filter[search]": searchTerm // Preserve search term when changing pages
         }, {
@@ -141,11 +161,16 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         try {
             setIsDownloading(true);
             setDownloadProgress(0);
-       
-            const resp = await axios.post(`/api/invoices/${invoice.organization.id}/export`, { 
-                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1, 
+
+            toast({
+                title: "Downloading...",
+                description: `Preparing invoice for ${invoice.organization.name}...`,
+            });
+
+            const resp = await axios.post(`/api/invoices/${invoice.organization.id}/export`, {
+                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1,
                 year: +invoice.year,
-                include_cover: true 
+                include_cover: true
             }, {
                 responseType: 'blob',
                 withCredentials: true,
@@ -160,22 +185,26 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
                 `${includeCover ? 'invoice-with-cover' : 'invoice'}-${selectedMonth}-${selectedYear}.${includeCover ? 'zip' : 'pdf'}`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
-                type: includeCover ? 'application/zip' : 'application/pdf' 
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: includeCover ? 'application/zip' : 'application/pdf'
             }));
             const a = document.createElement('a');
             a.href = blobUrl;
             a.download = filename;
             document.body.appendChild(a);
-            a.click();
+            a.click(); toast({ title: "Success", description: "Invoice downloaded successfully" });
             a.remove();
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 404) {
-                alert('No invoice found for the selected month and organization.');
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No invoice found for the selected month and organization.",
+                });
             }
         } finally {
             setIsDownloading(false);
@@ -201,8 +230,8 @@ export default function Index({ months, years, organizations, invoices }: IndexP
 
         try {
 
-            const resp = await axios.post(`/api/reports/monthly-export`, { 
-                month: selectedMonthForReport, 
+            const resp = await axios.post(`/api/reports/monthly-export`, {
+                month: selectedMonthForReport,
                 year: selectedYearForReport,
             }, {
                 responseType: 'blob',
@@ -215,14 +244,19 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 },
             });
 
+            toast({
+                title: "Downloading...",
+                description: "Preparing monthly report...",
+            });
+
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
                 `monthly-report-${selectedMonthForReport}-${selectedYearForReport}.xlsx`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             }));
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -233,9 +267,17 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 404) {
-                alert('No data found for the selected month, year and organization.');
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No data found for the selected month and year.",
+                });
             } else {
-                alert('An error occurred while downloading the report.');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "An error occurred while downloading the report.",
+                });
             }
         } finally {
             setIsDownloadingReport(false);
@@ -331,7 +373,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             )
         }
     ], []);
-    
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Download Invoice" />
@@ -399,7 +441,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                 Choose the month and year for your invoice download
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="space-y-6">
                             {/* Organization Selection */}
                             <div className="space-y-2">
@@ -471,7 +513,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                         <div>
                                             <p className="font-medium text-blue-600">Cover Page Option</p>
                                             <p className="mt-1">
-                                                {includeCover 
+                                                {includeCover
                                                     ? "Download will include a cover page and be packaged as a ZIP file"
                                                     : "Download will be a single PDF file without cover page"
                                                 }
@@ -508,7 +550,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                         <span>{downloadProgress}%</span>
                                     </div>
                                     <div className="w-full bg-muted rounded-full h-2">
-                                        <div 
+                                        <div
                                             className="bg-primary h-2 rounded-full transition-all duration-300"
                                             style={{ width: `${downloadProgress}%` }}
                                         ></div>
@@ -560,7 +602,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                 Generate and download monthly Excel report
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="space-y-6">
                             {/* Month and Year Selection */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -623,7 +665,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                         <span>{downloadReportProgress}%</span>
                                     </div>
                                     <div className="w-full bg-muted rounded-full h-2">
-                                        <div 
+                                        <div
                                             className="bg-primary h-2 rounded-full transition-all duration-300"
                                             style={{ width: `${downloadReportProgress}%` }}
                                         ></div>

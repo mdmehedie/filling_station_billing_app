@@ -193,7 +193,7 @@
             <tfoot>
                 <tr>
                     <td colspan="2" style="text-align:left;">Rate:</td>
-                    @foreach ($fuel['per_ltr_price_ranges'] as $range => $price)
+                    @foreach ($fuel['per_ltr_price_ranges'] as $range => $rangeData)
                         @php
                             $colspan =
                                 array_reduce(
@@ -205,7 +205,7 @@
                                 ) + 1;
                         @endphp
                         <td colspan={{ $colspan }} style="text-align:center;">
-                            <strong>{{ removeLeadingZeros($price) }} Tk</strong>
+                            <strong>{{ removeLeadingZeros($rangeData['price']) }} Tk</strong>
                         </td>
                     @endforeach
                 </tr>

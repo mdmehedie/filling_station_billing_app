@@ -304,8 +304,25 @@ class InvoiceService
                 // Format as "1-7": 121, "8-31": 110, etc. (dynamic, not static)
                 foreach ($ranges as $range) {
                     $label = $range['start'].'-'.$range['end'];
-                    // Format price as string with 2 decimals
-                    $perLtrPriceRanges[$label] = number_format($range['per_ltr_price'], 2, '.', '');
+                    
+                    // Calculate exact totals for this specific range
+                    $rangeQty = 0;
+                    $rangeBill = 0;
+                    foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
+                        for ($d = $range['start']; $d <= $range['end']; $d++) {
+                            $dStr = (string)$d;
+                            if (isset($days[$dStr])) {
+                                $rangeQty += $days[$dStr]['qty'];
+                                $rangeBill += $days[$dStr]['qty'] * $days[$dStr]['per_ltr_price'];
+                            }
+                        }
+                    }
+
+                    $perLtrPriceRanges[$label] = [
+                        'price' => number_format($range['per_ltr_price'], 2, '.', ''),
+                        'total_qty' => $rangeQty,
+                        'total_bill' => $rangeBill,
+                    ];
                 }
             }
 
