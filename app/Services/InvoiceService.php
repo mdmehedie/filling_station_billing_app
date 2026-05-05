@@ -25,7 +25,7 @@ class InvoiceService
     /**
      * Start date, end date, period
      */
-    public function findOutStartEndPeriod($month, $year)
+    public function findOutStartEndPeriod(int $month, int $year): array
     {
         $period = Carbon::create($year, $month, 1);
         $start = $period->copy()->startOfMonth();
@@ -34,7 +34,7 @@ class InvoiceService
         return [$start, $end, $period];
     }
 
-    public function exportPdf($validated, $organization_id)
+    public function exportPdf(array $validated, int $organization_id)
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($validated['month'], $validated['year']);
 
@@ -43,7 +43,7 @@ class InvoiceService
 
         // return $data;
 
-        $organization = Organization::find($organization_id);
+        $organization = Organization::find($organization_id, ['*']);
         $fileName = $organization->ucode.'_'.$organization->name.'_'.$period->isoFormat('MMMM YYYY');
         $month = $validated['month'];
         $year = $validated['year'];
@@ -69,14 +69,14 @@ class InvoiceService
                 $invoicePdf = Pdf::view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))
                     ->format('legal')
                     ->landscape()
-                    ->margins(0, 0, 0, 0)
+                    ->margins(0, 0, 0, 0, 'mm')
                     ->generatePdfContent();
 
                 // Generate cover PDF with Spatie Laravel PDF
                 $coverPdf = Pdf::view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))
                     ->format('legal')
                     ->landscape()
-                    ->margins(0, 0, 0, 0)
+                    ->margins(0, 0, 0, 0, 'mm')
                     ->generatePdfContent();
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
@@ -102,7 +102,7 @@ class InvoiceService
                 $invoicePdf = Pdf::view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))
                     ->format('legal')
                     ->landscape()
-                    ->margins(0, 0, 0, 0)
+                    ->margins(0, 0, 0, 0, 'mm')
                     ->generatePdfContent();
 
                 return response($invoicePdf, 200, [
@@ -118,7 +118,7 @@ class InvoiceService
     /**
      * Fetch and structure invoice data
      */
-    public function getInvoiceData($organization_id, $start, $end, $period)
+    public function getInvoiceData(int $organization_id, Carbon $start, Carbon $end, Carbon $period): array
     {
         // Build table headers for each day of the month
         $tableHeaders = [];
@@ -133,13 +133,13 @@ class InvoiceService
 
         // Get all fuels used by this organization in this period
         $fuels = Order::query()
-            ->select('fuels.id', 'fuels.name')
+            ->select(['fuels.id', 'fuels.name'])
             ->where('orders.organization_id', $organization_id)
             ->leftJoin('fuels', 'orders.fuel_id', '=', 'fuels.id')
-            ->whereDate('sold_date', '>=', $start->toDateString())
-            ->whereDate('sold_date', '<=', $end->toDateString())
+            ->whereDate('sold_date', '>=', $start->toDateString(), 'and')
+            ->whereDate('sold_date', '<=', $end->toDateString(), 'and')
             ->groupBy('fuels.id', 'fuels.name')
-            ->get()
+            ->get(['*'])
             ->toArray();
 
         // Get all vehicles for this organization and period, grouped by fuel, vehicle, and day and per_ltr_price
@@ -156,17 +156,18 @@ class InvoiceService
             ->leftJoin('vehicles', 'orders.vehicle_id', '=', 'vehicles.id')
             ->leftJoin('fuels', 'orders.fuel_id', '=', 'fuels.id')
             ->where('orders.organization_id', $organization_id)
-            ->whereBetween('orders.sold_date', [$start->toDateString(), $end->toDateString()])
+            ->where('orders.sold_date', '>=', $start->toDateString())
+            ->where('orders.sold_date', '<=', $end->toDateString())
             ->groupBy(
                 'fuels.name',
                 'vehicles.ucode',
                 'orders.per_ltr_price',
                 DB::raw('EXTRACT(DAY FROM orders.sold_date)')
             )
-            ->orderBy('fuels.name')
-            ->orderBy('vehicles.ucode')
+            ->orderBy('fuels.name', 'asc')
+            ->orderBy('vehicles.ucode', 'asc')
             ->orderBy(DB::raw('EXTRACT(DAY FROM orders.sold_date)'), 'asc')
-            ->get()
+            ->get(['*'])
             ->toArray();
 
         // Build a lookup: [fuel_name][ucode][day] = [qty, price, per_ltr_price, order_count]
@@ -374,7 +375,7 @@ class InvoiceService
      * 5) Calculate total bill, total coupon, total quantity
      * 6) Calculate page count based on data
      */
-    public function generateMonthlyInvoice($sold_date, $organization_id)
+    public function generateMonthlyInvoice(Carbon $sold_date, int $organization_id): void
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($sold_date->month, $sold_date->year);
         [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount] = $this->getInvoiceData($organization_id, $start, $end, $period);
@@ -382,27 +383,27 @@ class InvoiceService
         // get order ids for this period and organization
         $orderIds = Order::query()
             ->where('organization_id', $organization_id)
-            ->whereDate('sold_date', '>=', $start->toDateString())
-            ->whereDate('sold_date', '<=', $end->toDateString())
-            ->pluck('id')
+            ->whereDate('sold_date', '>=', $start->toDateString(), 'and')
+            ->whereDate('sold_date', '<=', $end->toDateString(), 'and')
+            ->pluck('id', null)
             ->toArray();
 
         if (count($orderIds) === 0) {
             // if prev invoice exists, delete it
             $prevInvoice = Invoice::query()
                 ->where('organization_id', $organization_id)
-                ->where('month', $period->isoFormat('MMMM'))
+                ->where('month', $period->format('F'))
                 ->where('year', $period->year)
-                ->first();
+                ->first(['*']);
 
             if ($prevInvoice) {
-                $prevInvoice->delete();
+                Invoice::destroy($prevInvoice->id);
             }
         } else {
             // create invoice
             Invoice::updateOrCreate([
                 'organization_id' => $organization_id,
-                'month' => $period->isoFormat('MMMM'),
+                'month' => $period->format('F'),
                 'year' => $period->year,
             ], [
                 'total_bill' => $totalBill,
@@ -427,7 +428,7 @@ class InvoiceService
     /**
      * Calculate the number of pages needed for the invoice PDF
      */
-    public function calculatePageCount($data, $tableHeaders)
+    public function calculatePageCount(array $data, array $tableHeaders): int
     {
         $maxVehiclesPerPage = 12;  // Maximum vehicles that can fit on one page (Legal landscape)
         $headerRows = 3;  // Header rows (fuel name, price, totals)
@@ -491,16 +492,16 @@ class InvoiceService
      * Logic: If a coupon (order_no) is used more than 2 times in a single day, it is considered a repeated coupon for that day (counted as 1 for that day).
      * The function sums up the repeated coupon count for all days in the given period.
      */
-    public function calculateRepeatedCouponCount($start_date, $end_date, $organization_id)
+    public function calculateRepeatedCouponCount(Carbon $start_date, Carbon $end_date, int $organization_id): int
     {
         // Get all orders in the date range, grouped by sold_date and order_no
         $orders = Order::query()
             ->selectRaw('DATE(sold_date) as sold_date, vehicle_id, COUNT(*) as count')
-            ->whereDate('sold_date', '>=', $start_date)
-            ->whereDate('sold_date', '<=', $end_date)
+            ->whereDate('sold_date', '>=', $start_date, 'and')
+            ->whereDate('sold_date', '<=', $end_date, 'and')
             ->where('organization_id', $organization_id)
             ->groupBy(DB::raw('DATE(sold_date)'), 'vehicle_id')
-            ->get();
+            ->get(['*']);
 
         // For each day, count how many coupons (order_no) are repeated more than 2 times
         $repeatedCouponCount = 0;
@@ -518,7 +519,7 @@ class InvoiceService
         return $repeatedCouponCount;
     }
 
-    public function monthlyExport($validated)
+    public function monthlyExport(array $validated)
     {
         $month = $validated['month'];
         $year = $validated['year'];
