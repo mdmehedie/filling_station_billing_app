@@ -1,9 +1,14 @@
 services:
-  gotenberg:
-    image: gotenberg/gotenberg:8
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - '127.0.0.1:3210:3000'
+      - '8000:80'
+      - '3210:3000'
+    volumes:
+      - .:/var/www/html
     networks:
       - csd_filling_station_network
 

@@ -65,6 +65,9 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Copy Gotenberg binary from official image
+COPY --from=gotenberg/gotenberg:8 /usr/bin/gotenberg /usr/bin/gotenberg
+
 # Create storage directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
 
@@ -176,6 +179,16 @@ autorestart=true
 user=www-data
 redirect_stderr=true
 stdout_logfile=/var/www/html/storage/logs/queue.log
+
+[program:gotenberg]
+command=/usr/bin/gotenberg
+autostart=true
+autorestart=true
+priority=1
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
 EOF
 
 # Create entrypoint script
@@ -202,6 +215,6 @@ EOF
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 80
+EXPOSE 80 3000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
