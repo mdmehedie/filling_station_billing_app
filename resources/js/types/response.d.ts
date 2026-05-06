@@ -33,14 +33,14 @@ export interface Payment {
     id: number;
     organization_id: number;
     amount: number;
+    type: 'cash' | 'bank' | 'check';
     payment_date: string;
     tnx_id?: string;
     note?: string;
     proof?: string[];
-    payment_method?: {
+    bank_account?: {
         id: number;
         name: string;
-        type: string;
     };
     created_at: string;
 }

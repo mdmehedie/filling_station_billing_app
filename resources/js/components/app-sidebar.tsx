@@ -23,8 +23,7 @@ import users from "@/routes/users";
 import { usePage } from '@inertiajs/react';
 import { useCallback } from "react";
 import invoices from "@/routes/invoices";
-import paymentMethods from "@/routes/payment-methods";
-import payments from "@/routes/payments";
+import bankAccounts from "@/routes/bank-accounts";
 
 const mainNavItemsBase: NavItem[] = [
     {
@@ -63,8 +62,8 @@ const mainNavItemsBase: NavItem[] = [
         icon: File,
     },
     {
-        title: 'Payment Methods',
-        href: paymentMethods.index(),
+        title: 'Bank Information',
+        href: bankAccounts.index(),
         icon: Wallet,
     }
 ];

@@ -12,13 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payment_methods', function (Blueprint $table) {
+        Schema::create('bank_accounts', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('account_name')->nullable();
             $table->string('account_no')->nullable();
             $table->string('branch_name')->nullable();
-            $table->enum('type', PaymentMethodTypeEnums::getValueAsArray());
             $table->text('note')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -26,8 +25,11 @@ return new class extends Migration
 
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('updated_by')->constrained('users')->cascadeOnDelete();
             $table->foreignId('organization_id')->constrained('organizations')->cascadeOnDelete();
-            $table->foreignId('payment_method_id')->constrained('payment_methods')->cascadeOnDelete();
+            $table->foreignId('bank_account_id')->nullable()->constrained('bank_accounts')->cascadeOnDelete();
+            $table->enum('type', PaymentMethodTypeEnums::getValueAsArray());
             $table->decimal('amount', 10, 2);
             $table->date('payment_date');
             $table->string('tnx_id')->nullable();
@@ -43,5 +45,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('payments');
+        Schema::dropIfExists('bank_accounts');
+        Schema::dropIfExists('payment_methods');
     }
 };

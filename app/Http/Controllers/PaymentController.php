@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PaymentMethodTypeEnums;
 use App\Models\Organization;
 use App\Models\Payment;
-use App\Models\PaymentMethod;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Enum;
 
 class PaymentController extends Controller
 {
@@ -23,10 +25,15 @@ class PaymentController extends Controller
      */
     public function create(Request $request)
     {
+        $organization = null;
+        if ($request->has('organization_id')) {
+            $organization = Organization::find($request->get('organization_id'), ['id', 'name', 'ucode']);
+        }
+
         return inertia('Payments/Create', [
-            'organizations' => Organization::select(['id', 'name', 'ucode'])->get(),
-            'paymentMethods' => PaymentMethod::query()->where('is_active', '=', true)->get(),
-            'selected_organization_id' => $request->get('organization_id'),
+            'organization' => $organization,
+            'organizations' => $organization ? [] : Organization::select(['id', 'name', 'ucode'])->get(),
+            'bankAccounts' => BankAccount::query()->where('is_active', '=', true)->get(),
         ]);
     }
 
@@ -37,7 +44,8 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
-            'payment_method_id' => 'required|exists:payment_methods,id',
+            'bank_account_id' => 'required_if:type,bank|nullable|exists:bank_accounts,id',
+            'type' => ['required', 'string', new Enum(PaymentMethodTypeEnums::class)],
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'tnx_id' => 'nullable|string|max:255',
@@ -50,9 +58,12 @@ class PaymentController extends Controller
             $validated['proof'] = [$path];
         }
 
+        $validated['created_by'] = $request->user()->id;
+        $validated['updated_by'] = $request->user()->id;
+
         Payment::create($validated);
 
-        return redirect()->route('organizations.index')->with('success', 'Payment recorded successfully');
+        return redirect()->route('organizations.show', $validated['organization_id'])->with('success', 'Payment recorded successfully');
     }
 
     /**
@@ -68,10 +79,12 @@ class PaymentController extends Controller
      */
     public function edit(Payment $payment)
     {
+        $payment->load('organization:id,name,ucode');
+
         return inertia('Payments/Edit', [
             'payment' => $payment,
-            'organizations' => Organization::select(['id', 'name', 'ucode'])->get(),
-            'paymentMethods' => PaymentMethod::query()->where('is_active', '=', true)->get(),
+            'organization' => $payment->organization,
+            'bankAccounts' => BankAccount::query()->where('is_active', '=', true)->get(),
         ]);
     }
 
@@ -82,7 +95,8 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
-            'payment_method_id' => 'required|exists:payment_methods,id',
+            'bank_account_id' => 'required_if:type,bank|nullable|exists:bank_accounts,id',
+            'type' => 'required|string|in:cash,bank,check',
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'tnx_id' => 'nullable|string|max:255',
@@ -101,9 +115,11 @@ class PaymentController extends Controller
             $validated['proof'] = [$path];
         }
 
+        $validated['updated_by'] = $request->user()->id;
+
         $payment->update($validated);
 
-        return redirect()->route('payments.index')->with('success', 'Payment record updated successfully');
+        return redirect()->route('organizations.show', $validated['organization_id'])->with('success', 'Payment record updated successfully');
     }
 
     /**

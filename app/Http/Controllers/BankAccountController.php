@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\PaymentMethodTypeEnums;
-use App\Models\PaymentMethod;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 
-class PaymentMethodController extends Controller
+class BankAccountController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return inertia('PaymentMethods/Index', [
-            'paymentMethods' => PaymentMethod::query()->latest('id')->get(),
-            'types' => PaymentMethodTypeEnums::getValues(),
+        return inertia('BankAccounts/Index', [
+            'bankAccounts' => BankAccount::query()->latest('id')->get(),
         ]);
     }
 
@@ -37,43 +35,41 @@ class PaymentMethodController extends Controller
             'account_name' => 'nullable|string|max:255',
             'account_no' => 'nullable|string|max:255',
             'branch_name' => 'nullable|string|max:255',
-            'type' => 'required|string',
             'note' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
-        PaymentMethod::create($validated);
+        BankAccount::create($validated);
 
-        return back()->with('success', 'Payment method created successfully');
+        return back()->with('success', 'Bank information created successfully');
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PaymentMethod $paymentMethod)
+    public function update(Request $request, BankAccount $bankAccount)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'account_name' => 'nullable|string|max:255',
             'account_no' => 'nullable|string|max:255',
             'branch_name' => 'nullable|string|max:255',
-            'type' => 'required|string',
             'note' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
-        $paymentMethod->update($validated);
+        $bankAccount->update($validated);
 
-        return back()->with('success', 'Payment method updated successfully');
+        return back()->with('success', 'Bank information updated successfully');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PaymentMethod $paymentMethod)
+    public function destroy(BankAccount $bankAccount)
     {
-        $paymentMethod->delete();
+        $bankAccount->delete();
 
-        return back()->with('success', 'Payment method deleted successfully');
+        return back()->with('success', 'Bank information deleted successfully');
     }
 }

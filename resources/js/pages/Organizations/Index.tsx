@@ -12,6 +12,7 @@ import organizationsRoute from "@/routes/organizations";
 import paymentsRoute from "@/routes/payments";
 import { dashboard } from "@/routes";
 import { useState, useCallback, useRef, useMemo } from "react";
+import { numberFormat } from "@/lib/utils";
 
 interface Props {
     organizations: PaginatedResponse<Organization>;
@@ -164,7 +165,7 @@ export default function Index({ organizations }: Props) {
             sortable: true,
             render: (value) => (
                 <div className="font-medium text-green-600">
-                    {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(value)}
+                    {numberFormat(value)}
                 </div>
             )
         },
@@ -174,7 +175,7 @@ export default function Index({ organizations }: Props) {
             sortable: true,
             render: (value) => (
                 <div className="font-medium text-destructive">
-                    {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(value)}
+                    {numberFormat(value)}
                 </div>
             )
         },
@@ -188,7 +189,7 @@ export default function Index({ organizations }: Props) {
             key: 'actions',
             header: 'Actions',
             render: (value, row) => (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                     <Button
                         variant="ghost"
                         size="sm"

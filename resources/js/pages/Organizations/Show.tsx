@@ -77,13 +77,13 @@ export default function Show({ organization }: Props) {
             render: (value) => new Date(value).toLocaleDateString()
         },
         {
-            header: 'Method',
-            key: 'payment_method',
-            render: (value) => (
+            header: 'Bank Information',
+            key: 'bank_account',
+            render: (value, row) => (
                 <div className="flex flex-col">
                     <span className="font-medium">{value?.name}</span>
                     <Badge variant="secondary" className="text-[10px] w-fit uppercase">
-                        {value?.type.replace('_', ' ')}
+                        {row?.type?.replace('_', ' ')}
                     </Badge>
                 </div>
             )

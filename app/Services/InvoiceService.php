@@ -7,6 +7,7 @@ use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Organization;
+use App\Models\Payment;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -301,13 +302,13 @@ class InvoiceService
                 // Format as "1-7": 121, "8-31": 110, etc. (dynamic, not static)
                 foreach ($ranges as $range) {
                     $label = $range['start'].'-'.$range['end'];
-                    
+
                     // Calculate exact totals for this specific range
                     $rangeQty = 0;
                     $rangeBill = 0;
                     foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
                         for ($d = $range['start']; $d <= $range['end']; $d++) {
-                            $dStr = (string)$d;
+                            $dStr = (string) $d;
                             if (isset($days[$dStr])) {
                                 $rangeQty += $days[$dStr]['qty'];
                                 $rangeBill += $days[$dStr]['qty'] * $days[$dStr]['per_ltr_price'];
@@ -552,17 +553,23 @@ class InvoiceService
             ->get()
             ->map(function ($item) {
                 $item->type = 'order';
-                $item->description = 'Fuel Order #' . $item->id;
+                $item->description = 'Fuel Order #'.$item->id;
+
                 return $item;
             });
 
-        $payments = \App\Models\Payment::query()
+        $payments = Payment::query()
             ->where('organization_id', $organization->id)
-            ->select(['id', 'amount', 'payment_date as date', 'tnx_id'])
+            ->select(['id', 'amount', 'payment_date as date', 'tnx_id', 'type'])
             ->get()
             ->map(function ($item) {
+                $description = 'Payment ('.ucfirst($item->type).')';
+                if ($item->tnx_id) {
+                    $description .= ' - '.$item->tnx_id;
+                }
                 $item->type = 'payment';
-                $item->description = 'Payment' . ($item->tnx_id ? ' (Tnx: ' . $item->tnx_id . ')' : '');
+                $item->description = $description;
+
                 return $item;
             });
 

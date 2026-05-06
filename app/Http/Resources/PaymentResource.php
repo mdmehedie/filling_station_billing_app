@@ -18,14 +18,14 @@ class PaymentResource extends JsonResource
             'id' => $this->id,
             'organization_id' => $this->organization_id,
             'amount' => (float) $this->amount,
+            'type' => $this->type,
             'payment_date' => $this->payment_date,
             'tnx_id' => $this->tnx_id,
             'note' => $this->note,
             'proof' => $this->proof,
-            'payment_method' => $this->whenLoaded('paymentMethod', fn() => [
-                'id' => $this->paymentMethod->id,
-                'name' => $this->paymentMethod->name,
-                'type' => $this->paymentMethod->type,
+            'bank_account' => $this->whenLoaded('bankAccount', fn () => [
+                'id' => $this->bankAccount->id,
+                'name' => $this->bankAccount->name,
             ]),
             'created_at' => $this->created_at,
         ];

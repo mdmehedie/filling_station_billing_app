@@ -19,7 +19,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::resource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization')->middleware('is_admin');
     Route::resource('payments', \App\Http\Controllers\PaymentController::class)->middleware('is_admin');
-    Route::resource('payment-methods', \App\Http\Controllers\PaymentMethodController::class)->middleware('is_admin');
+    Route::resource('bank-accounts', \App\Http\Controllers\BankAccountController::class)->middleware('is_admin');
     Route::resource('fuels', FuelController::class)->except(['show'])->middleware('is_admin');
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');

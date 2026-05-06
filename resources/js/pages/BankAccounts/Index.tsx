@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Plus, Loader2 } from "lucide-react";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
-import paymentMethodsRoute from "@/routes/payment-methods";
+import bankAccountsRoute from "@/routes/bank-accounts";
 import { useMemo, useState } from "react";
 import {
     Dialog,
@@ -28,51 +28,47 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 
-interface PaymentMethod {
+interface BankAccount {
     id: number;
     name: string;
     account_name?: string;
     account_no?: string;
     branch_name?: string;
-    type: string;
     is_active: boolean;
     note?: string;
 }
 
 interface Props {
-    paymentMethods: PaymentMethod[];
-    types: string[];
+    bankAccounts: BankAccount[];
 }
 
-export default function Index({ paymentMethods, types }: Props) {
+export default function Index({ bankAccounts }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
+    const [editingBankAccount, setEditingBankAccount] = useState<BankAccount | null>(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset, clearErrors } = useForm({
         name: '',
         account_name: '',
         account_no: '',
         branch_name: '',
-        type: '',
         note: '',
         is_active: true,
     });
 
-    const handleOpenModal = (paymentMethod?: PaymentMethod) => {
-        if (paymentMethod) {
-            setEditingPaymentMethod(paymentMethod);
+    const handleOpenModal = (bankAccount?: BankAccount) => {
+        if (bankAccount) {
+            setEditingBankAccount(bankAccount);
             setData({
-                name: paymentMethod.name,
-                account_name: paymentMethod.account_name || '',
-                account_no: paymentMethod.account_no || '',
-                branch_name: paymentMethod.branch_name || '',
-                type: paymentMethod.type,
-                note: paymentMethod.note || '',
-                is_active: paymentMethod.is_active,
+                name: bankAccount.name,
+                account_name: bankAccount.account_name || '',
+                account_no: bankAccount.account_no || '',
+                branch_name: bankAccount.branch_name || '',
+                note: bankAccount.note || '',
+                is_active: bankAccount.is_active,
             });
         } else {
-            setEditingPaymentMethod(null);
+            setEditingBankAccount(null);
             reset();
         }
         clearErrors();
@@ -87,44 +83,35 @@ export default function Index({ paymentMethods, types }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingPaymentMethod) {
-            put(paymentMethodsRoute.update(editingPaymentMethod.id).url, {
+        if (editingBankAccount) {
+            put(bankAccountsRoute.update(editingBankAccount.id).url, {
                 onSuccess: () => handleCloseModal(),
             });
         } else {
-            post(paymentMethodsRoute.store().url, {
+            post(bankAccountsRoute.store().url, {
                 onSuccess: () => handleCloseModal(),
             });
         }
     };
 
-    const handleDeleteClick = (paymentMethod: PaymentMethod) => {
-        setEditingPaymentMethod(paymentMethod);
+    const handleDeleteClick = (bankAccount: BankAccount) => {
+        setEditingBankAccount(bankAccount);
         setIsDeleteModalOpen(true);
     };
 
     const handleDeleteConfirm = () => {
-        if (editingPaymentMethod) {
-            destroy(paymentMethodsRoute.destroy(editingPaymentMethod.id).url, {
+        if (editingBankAccount) {
+            destroy(bankAccountsRoute.destroy(editingBankAccount.id).url, {
                 onSuccess: () => setIsDeleteModalOpen(false),
             });
         }
     };
 
-    const columns: Column<PaymentMethod>[] = useMemo(() => [
+    const columns: Column<BankAccount>[] = useMemo(() => [
         {
             header: 'Name',
             key: 'name',
             sortable: true,
-        },
-        {
-            header: 'Type',
-            key: 'type',
-            render: (value) => (
-                <Badge variant="secondary" className="capitalize">
-                    {value.replace('_', ' ')}
-                </Badge>
-            )
         },
         {
             header: 'Account Info',
@@ -152,13 +139,13 @@ export default function Index({ paymentMethods, types }: Props) {
             header: 'Actions',
             key: 'actions',
             render: (value, row) => (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => handleOpenModal(row)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleDeleteClick(row)}
                     >
@@ -175,33 +162,33 @@ export default function Index({ paymentMethods, types }: Props) {
             href: dashboard().url,
         },
         {
-            title: 'Payment Methods',
-            href: paymentMethodsRoute.index().url,
+            title: 'Bank Information',
+            href: bankAccountsRoute.index().url,
         },
     ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Payment Methods" />
+            <Head title="Bank Information" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Payment Methods</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">Bank Information</h1>
                         <p className="text-muted-foreground">
-                            Manage your payment methods and account details
+                            Manage your bank accounts and payment details
                         </p>
                     </div>
                     <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
-                        Add Payment Method
+                        Add Bank Information
                     </Button>
                 </div>
 
                 <DataTable
-                    data={paymentMethods}
+                    data={bankAccounts}
                     columns={columns}
                     searchable={true}
-                    searchPlaceholder="Search payment methods..."
+                    searchPlaceholder="Search bank information..."
                 />
 
                 {/* Create/Edit Modal */}
@@ -209,9 +196,9 @@ export default function Index({ paymentMethods, types }: Props) {
                     <DialogContent className="sm:max-w-[425px]">
                         <form onSubmit={handleSubmit}>
                             <DialogHeader>
-                                <DialogTitle>{editingPaymentMethod ? 'Edit Payment Method' : 'Add Payment Method'}</DialogTitle>
+                                <DialogTitle>{editingBankAccount ? 'Edit Bank Information' : 'Add Bank Information'}</DialogTitle>
                                 <DialogDescription>
-                                    Fill in the details for the payment method. Click save when you're done.
+                                    Fill in the details for the bank account. Click save when you're done.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
@@ -224,25 +211,6 @@ export default function Index({ paymentMethods, types }: Props) {
                                         placeholder="e.g. Dutch Bangla Bank"
                                     />
                                     {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="type">Type</Label>
-                                    <Select 
-                                        value={data.type} 
-                                        onValueChange={(value) => setData('type', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {types.map((type) => (
-                                                <SelectItem key={type} value={type}>
-                                                    {type.replace('_', ' ').charAt(0).toUpperCase() + type.replace('_', ' ').slice(1)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="account_name">Account Name</Label>
@@ -285,7 +253,7 @@ export default function Index({ paymentMethods, types }: Props) {
                                 </Button>
                                 <Button type="submit" disabled={processing}>
                                     {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {editingPaymentMethod ? 'Update' : 'Save'}
+                                    {editingBankAccount ? 'Update' : 'Save'}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -296,9 +264,9 @@ export default function Index({ paymentMethods, types }: Props) {
                     isOpen={isDeleteModalOpen}
                     onClose={() => setIsDeleteModalOpen(false)}
                     onConfirm={handleDeleteConfirm}
-                    title="Delete Payment Method"
-                    description="Are you sure you want to delete this payment method? This action cannot be undone."
-                    itemName={editingPaymentMethod?.name}
+                    title="Delete Bank Information"
+                    description="Are you sure you want to delete this bank information? This action cannot be undone."
+                    itemName={editingBankAccount?.name}
                 />
             </div>
         </AppLayout>

@@ -15,7 +15,7 @@
 
         body {
             font-family: "Noto Serif Bengali", serif;
-            margin: 20mm;
+            margin: 5mm;
         }
 
         .header {

@@ -70,7 +70,7 @@ class OrganizationController extends Controller
      */
     public function show(Organization $organization)
     {
-        $organization->load(['user', 'payments.paymentMethod']);
+        $organization->load(['user', 'payments.bankAccount']);
         $organization->loadSum('orders', 'total_price');
         $organization->loadSum('payments', 'amount');
 

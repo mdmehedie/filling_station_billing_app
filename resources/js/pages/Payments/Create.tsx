@@ -3,6 +3,7 @@ import { Head, useForm } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -13,7 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
-import { Loader2, ArrowLeft, Paperclip, X } from "lucide-react";
+import { Loader2, ArrowLeft, Paperclip, X, Building } from "lucide-react";
 import { useMemo } from "react";
 
 interface Organization {
@@ -22,23 +23,23 @@ interface Organization {
     ucode: string;
 }
 
-interface PaymentMethod {
+interface BankAccount {
     id: number;
     name: string;
-    type: string;
     account_no?: string;
 }
 
 interface Props {
+    organization?: Organization;
     organizations: Organization[];
-    paymentMethods: PaymentMethod[];
-    selected_organization_id?: string;
+    bankAccounts: BankAccount[];
 }
 
-export default function Create({ organizations, paymentMethods, selected_organization_id }: Props) {
+export default function Create({ organization, organizations, bankAccounts }: Props) {
     const { data, setData, post, processing, errors } = useForm({
-        organization_id: selected_organization_id || '',
-        payment_method_id: '',
+        organization_id: organization?.id.toString() || '',
+        bank_account_id: '',
+        type: '',
         amount: '',
         payment_date: new Date().toISOString().split('T')[0],
         tnx_id: '',
@@ -46,11 +47,7 @@ export default function Create({ organizations, paymentMethods, selected_organiz
         proof: null as File | null,
     });
 
-    const selectedPaymentMethod = useMemo(() => {
-        return paymentMethods.find(pm => pm.id.toString() === data.payment_method_id);
-    }, [data.payment_method_id, paymentMethods]);
-
-    const isCheckPayment = selectedPaymentMethod?.type === 'check';
+    const showProofUpload = data.type === 'bank' || data.type === 'check';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -74,7 +71,7 @@ export default function Create({ organizations, paymentMethods, selected_organiz
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Add Payment" />
+            <Head title={`Add Payment - ${organization?.name || 'Organization'}`} />
             <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto w-full">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
@@ -83,61 +80,81 @@ export default function Create({ organizations, paymentMethods, selected_organiz
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Record Payment</h1>
                         <p className="text-muted-foreground">
-                            Record a new payment received from an organization
+                            {organization ? `Record a new payment received from ${organization.name}` : 'Record a new payment received from an organization'}
                         </p>
                     </div>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Payment Details</CardTitle>
+                        <CardTitle className="flex items-center justify-between">
+                            <span>Payment Details</span>
+                            {organization && (
+                                <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                                    <Building className="h-3 w-3 text-primary" />
+                                    <span className="text-xs font-bold text-primary">{organization.name}</span>
+                                    <span className="text-[10px] text-muted-foreground uppercase">{organization.ucode}</span>
+                                </div>
+                            )}
+                        </CardTitle>
                         <CardDescription>
                             Enter the details of the transaction below.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="organization_id">Organization</Label>
-                                <Select
-                                    value={data.organization_id.toString()}
-                                    onValueChange={(value) => setData('organization_id', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select organization" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {organizations.map((org) => (
-                                            <SelectItem key={org.id} value={org.id.toString()}>
-                                                {org.name} (#{org.ucode})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.organization_id && <p className="text-xs text-destructive">{errors.organization_id}</p>}
-                            </div>
+                            {!organization && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="organization_id">Organization</Label>
+                                    <Select
+                                        value={data.organization_id.toString()}
+                                        onValueChange={(value) => setData('organization_id', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select organization" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {organizations.map((org) => (
+                                                <SelectItem key={org.id} value={org.id.toString()}>
+                                                    {org.name} (#{org.ucode})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.organization_id && <p className="text-xs text-destructive">{errors.organization_id}</p>}
+                                </div>
+                            )}
 
                             <div className="grid gap-2">
-                                <Label htmlFor="payment_method_id">Payment Method</Label>
-                                <Select
-                                    value={data.payment_method_id.toString()}
-                                    onValueChange={(value) => setData('payment_method_id', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select payment method" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {paymentMethods.map((pm) => (
-                                            <SelectItem key={pm.id} value={pm.id.toString()}>
-                                                {pm.name} {pm.account_no ? `(${pm.account_no})` : ''}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.payment_method_id && <p className="text-xs text-destructive">{errors.payment_method_id}</p>}
+                                <Label htmlFor="payment_date">Payment Date</Label>
+                                <Input
+                                    id="payment_date"
+                                    type="date"
+                                    value={data.payment_date}
+                                    onChange={(e) => setData('payment_date', e.target.value)}
+                                />
+                                {errors.payment_date && <p className="text-xs text-destructive">{errors.payment_date}</p>}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="type">Payment Type</Label>
+                                    <Select
+                                        value={data.type}
+                                        onValueChange={(value) => setData('type', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="cash">Cash</SelectItem>
+                                            <SelectItem value="bank">Bank</SelectItem>
+                                            <SelectItem value="check">Check</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
+                                </div>
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="amount">Amount (BDT)</Label>
                                     <Input
@@ -151,35 +168,48 @@ export default function Create({ organizations, paymentMethods, selected_organiz
                                     />
                                     {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
                                 </div>
+                            </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="payment_date">Payment Date</Label>
-                                    <Input
-                                        id="payment_date"
-                                        type="date"
-                                        value={data.payment_date}
-                                        onChange={(e) => setData('payment_date', e.target.value)}
-                                    />
-                                    {errors.payment_date && <p className="text-xs text-destructive">{errors.payment_date}</p>}
+                            {data.type === 'bank' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bank_account_id">Bank Information</Label>
+                                        <Select
+                                            value={data.bank_account_id.toString()}
+                                            onValueChange={(value) => setData('bank_account_id', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select bank account" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {bankAccounts.map((pm) => (
+                                                    <SelectItem key={pm.id} value={pm.id.toString()}>
+                                                        {pm.name} {pm.account_no ? `(${pm.account_no})` : ''}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.bank_account_id && <p className="text-xs text-destructive">{errors.bank_account_id}</p>}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="tnx_id">Transaction ID / Reference</Label>
+                                        <Input
+                                            id="tnx_id"
+                                            value={data.tnx_id}
+                                            onChange={(e) => setData('tnx_id', e.target.value)}
+                                            placeholder="e.g. BK-12345678"
+                                        />
+                                        {errors.tnx_id && <p className="text-xs text-destructive">{errors.tnx_id}</p>}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="tnx_id">Transaction ID / Reference (Optional)</Label>
-                                <Input
-                                    id="tnx_id"
-                                    value={data.tnx_id}
-                                    onChange={(e) => setData('tnx_id', e.target.value)}
-                                    placeholder="e.g. BK-12345678"
-                                />
-                                {errors.tnx_id && <p className="text-xs text-destructive">{errors.tnx_id}</p>}
-                            </div>
-
-                            {isCheckPayment && (
+                            {showProofUpload && (
                                 <div className="grid gap-2 p-4 border-2 border-dashed rounded-lg bg-muted/30">
                                     <Label htmlFor="proof" className="flex items-center gap-2 cursor-pointer">
                                         <Paperclip className="h-4 w-4" />
-                                        Upload Check Copy / Proof
+                                        Upload {data.type === 'check' ? 'Check Copy' : 'Deposit Slip'} / Proof
                                     </Label>
                                     <div className="flex items-center gap-4">
                                         <Input
@@ -214,7 +244,7 @@ export default function Create({ organizations, paymentMethods, selected_organiz
                                         )}
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Please upload a scanned copy or photo of the check (Image or PDF).
+                                        Please upload a scanned copy or photo of the {data.type === 'check' ? 'check' : 'deposit slip'} (Image or PDF).
                                     </p>
                                     {errors.proof && <p className="text-xs text-destructive">{errors.proof}</p>}
                                 </div>
@@ -222,10 +252,12 @@ export default function Create({ organizations, paymentMethods, selected_organiz
 
                             <div className="grid gap-2">
                                 <Label htmlFor="note">Note (Optional)</Label>
-                                <Input
+                                <Textarea
                                     id="note"
                                     value={data.note}
                                     onChange={(e) => setData('note', e.target.value)}
+                                    placeholder="Add any additional details about this payment..."
+                                    className="min-h-[100px]"
                                 />
                                 {errors.note && <p className="text-xs text-destructive">{errors.note}</p>}
                             </div>

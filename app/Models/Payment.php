@@ -2,24 +2,29 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentMethodTypeEnums;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
     protected $fillable = [
         'organization_id',
-        'payment_method_id',
+        'bank_account_id',
+        'type',
         'amount',
         'payment_date',
         'tnx_id',
         'note',
         'proof',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'payment_date' => 'date',
         'amount' => 'decimal:2',
         'proof' => 'json',
+        'type' => PaymentMethodTypeEnums::class,
     ];
 
     public function organization()
@@ -27,8 +32,18 @@ class Payment extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function paymentMethod()
+    public function bankAccount()
     {
-        return $this->belongsTo(PaymentMethod::class);
+        return $this->belongsTo(BankAccount::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

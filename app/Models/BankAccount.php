@@ -4,14 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PaymentMethod extends Model
+class BankAccount extends Model
 {
     protected $fillable = [
         'name',
         'account_name',
         'account_no',
         'branch_name',
-        'type',
         'note',
         'is_active',
     ];

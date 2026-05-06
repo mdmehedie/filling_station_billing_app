@@ -20,10 +20,9 @@ interface Payment {
         name: string;
         ucode: string;
     };
-    payment_method: {
+    bank_account: {
         id: number;
         name: string;
-        type: string;
     };
 }
 
@@ -60,14 +59,11 @@ export default function Index({ payments }: Props) {
             )
         },
         {
-            header: 'Method',
-            key: 'payment_method',
+            header: 'Bank Information',
+            key: 'bank_account',
             render: (value) => (
                 <div>
                     <div className="font-medium">{value.name}</div>
-                    <Badge variant="secondary" className="text-[10px] uppercase">
-                        {value.type.replace('_', ' ')}
-                    </Badge>
                 </div>
             )
         },
@@ -80,7 +76,7 @@ export default function Index({ payments }: Props) {
             header: 'Actions',
             key: 'actions',
             render: (value, row) => (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                     </Button>
