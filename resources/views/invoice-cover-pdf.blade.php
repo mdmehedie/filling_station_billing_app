@@ -4,6 +4,9 @@
 <head>
     <meta charset="utf-8">
     <title>বিল পরিশোধ প্রসঙ্গে</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@100..900&display=swap" rel="stylesheet">
     <style>
         /* ====== Page Setup (A4) ====== */
         @page {
@@ -11,19 +14,9 @@
             margin: 22mm 18mm 20mm 18mm;
         }
 
-        /* Web Bengali font support */
-        /*@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap');*/
-
-        @font-face{
-            font-family:"Noto Sans Bengali";
-            url("NotoSansBengali.woff") format("woff");
-            font-weight:400; font-style:normal; font-display:swap;
-            unicode-range: U+0980-09FF, U+0964-0965; /* Bengali + danda */
-        }
-
         html,
         body {
-            font-family: "Noto Sans Bengali", Arial, sans-serif;
+            font-family: "Noto Serif Bengali", serif;
             font-size: 11pt;
             line-height: 1.6;
             color: #111;

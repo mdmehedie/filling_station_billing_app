@@ -47,6 +47,14 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     libu2f-udev \
     libvulkan1 \
+    python3-pip \
+    python3-cffi \
+    python3-brotli \
+    libpango-1.0-0 \
+    libharfbuzz0b \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    && pip3 install weasyprint --break-system-packages \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && apt-get install -y chromium \
@@ -59,14 +67,6 @@ RUN apt-get update && apt-get install -y \
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Copy Gotenberg binary and assets from official image
-COPY --from=gotenberg/gotenberg:8 /usr/bin/gotenberg /usr/bin/gotenberg
-COPY --from=gotenberg/gotenberg:8 /opt/gotenberg /opt/gotenberg
-
-# Gotenberg environment variables
-ENV CHROMIUM_BIN_PATH=/usr/bin/chromium
-ENV CHROMIUM_HYPHEN_DATA_DIR_PATH=/opt/gotenberg/chromium-hyphen-data
 
 # Create storage directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
@@ -179,16 +179,6 @@ autorestart=true
 user=www-data
 redirect_stderr=true
 stdout_logfile=/var/www/html/storage/logs/queue.log
-
-[program:gotenberg]
-command=/usr/bin/gotenberg --modules.exclude="exiftool,pdftk,qpdf,pdfcpu,libreoffice"
-autostart=true
-autorestart=true
-priority=1
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
-stderr_logfile=/dev/stderr
-stderr_logfile_maxbytes=0
 EOF
 
 # Create entrypoint script
@@ -215,6 +205,6 @@ EOF
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 80 3000
+EXPOSE 80
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

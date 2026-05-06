@@ -103,7 +103,7 @@ return [
         /*
          * The timeout (default = 10 seconds)
          */
-        'timeout' => 10,
+        'timeout' => env('LARAVEL_PDF_WEASYPRINT_TIMEOUT', 60),
     ],
 
     /*

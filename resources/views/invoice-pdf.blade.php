@@ -4,10 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Credit Sale Statement</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@100..900&display=swap" rel="stylesheet">
     <style>
+        @page {
+            size: legal landscape;
+            margin: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: "Noto Serif Bengali", serif;
+            margin: 20mm;
         }
 
         .header {

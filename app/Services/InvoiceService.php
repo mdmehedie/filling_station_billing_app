@@ -10,7 +10,7 @@ use App\Models\Organization;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
-use Spatie\LaravelPdf\Facades\Pdf;
+use Pontedilana\PhpWeasyPrint\Pdf;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -65,19 +65,16 @@ class InvoiceService
 
         if ($validated['include_cover']) {
             try {
-                // Generate invoice PDF with Spatie Laravel PDF
-                $invoicePdf = Pdf::view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))
-                    ->format('legal')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0, 'mm')
-                    ->generatePdfContent();
+                $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+                $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
 
-                // Generate cover PDF with Spatie Laravel PDF
-                $coverPdf = Pdf::view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))
-                    ->format('legal')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0, 'mm')
-                    ->generatePdfContent();
+                // Generate invoice PDF
+                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render();
+                $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
+
+                // Generate cover PDF
+                $coverHtml = view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render();
+                $coverPdf = $pdf->getOutputFromHtml($coverHtml);
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
             }
@@ -98,12 +95,12 @@ class InvoiceService
             }
         } else {
             try {
-                // Generate invoice PDF with Spatie Laravel PDF
-                $invoicePdf = Pdf::view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))
-                    ->format('legal')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0, 'mm')
-                    ->generatePdfContent();
+                $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+                $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
+
+                // Generate invoice PDF
+                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render();
+                $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
 
                 return response($invoicePdf, 200, [
                     'Content-Type' => 'application/pdf',
