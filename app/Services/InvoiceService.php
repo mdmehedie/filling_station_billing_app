@@ -543,4 +543,47 @@ class InvoiceService
 
         return Excel::download(new InvoiceExport($month, $year), $filename, \Maatwebsite\Excel\Excel::XLSX);
     }
+
+    public function exportStatement(Organization $organization)
+    {
+        $orders = Order::query()
+            ->where('organization_id', $organization->id)
+            ->select(['id', 'total_price as amount', 'sold_date as date'])
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'order';
+                $item->description = 'Fuel Order #' . $item->id;
+                return $item;
+            });
+
+        $payments = \App\Models\Payment::query()
+            ->where('organization_id', $organization->id)
+            ->select(['id', 'amount', 'payment_date as date', 'tnx_id'])
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'payment';
+                $item->description = 'Payment' . ($item->tnx_id ? ' (Tnx: ' . $item->tnx_id . ')' : '');
+                return $item;
+            });
+
+        $entries = $orders->concat($payments)->sortBy('date');
+
+        $totalOrders = $orders->sum('amount');
+        $totalPayments = $payments->sum('amount');
+
+        try {
+            $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+            $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
+
+            $html = view('statement-pdf', compact('organization', 'entries', 'totalOrders', 'totalPayments'))->render();
+            $pdfContent = $pdf->getOutputFromHtml($html);
+
+            return response($pdfContent, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="Statement_'.$organization->ucode.'_'.date('Y-m-d').'.pdf"',
+            ]);
+        } catch (\Exception $e) {
+            abort(500, $e->getMessage());
+        }
+    }
 }

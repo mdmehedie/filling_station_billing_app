@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
     Building2, User, Calendar, Percent, Hash, Globe, ArrowLeft,
-    CreditCard, Wallet, AlertCircle, FileText, Download, Paperclip, ExternalLink
+    CreditCard, Wallet, AlertCircle, FileText, Download, Paperclip, ExternalLink, Edit, Trash2
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
@@ -24,6 +24,7 @@ interface Props {
 
 export default function Show({ organization }: Props) {
     const [deleteModal, setDeleteModal] = useState({ isOpen: false });
+    const [paymentDeleteModal, setPaymentDeleteModal] = useState<{ isOpen: boolean, paymentId: number | null }>({ isOpen: false, paymentId: null });
 
     const handleDeleteClick = () => setDeleteModal({ isOpen: true });
     const handleDeleteCancel = () => setDeleteModal({ isOpen: false });
@@ -31,6 +32,17 @@ export default function Show({ organization }: Props) {
     const handleDeleteConfirm = () => {
         router.delete(organizationsRoute.destroy(organization.id).url, {
             onSuccess: () => setDeleteModal({ isOpen: false }),
+        });
+    };
+
+    const handlePaymentDeleteClick = (id: number) => {
+        setPaymentDeleteModal({ isOpen: true, paymentId: id });
+    };
+
+    const handlePaymentDeleteConfirm = () => {
+        if (!paymentDeleteModal.paymentId) return;
+        router.delete(paymentsRoute.destroy(paymentDeleteModal.paymentId).url, {
+            onSuccess: () => setPaymentDeleteModal({ isOpen: false, paymentId: null }),
         });
     };
 
@@ -108,6 +120,30 @@ export default function Show({ organization }: Props) {
                     </a>
                 );
             }
+        },
+        {
+            header: 'Actions',
+            key: 'actions',
+            render: (value, row) => (
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => router.visit(paymentsRoute.edit(row.id).url)}
+                        className="h-8 w-8 p-0"
+                    >
+                        <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handlePaymentDeleteClick(row.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )
         }
     ];
 
@@ -203,7 +239,11 @@ export default function Show({ organization }: Props) {
                                     <CardTitle>Payment History</CardTitle>
                                     <CardDescription>Recently received payments from this organization</CardDescription>
                                 </div>
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => window.open(`/organizations/${organization.id}/statement`, '_blank')}
+                                >
                                     <Download className="mr-2 h-4 w-4" />
                                     Statement
                                 </Button>
@@ -277,6 +317,15 @@ export default function Show({ organization }: Props) {
                     title="Delete Organization"
                     description="Are you sure you want to delete this organization? This action cannot be undone."
                     itemName={organization.name}
+                />
+
+                <DeleteConfirmation
+                    isOpen={paymentDeleteModal.isOpen}
+                    onClose={() => setPaymentDeleteModal({ isOpen: false, paymentId: null })}
+                    onConfirm={handlePaymentDeleteConfirm}
+                    title="Delete Payment Record"
+                    description="Are you sure you want to delete this payment record? This will affect the organization's total balance."
+                    itemName="this payment"
                 />
             </div>
         </AppLayout>

@@ -13,6 +13,11 @@ class InvoiceController extends Controller
         private InvoiceService $invoiceService
     ) {}
 
+    public function statement(Request $request, Organization $organization)
+    {
+        return $this->invoiceService->exportStatement($organization);
+    }
+
     public function index()
     {
         // fetch avaiable Months and Years from orders

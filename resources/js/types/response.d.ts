@@ -31,6 +31,7 @@ export interface Organization {
 
 export interface Payment {
     id: number;
+    organization_id: number;
     amount: number;
     payment_date: string;
     tnx_id?: string;
