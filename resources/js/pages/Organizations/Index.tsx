@@ -160,6 +160,16 @@ export default function Index({ organizations }: Props) {
             )
         },
         {
+            key: 'security_money',
+            header: 'Security Money',
+            sortable: true,
+            render: (value) => (
+                <div className="font-medium text-blue-600">
+                    {numberFormat(value)}
+                </div>
+            )
+        },
+        {
             key: 'total_paid',
             header: 'Paid Amount',
             sortable: true,

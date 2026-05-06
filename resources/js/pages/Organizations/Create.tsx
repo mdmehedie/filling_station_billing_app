@@ -21,6 +21,7 @@ interface OrganizationFormData {
     logo: File | null;
     is_vat_applied: boolean;
     vat_rate: number | string;
+    security_money: number | string;
 }
 
 export default function Create() {
@@ -31,6 +32,7 @@ export default function Create() {
         logo: null,
         is_vat_applied: true,
         vat_rate: 0,
+        security_money: 0,
     });
 
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -340,6 +342,38 @@ export default function Create() {
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    </div>
+
+                                    <Separator />
+                                    
+                                    {/* Financial Settings */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-medium">Financial Settings</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="security_money">Security Money</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        id="security_money"
+                                                        name="security_money"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={data.security_money}
+                                                        onChange={(e) => setData('security_money', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pl-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span className="text-muted-foreground text-sm">৳</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={errors.security_money} />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Initial security deposit or money for this organization
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 

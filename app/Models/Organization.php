@@ -16,6 +16,7 @@ class Organization extends Model
         'logo',
         'is_vat_applied',
         'vat_rate',
+        'security_money',
     ];
 
     protected $appends = ['logo_url', 'total_paid', 'total_due'];

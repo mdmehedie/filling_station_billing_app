@@ -289,6 +289,12 @@ export default function Show({ organization }: Props) {
                                         <span className="text-muted-foreground flex items-center gap-2"><CreditCard size={14} /> Vehicles</span>
                                         <span className="font-medium">{organization.vehicles_count}</span>
                                     </div>
+                                    <div className="flex justify-between items-center text-sm pt-2 border-t border-dashed mt-2">
+                                        <span className="text-muted-foreground flex items-center gap-2 font-bold text-primary"><Wallet size={14} /> Security Money</span>
+                                        <span className="font-bold text-primary">
+                                            {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(organization.security_money || 0)}
+                                        </span>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
