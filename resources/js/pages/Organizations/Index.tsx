@@ -3,12 +3,13 @@ import { Head, router } from "@inertiajs/react";
 import { DataTable, Column } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Eye, Plus } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, CreditCard } from "lucide-react";
 import { Organization, PaginatedResponse } from "@/types/response";
 import DeleteConfirmation from "@/components/DeleteConfirmation";
 
 import { BreadcrumbItem } from "@/types";
 import organizationsRoute from "@/routes/organizations";
+import paymentsRoute from "@/routes/payments";
 import { dashboard } from "@/routes";
 import { useState, useCallback, useRef, useMemo } from "react";
 
@@ -34,9 +35,9 @@ export default function Index({ organizations }: Props) {
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
-        
+
         searchTimeoutRef.current = setTimeout(() => {
-            router.get('/organizations', { 
+            router.get('/organizations', {
                 "filter[search]": term,
                 page: 1 // Reset to first page when searching
             }, {
@@ -52,7 +53,7 @@ export default function Index({ organizations }: Props) {
     };
 
     const handlePageChange = (page: number) => {
-        router.get('/organizations', { 
+        router.get('/organizations', {
             page,
             "filter[search]": searchTerm // Preserve search term when changing pages
         }, {
@@ -77,7 +78,7 @@ export default function Index({ organizations }: Props) {
                 },
                 onError: (errors) => {
                     setDeleteModal({ isOpen: true, organization: null, error: Object.values(errors).join(', ') });
-                    
+
                     throw new Error(Object.values(errors).join(', '));
                 }
             });
@@ -106,8 +107,8 @@ export default function Index({ organizations }: Props) {
             render: (value, row) => (
                 <div className="flex items-center space-x-3">
                     {row.logo_url && (
-                        <img 
-                            src={row.logo_url} 
+                        <img
+                            src={row.logo_url}
                             alt={row.name}
                             className="h-8 w-8 rounded-full object-cover"
                         />
@@ -136,8 +137,8 @@ export default function Index({ organizations }: Props) {
             render: (value, row) => (
                 <div>
                     {row.is_vat_applied ? (
-                        row.vat_rate ? `${row.vat_rate}%` : 
-                            row.vat_rate ? `Flat: ${row.vat_rate}` : 
+                        row.vat_rate ? `${row.vat_rate}%` :
+                            row.vat_rate ? `Flat: ${row.vat_rate}` :
                                 'Not set'
                     ) : '-'}
                 </div>
@@ -158,6 +159,26 @@ export default function Index({ organizations }: Props) {
             )
         },
         {
+            key: 'total_paid',
+            header: 'Paid Amount',
+            sortable: true,
+            render: (value) => (
+                <div className="font-medium text-green-600">
+                    {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(value)}
+                </div>
+            )
+        },
+        {
+            key: 'total_due',
+            header: 'Due Amount',
+            sortable: true,
+            render: (value) => (
+                <div className="font-medium text-destructive">
+                    {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(value)}
+                </div>
+            )
+        },
+        {
             key: 'created_at',
             header: 'Created',
             sortable: true,
@@ -168,8 +189,17 @@ export default function Index({ organizations }: Props) {
             header: 'Actions',
             render: (value, row) => (
                 <div className="flex items-center space-x-2">
-                    <Button 
-                        variant="ghost" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        title="Add Payment"
+                        onClick={() => router.visit(paymentsRoute.create({ query: { organization_id: row.id } }).url)}
+                    >
+                        <CreditCard className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => router.visit(organizationsRoute.show(row.id).url)}
                     >
@@ -178,10 +208,10 @@ export default function Index({ organizations }: Props) {
                     <Button variant="ghost" size="sm" onClick={() => router.visit(organizationsRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-destructive hover:text-destructive" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
                         onClick={() => handleDeleteClick(row)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -214,7 +244,7 @@ export default function Index({ organizations }: Props) {
                             Manage your organizations and their settings
                         </p>
                     </div>
-                    <Button 
+                    <Button
                         onClick={() => router.visit(organizationsRoute.create().url)}
                         className="flex items-center gap-2"
                     >
@@ -250,7 +280,7 @@ export default function Index({ organizations }: Props) {
                     description={`Are you sure you want to delete this organization? This action cannot be undone. ${deleteModal.error ? `Error: ${deleteModal.error}` : ''}`}
                     itemName={deleteModal.organization?.name}
                 />
-            </div>  
+            </div>
         </AppLayout>
     )
 } 

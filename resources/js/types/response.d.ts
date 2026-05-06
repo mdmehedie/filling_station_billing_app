@@ -23,7 +23,25 @@ export interface Organization {
     created_at: string;
     vehicles_count?: number;
     orders_count?: number;
+    total_paid: number;
+    total_due: number;
+    payments?: Payment[];
     user: User;
+}
+
+export interface Payment {
+    id: number;
+    amount: number;
+    payment_date: string;
+    tnx_id?: string;
+    note?: string;
+    proof?: string[];
+    payment_method?: {
+        id: number;
+        name: string;
+        type: string;
+    };
+    created_at: string;
 }
 
 export interface PaginationLink {

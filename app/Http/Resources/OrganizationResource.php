@@ -26,6 +26,9 @@ class OrganizationResource extends JsonResource
             'created_at' => $this->created_at,
             'vehicles_count' => $this->vehicles_count,
             'orders_count' => $this->orders_count,
+            'total_paid' => (float) $this->total_paid,
+            'total_due' => (float) $this->total_due,
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
 }

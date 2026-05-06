@@ -58,4 +58,18 @@ class InvoiceController extends Controller
 
         return $this->invoiceService->monthlyExport($validated);
     }
+
+    public function sync(Request $request, string $organization_id)
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2000|max:2050',
+        ]);
+
+        $date = \Illuminate\Support\Carbon::createFromDate((int) $validated['year'], (int) $validated['month'], 1);
+
+        $this->invoiceService->generateMonthlyInvoice($date, (int) $organization_id);
+
+        return back()->with('success', 'Invoice synchronized successfully');
+    }
 }

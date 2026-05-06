@@ -18,7 +18,7 @@ class Organization extends Model
         'vat_rate',
     ];
 
-    protected $appends = ['logo_url'];
+    protected $appends = ['logo_url', 'total_paid', 'total_due'];
 
     public function user()
     {
@@ -35,9 +35,25 @@ class Organization extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function getLogoUrlAttribute()
     {
         return $this->logo ? asset('storage/organizations/' . $this->logo) : null;
+    }
+
+    public function getTotalPaidAttribute()
+    {
+        return $this->payments_sum_amount ?? $this->payments()->sum('amount') ?? 0;
+    }
+
+    public function getTotalDueAttribute()
+    {
+        $total_orders = $this->orders_sum_total_price ?? $this->orders()->sum('total_price') ?? 0;
+        return $total_orders - $this->total_paid;
     }
 
     public function getVehiclesCountAttribute()

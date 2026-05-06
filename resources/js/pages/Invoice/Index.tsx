@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing } from "lucide-react";
+import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing, RefreshCcw } from "lucide-react";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization, Invoice, PaginatedResponse } from "@/types/response";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
@@ -217,6 +217,35 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         }
     }
 
+    const [isSyncing, setIsSyncing] = useState<number | null>(null);
+
+    const handleSync = async (invoice: Invoice) => {
+        setIsSyncing(invoice.id);
+        try {
+            await router.post(`/invoices/${invoice.organization.id}/sync`, {
+                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1,
+                year: +invoice.year,
+            }, {
+                onSuccess: () => {
+                    toast({
+                        title: "Success",
+                        description: "Invoice synchronized successfully",
+                    });
+                },
+                onError: () => {
+                    toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "An error occurred while syncing the invoice",
+                    });
+                },
+                preserveScroll: true,
+            });
+        } finally {
+            setIsSyncing(null);
+        }
+    };
+
     // monthly report modal
     const [showMonthlyReportModal, setShowMonthlyReportModal] = useState<boolean>(false);
     const [selectedMonthForReport, setSelectedMonthForReport] = useState<number>(months[0] || 0);
@@ -368,6 +397,16 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                     >
                         {isDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                         PDF
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSync(row)}
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                        disabled={isSyncing === row.id}
+                    >
+                        {isSyncing === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCcw className="h-3 w-3" />}
+                        Sync
                     </Button>
                 </div>
             )

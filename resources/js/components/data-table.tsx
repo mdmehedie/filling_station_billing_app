@@ -64,7 +64,7 @@ export function DataTable<T extends Record<string, any>>({
     // Selection props
     enableSelection = false,
     getRowId = (row: T) => (row as any).id,
-    selectedRows = [],
+    selectedRows,
     onSelectionChange,
 }: DataTableProps<T>) {
     const [searchTerm, setSearchTerm] = useState(searchValue)
@@ -74,7 +74,7 @@ export function DataTable<T extends Record<string, any>>({
         key: keyof T | string | null
         direction: 'asc' | 'desc'
     }>({ key: null, direction: 'asc' })
-    const [internalSelectedRows, setInternalSelectedRows] = useState<(string | number)[]>(selectedRows)
+    const [internalSelectedRows, setInternalSelectedRows] = useState<(string | number)[]>(selectedRows || [])
 
     // Filter data based on search term (only for client-side)
     const filteredData = useMemo(() => {

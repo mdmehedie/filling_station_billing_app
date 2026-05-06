@@ -24,6 +24,8 @@ class OrganizationController extends Controller
             'organizations' => OrganizationResource::collection(
                 QueryBuilder::for(Organization::class)
                     ->with('user')
+                    ->withSum('orders', 'total_price')
+                    ->withSum('payments', 'amount')
                     ->orderBy('id', 'desc')
                     ->allowedFilters([
                         AllowedFilter::callback('search', function ($query, $value) {
@@ -68,8 +70,12 @@ class OrganizationController extends Controller
      */
     public function show(Organization $organization)
     {
+        $organization->load(['user', 'payments.paymentMethod']);
+        $organization->loadSum('orders', 'total_price');
+        $organization->loadSum('payments', 'amount');
+
         return inertia('Organizations/Show', [
-            'organization' => OrganizationResource::make($organization->load('user'))
+            'organization' => OrganizationResource::make($organization)
         ]);
     }
 
