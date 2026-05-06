@@ -123,28 +123,28 @@ export default function Index({ organizations }: Props) {
                 </div>
             )
         },
-        {
-            key: 'is_vat_applied',
-            header: 'VAT Status',
-            render: (value, row) => (
-                <Badge variant={row.is_vat_applied ? "default" : "secondary"}>
-                    {row.is_vat_applied ? 'VAT Applied' : 'No VAT'}
-                </Badge>
-            )
-        },
-        {
-            key: 'vat_rate',
-            header: 'VAT Rate',
-            render: (value, row) => (
-                <div>
-                    {row.is_vat_applied ? (
-                        row.vat_rate ? `${row.vat_rate}%` :
-                            row.vat_rate ? `Flat: ${row.vat_rate}` :
-                                'Not set'
-                    ) : '-'}
-                </div>
-            )
-        },
+        // {
+        //     key: 'is_vat_applied',
+        //     header: 'VAT Status',
+        //     render: (value, row) => (
+        //         <Badge variant={row.is_vat_applied ? "default" : "secondary"}>
+        //             {row.is_vat_applied ? 'VAT Applied' : 'No VAT'}
+        //         </Badge>
+        //     )
+        // },
+        // {
+        //     key: 'vat_rate',
+        //     header: 'VAT Rate',
+        //     render: (value, row) => (
+        //         <div>
+        //             {row.is_vat_applied ? (
+        //                 row.vat_rate ? `${row.vat_rate}%` :
+        //                     row.vat_rate ? `Flat: ${row.vat_rate}` :
+        //                         'Not set'
+        //             ) : '-'}
+        //         </div>
+        //     )
+        // },
         {
             key: 'vehicles_count',
             header: 'Vehicles',
@@ -159,16 +159,16 @@ export default function Index({ organizations }: Props) {
                 <div>{row.orders_count}</div>
             )
         },
-        {
-            key: 'security_money',
-            header: 'Security Money',
-            sortable: true,
-            render: (value) => (
-                <div className="font-medium text-blue-600">
-                    {numberFormat(value)}
-                </div>
-            )
-        },
+        // {
+        //     key: 'security_money',
+        //     header: 'Security Money',
+        //     sortable: true,
+        //     render: (value) => (
+        //         <div className="font-medium text-blue-600">
+        //             {numberFormat(value)}
+        //         </div>
+        //     )
+        // },
         {
             key: 'total_paid',
             header: 'Paid Amount',
@@ -189,12 +189,12 @@ export default function Index({ organizations }: Props) {
                 </div>
             )
         },
-        {
-            key: 'created_at',
-            header: 'Created',
-            sortable: true,
-            render: (value) => new Date(value).toLocaleDateString()
-        },
+        // {
+        //     key: 'created_at',
+        //     header: 'Created',
+        //     sortable: true,
+        //     render: (value) => new Date(value).toLocaleDateString()
+        // },
         {
             key: 'actions',
             header: 'Actions',
