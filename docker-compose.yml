@@ -9,10 +9,9 @@ services:
       - '3210:3000'
     volumes:
       - .:/var/www/html
-    networks:
-      - csd_filling_station_network
 
-networks:
-  csd_filling_station_network:
-    name: csd_filling_station_network
-    driver: bridge
+volumes:
+  sail-mysql:
+    driver: local
+  sail-redis:
+    driver: local

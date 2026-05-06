@@ -57,16 +57,16 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Configure Chromium for Docker environment
-ENV CHROME_BIN=/usr/bin/chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy Gotenberg binary from official image
+# Copy Gotenberg binary and assets from official image
 COPY --from=gotenberg/gotenberg:8 /usr/bin/gotenberg /usr/bin/gotenberg
+COPY --from=gotenberg/gotenberg:8 /opt/gotenberg /opt/gotenberg
+
+# Gotenberg environment variables
+ENV CHROMIUM_BIN_PATH=/usr/bin/chromium
+ENV CHROMIUM_HYPHEN_DATA_DIR_PATH=/opt/gotenberg/chromium-hyphen-data
 
 # Create storage directories
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache
@@ -181,7 +181,7 @@ redirect_stderr=true
 stdout_logfile=/var/www/html/storage/logs/queue.log
 
 [program:gotenberg]
-command=/usr/bin/gotenberg
+command=/usr/bin/gotenberg --modules.exclude="exiftool,pdftk,qpdf,pdfcpu,libreoffice"
 autostart=true
 autorestart=true
 priority=1
