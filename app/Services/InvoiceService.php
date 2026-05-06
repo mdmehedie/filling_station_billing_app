@@ -260,7 +260,7 @@ class InvoiceService
                 $priceChangeDays = [];
                 foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
                     foreach ($days as $day => $info) {
-                        if ($info['per_ltr_price'] > 0) {
+                        if ($info['qty'] > 0 && $info['per_ltr_price'] > 0) {
                             $priceChangeDays[(int) $day] = $info['per_ltr_price'];
                         }
                     }
