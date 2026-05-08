@@ -381,7 +381,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                 <div>
                     <div className="font-medium">{row.creator.name}</div>
                     <div className="text-sm text-muted-foreground">
-                        {row.creator.email}
+                        {row.creator.phone || 'No phone'}
                     </div>
                 </div>
             )
