@@ -219,14 +219,17 @@ export default function Index({ organizations }: Props) {
                     <Button variant="ghost" size="sm" onClick={() => router.visit(organizationsRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteClick(row)}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+
+                    {(Number(row.vehicles_count) === 0 || Number(row.orders_count) === 0) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteClick(row)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             )
         }

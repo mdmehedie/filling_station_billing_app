@@ -547,12 +547,34 @@ class InvoiceService
 
     public function exportStatement(Organization $organization)
     {
+        $entries = collect();
+
+        // Add Previous Due as starting entry if exists
+        if ($organization->previous_due > 0) {
+            $entries->push((object) [
+                'date' => $organization->created_at,
+                'description' => 'Initial Previous Due',
+                'entry_type' => 'order',
+                'amount' => $organization->previous_due,
+            ]);
+        }
+
+        // Add Previous Paid as starting entry if exists
+        if ($organization->previous_paid > 0) {
+            $entries->push((object) [
+                'date' => $organization->created_at,
+                'description' => 'Initial Previous Paid',
+                'entry_type' => 'payment',
+                'amount' => $organization->previous_paid,
+            ]);
+        }
+
         $orders = Order::query()
             ->where('organization_id', $organization->id)
             ->select(['id', 'total_price as amount', 'sold_date as date'])
             ->get()
             ->map(function ($item) {
-                $item->type = 'order';
+                $item->entry_type = 'order';
                 $item->description = 'Fuel Order #'.$item->id;
 
                 return $item;
@@ -560,23 +582,27 @@ class InvoiceService
 
         $payments = Payment::query()
             ->where('organization_id', $organization->id)
-            ->select(['id', 'amount', 'payment_date as date', 'tnx_id', 'type'])
+            ->where('is_deleted', false)
+            ->select(['id', 'amount', 'payment_date as date', 'tnx_id', 'method', 'type'])
             ->get()
             ->map(function ($item) {
-                $description = 'Payment ('.ucfirst($item->type).')';
+                $description = 'Payment ('.ucfirst($item->method->value).')';
+                if ($item->type === 'prev_paid') {
+                    $description .= ' [Prev. Due Payment]';
+                }
                 if ($item->tnx_id) {
                     $description .= ' - '.$item->tnx_id;
                 }
-                $item->type = 'payment';
+                $item->entry_type = 'payment';
                 $item->description = $description;
 
                 return $item;
             });
 
-        $entries = $orders->concat($payments)->sortBy('date');
+        $entries = $entries->concat($orders)->concat($payments)->sortBy('date');
 
-        $totalOrders = $orders->sum('amount');
-        $totalPayments = $payments->sum('amount');
+        $totalOrders = $orders->sum('amount') + $organization->previous_due;
+        $totalPayments = $payments->sum('amount') + $organization->previous_paid;
 
         try {
             $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));

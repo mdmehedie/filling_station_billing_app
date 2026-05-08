@@ -20,6 +20,8 @@ export interface Organization {
     is_vat_applied: number;
     vat_rate?: string;
     security_money: number;
+    previous_due?: number;
+    previous_paid?: number;
     deleted_at?: string;
     created_at: string;
     vehicles_count?: number;
@@ -34,12 +36,19 @@ export interface Payment {
     id: number;
     organization_id: number;
     amount: number;
-    type: 'cash' | 'bank' | 'check';
+    method: 'cash' | 'bank' | 'check';
+    type: 'prev_paid' | 'regular_paid';
+    is_deleted: boolean;
     payment_date: string;
     tnx_id?: string;
     note?: string;
     proof?: string[];
+    sender_bank?: string;
     bank_account?: {
+        id: number;
+        name: string;
+    };
+    creator?: {
         id: number;
         name: string;
     };
@@ -85,6 +94,7 @@ export interface DataTableProps<T> {
     getRowId?: (row: T) => string | number
     selectedRows?: (string | number)[]
     onSelectionChange?: (selectedIds: (string | number)[]) => void
+    getRowClassName?: (row: T) => string
 }
 
 export interface Links {

@@ -31,6 +31,7 @@ class StoreOrganizationRequest extends FormRequest
             'is_vat_applied' => 'required|boolean',
             'vat_rate' => 'required_if:is_vat_applied,true|numeric|min:0|max:100',
             'security_money' => 'nullable|numeric|min:0',
+            'previous_due' => 'nullable|numeric|min:0',
         ];
     }
 

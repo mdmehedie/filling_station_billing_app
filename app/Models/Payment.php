@@ -10,12 +10,15 @@ class Payment extends Model
     protected $fillable = [
         'organization_id',
         'bank_account_id',
+        'method',
         'type',
         'amount',
         'payment_date',
         'tnx_id',
         'note',
         'proof',
+        'sender_bank',
+        'is_deleted',
         'created_by',
         'updated_by',
     ];
@@ -24,7 +27,8 @@ class Payment extends Model
         'payment_date' => 'date',
         'amount' => 'decimal:2',
         'proof' => 'json',
-        'type' => PaymentMethodTypeEnums::class,
+        'method' => PaymentMethodTypeEnums::class,
+        'is_deleted' => 'boolean',
     ];
 
     public function organization()

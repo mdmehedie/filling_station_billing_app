@@ -17,7 +17,14 @@ class PaymentController extends Controller
      */
     public function index()
     {
-        //
+        $payments = Payment::with(['organization:id,name,ucode', 'bankAccount:id,name', 'creator:id,name'])
+            ->where('is_deleted', false)
+            ->latest('payment_date')
+            ->paginate(10);
+
+        return inertia('Payments/Index', [
+            'payments' => \App\Http\Resources\PaymentResource::collection($payments),
+        ]);
     }
 
     /**
@@ -44,12 +51,14 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
-            'bank_account_id' => 'required_if:type,bank|nullable|exists:bank_accounts,id',
-            'type' => ['required', 'string', new Enum(PaymentMethodTypeEnums::class)],
+            'bank_account_id' => 'required_if:method,bank|nullable|exists:bank_accounts,id',
+            'method' => ['required', 'string', new Enum(PaymentMethodTypeEnums::class)],
+            'type' => 'required|in:prev_paid,regular_paid',
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'tnx_id' => 'nullable|string|max:255',
             'note' => 'nullable|string',
+            'sender_bank' => 'nullable|string|max:255',
             'proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -95,12 +104,14 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'organization_id' => 'required|exists:organizations,id',
-            'bank_account_id' => 'required_if:type,bank|nullable|exists:bank_accounts,id',
-            'type' => 'required|string|in:cash,bank,check',
+            'bank_account_id' => 'required_if:method,bank|nullable|exists:bank_accounts,id',
+            'method' => 'required|string|in:cash,bank,check',
+            'type' => 'required|in:prev_paid,regular_paid',
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'tnx_id' => 'nullable|string|max:255',
             'note' => 'nullable|string',
+            'sender_bank' => 'nullable|string|max:255',
             'proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -127,13 +138,7 @@ class PaymentController extends Controller
      */
     public function destroy(Payment $payment)
     {
-        if ($payment->proof && is_array($payment->proof)) {
-            foreach ($payment->proof as $path) {
-                Storage::disk('public')->delete($path);
-            }
-        }
-
-        $payment->delete();
+        $payment->update(['is_deleted' => true]);
 
         return back()->with('success', 'Payment record deleted successfully');
     }

@@ -81,10 +81,15 @@ export default function Show({ organization }: Props) {
             key: 'bank_account',
             render: (value, row) => (
                 <div className="flex flex-col">
-                    <span className="font-medium">{value?.name}</span>
-                    <Badge variant="secondary" className="text-[10px] w-fit uppercase">
-                        {row?.type?.replace('_', ' ')}
-                    </Badge>
+                    <span className="font-medium">{value?.name || 'Cash'}</span>
+                    <div className="flex gap-1 mt-1">
+                        <Badge variant="secondary" className="text-[8px] px-1 h-4 uppercase">
+                            {row?.method}
+                        </Badge>
+                        <Badge variant="outline" className="text-[8px] px-1 h-4 uppercase">
+                            {row?.type?.replace('_', ' ')}
+                        </Badge>
+                    </div>
                 </div>
             )
         },
@@ -101,6 +106,16 @@ export default function Show({ organization }: Props) {
             header: 'Transaction ID',
             key: 'tnx_id',
             render: (value) => value || '-'
+        },
+        {
+            header: 'Created By',
+            key: 'creator',
+            render: (value) => (
+                <div className="flex items-center gap-1.5 text-xs">
+                    <User className="h-3 w-3 text-muted-foreground" />
+                    <span>{value?.name || 'System'}</span>
+                </div>
+            )
         },
         {
             header: 'Proof',
@@ -126,22 +141,16 @@ export default function Show({ organization }: Props) {
             key: 'actions',
             render: (value, row) => (
                 <div className="flex items-center gap-2">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => router.visit(paymentsRoute.edit(row.id).url)}
-                        className="h-8 w-8 p-0"
-                    >
-                        <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handlePaymentDeleteClick(row.id)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!row.is_deleted && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePaymentDeleteClick(row.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             )
         }
@@ -159,9 +168,9 @@ export default function Show({ organization }: Props) {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-6">
                         {organization.logo_url ? (
-                            <img src={organization.logo_url} alt={organization.name} className="h-20 w-20 rounded-2xl object-cover border-4 border-background shadow-xl" />
+                            <img src={organization.logo_url} alt={organization.name} className="h-20 w-20 rounded-2xl object-cover border-4 border-background" />
                         ) : (
-                            <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border-4 border-background shadow-xl">
+                            <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border-4 border-background">
                                 <Building2 size={40} />
                             </div>
                         )}
@@ -177,14 +186,14 @@ export default function Show({ organization }: Props) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href={organizationsRoute.edit(organization.id).url}>
-                            <Button variant="outline">Edit Details</Button>
-                        </Link>
                         <Button variant="outline" onClick={() => router.visit(paymentsRoute.create({ query: { organization_id: organization.id } }).url)} className="bg-green-600 text-white hover:bg-green-700 hover:text-white border-none">
                             <CreditCard className="mr-2 h-4 w-4" />
                             Record Payment
                         </Button>
-                        <Button variant="destructive" onClick={handleDeleteClick}>Delete</Button>
+                        <Link href={organizationsRoute.edit(organization.id).url}>
+                            <Button variant="outline">Edit Details</Button>
+                        </Link>
+                        {/* <Button variant="destructive" onClick={handleDeleteClick}>Delete</Button> */}
                     </div>
                 </div>
 
@@ -239,8 +248,8 @@ export default function Show({ organization }: Props) {
                                     <CardTitle>Payment History</CardTitle>
                                     <CardDescription>Recently received payments from this organization</CardDescription>
                                 </div>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => window.open(`/organizations/${organization.id}/statement`, '_blank')}
                                 >
@@ -254,6 +263,7 @@ export default function Show({ organization }: Props) {
                                     columns={paymentColumns}
                                     showPagination={false}
                                     emptyMessage="No payments recorded yet."
+                                    getRowClassName={(row) => row.is_deleted ? 'line-through opacity-50 grayscale select-none pointer-events-none bg-muted/20' : ''}
                                 />
                             </CardContent>
                         </Card>

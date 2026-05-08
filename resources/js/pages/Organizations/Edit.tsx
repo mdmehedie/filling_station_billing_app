@@ -24,6 +24,7 @@ interface OrganizationFormData {
     is_vat_applied: boolean;
     vat_rate: number | string;
     security_money: number | string;
+    previous_due: number | string;
 }
 
 interface Props {
@@ -41,6 +42,7 @@ export default function Edit({ organization }: Props) {
         is_vat_applied: organization.is_vat_applied === 1,
         vat_rate: organization.vat_rate || 0,
         security_money: organization.security_money || 0,
+        previous_due: organization.previous_due || 0,
     });
 
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -417,7 +419,31 @@ export default function Edit({ organization }: Props) {
                                                 </div>
                                                 <InputError message={errors.security_money} />
                                                 <p className="text-xs text-muted-foreground">
-                                                    Initial security deposit or money for this organization
+                                                    Initial security deposit or money
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="previous_due">Previous Due</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        id="previous_due"
+                                                        name="previous_due"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={data.previous_due}
+                                                        onChange={(e) => setData('previous_due', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pl-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span className="text-muted-foreground text-sm">৳</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={errors.previous_due} />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Outstanding due balance before joining the system
                                                 </p>
                                             </div>
                                         </div>

@@ -15,12 +15,17 @@ interface Payment {
     payment_date: string;
     tnx_id?: string;
     note?: string;
+    sender_bank?: string;
     organization: {
         id: number;
         name: string;
         ucode: string;
     };
     bank_account: {
+        id: number;
+        name: string;
+    };
+    creator?: {
         id: number;
         name: string;
     };
@@ -61,9 +66,15 @@ export default function Index({ payments }: Props) {
         {
             header: 'Bank Information',
             key: 'bank_account',
-            render: (value) => (
+            render: (value, row) => (
                 <div>
-                    <div className="font-medium">{value.name}</div>
+                    {value && <div className="font-medium">{value.name}</div>}
+                    {row.sender_bank && (
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <span className="bg-blue-100 text-blue-700 px-1 rounded uppercase font-bold text-[8px]">Sender:</span>
+                            {row.sender_bank}
+                        </div>
+                    )}
                 </div>
             )
         },
@@ -71,6 +82,11 @@ export default function Index({ payments }: Props) {
             header: 'Transaction ID',
             key: 'tnx_id',
             render: (value) => value || '-'
+        },
+        {
+            header: 'Created By',
+            key: 'creator',
+            render: (value) => value?.name || 'System'
         },
         {
             header: 'Actions',

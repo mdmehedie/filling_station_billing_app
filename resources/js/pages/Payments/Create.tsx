@@ -14,8 +14,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BreadcrumbItem } from "@/types";
 import { dashboard } from "@/routes";
-import { Loader2, ArrowLeft, Paperclip, X, Building } from "lucide-react";
+import { Loader2, ArrowLeft, Paperclip, X, Building, Landmark } from "lucide-react";
 import { useMemo } from "react";
+import BankSelector from "@/components/BankSelector";
 
 interface Organization {
     id: number;
@@ -39,15 +40,17 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
     const { data, setData, post, processing, errors } = useForm({
         organization_id: organization?.id.toString() || '',
         bank_account_id: '',
-        type: '',
+        method: '',
+        type: 'regular_paid',
         amount: '',
         payment_date: new Date().toISOString().split('T')[0],
         tnx_id: '',
         note: '',
+        sender_bank: '',
         proof: null as File | null,
     });
 
-    const showProofUpload = data.type === 'bank' || data.type === 'check';
+    const showProofUpload = data.method === 'bank' || data.method === 'check';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -138,42 +141,59 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="type">Payment Type</Label>
+                                    <Label htmlFor="type">Payment Category</Label>
                                     <Select
                                         value={data.type}
-                                        onValueChange={(value) => setData('type', value)}
+                                        onValueChange={(value) => setData('type', value as 'regular_paid' | 'prev_paid')}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select type" />
+                                            <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="cash">Cash</SelectItem>
-                                            <SelectItem value="bank">Bank</SelectItem>
-                                            <SelectItem value="check">Check</SelectItem>
+                                            <SelectItem value="regular_paid">Regular Paid</SelectItem>
+                                            <SelectItem value="prev_paid">Previous Paid</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="amount">Amount (BDT)</Label>
-                                    <Input
-                                        id="amount"
-                                        type="number"
-                                        step="0.01"
-                                        value={data.amount}
-                                        onChange={(e) => setData('amount', e.target.value)}
-                                        placeholder="0.00"
-                                        className="font-semibold text-lg"
-                                    />
-                                    {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
+                                    <Label htmlFor="method">Payment Method</Label>
+                                    <Select
+                                        value={data.method}
+                                        onValueChange={(value) => setData('method', value as 'bank' | 'check' | 'cash')}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select method" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="bank">Bank</SelectItem>
+                                            <SelectItem value="check">Check</SelectItem>
+                                            <SelectItem value="cash">Cash</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.method && <p className="text-xs text-destructive">{errors.method}</p>}
                                 </div>
                             </div>
 
-                            {data.type === 'bank' && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="amount">Amount (BDT)</Label>
+                                <Input
+                                    id="amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.amount}
+                                    onChange={(e) => setData('amount', e.target.value)}
+                                    placeholder="0.00"
+                                    className="font-semibold text-lg"
+                                />
+                                {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
+                            </div>
+
+                            {data.method === 'bank' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="bank_account_id">Bank Information</Label>
+                                        <Label htmlFor="bank_account_id">Recieved Account</Label>
                                         <Select
                                             value={data.bank_account_id.toString()}
                                             onValueChange={(value) => setData('bank_account_id', value)}
@@ -205,11 +225,22 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
                                 </div>
                             )}
 
+                            {data.method === 'bank' && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="sender_bank">Sender Bank (From which bank they sent?)</Label>
+                                    <BankSelector
+                                        selectedBank={data.sender_bank}
+                                        onBankSelect={(bank) => setData('sender_bank', bank)}
+                                        error={errors.sender_bank}
+                                    />
+                                </div>
+                            )}
+
                             {showProofUpload && (
                                 <div className="grid gap-2 p-4 border-2 border-dashed rounded-lg bg-muted/30">
                                     <Label htmlFor="proof" className="flex items-center gap-2 cursor-pointer">
                                         <Paperclip className="h-4 w-4" />
-                                        Upload {data.type === 'check' ? 'Check Copy' : 'Deposit Slip'} / Proof
+                                        Upload {data.method === 'check' ? 'Check Copy' : 'Deposit Slip'} / Proof
                                     </Label>
                                     <div className="flex items-center gap-4">
                                         <Input
@@ -244,7 +275,7 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
                                         )}
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Please upload a scanned copy or photo of the {data.type === 'check' ? 'check' : 'deposit slip'} (Image or PDF).
+                                        Please upload a scanned copy or photo of the {data.method === 'check' ? 'check' : 'deposit slip'} (Image or PDF).
                                     </p>
                                     {errors.proof && <p className="text-xs text-destructive">{errors.proof}</p>}
                                 </div>
