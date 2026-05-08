@@ -47,6 +47,8 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
         tnx_id: '',
         note: '',
         sender_bank: '',
+        check_number: '',
+        check_date: '',
         proof: null as File | null,
     });
 
@@ -225,7 +227,7 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
                                 </div>
                             )}
 
-                            {data.method === 'bank' && (
+                            {(data.method === 'bank' || data.method === 'check') && (
                                 <div className="grid gap-2">
                                     <Label htmlFor="sender_bank">Sender Bank (From which bank they sent?)</Label>
                                     <BankSelector
@@ -233,6 +235,31 @@ export default function Create({ organization, organizations, bankAccounts }: Pr
                                         onBankSelect={(bank) => setData('sender_bank', bank)}
                                         error={errors.sender_bank}
                                     />
+                                </div>
+                            )}
+
+                            {data.method === 'check' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="check_number">Check Number</Label>
+                                        <Input
+                                            id="check_number"
+                                            value={data.check_number}
+                                            onChange={(e) => setData('check_number', e.target.value)}
+                                            placeholder="Enter check number"
+                                        />
+                                        {errors.check_number && <p className="text-xs text-destructive">{errors.check_number}</p>}
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="check_date">Check Date</Label>
+                                        <Input
+                                            id="check_date"
+                                            type="date"
+                                            value={data.check_date}
+                                            onChange={(e) => setData('check_date', e.target.value)}
+                                        />
+                                        {errors.check_date && <p className="text-xs text-destructive">{errors.check_date}</p>}
+                                    </div>
                                 </div>
                             )}
 

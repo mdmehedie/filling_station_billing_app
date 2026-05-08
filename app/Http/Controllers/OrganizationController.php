@@ -42,7 +42,7 @@ class OrganizationController extends Controller
 
     public function getAllOrganizations(Request $request)
     {
-        return OrganizationResource::collection(Organization::select('id', 'name', 'name_bn', 'ucode')->get());
+        return OrganizationResource::collection(Organization::select(['id', 'name', 'name_bn', 'ucode'])->get());
     }
 
     /**
@@ -71,7 +71,12 @@ class OrganizationController extends Controller
      */
     public function show(Organization $organization)
     {
-        $organization->load(['user', 'payments.bankAccount', 'payments.creator']);
+        $organization->load([
+            'user',
+            'payments' => fn ($query) => $query->latest('id'),
+            'payments.bankAccount',
+            'payments.creator'
+        ]);
         $organization->loadSum('orders', 'total_price');
         $organization->loadSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount');
 

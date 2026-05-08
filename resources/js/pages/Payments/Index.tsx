@@ -68,13 +68,25 @@ export default function Index({ payments }: Props) {
             key: 'bank_account',
             render: (value, row) => (
                 <div>
-                    {value && <div className="font-medium">{value.name}</div>}
-                    {row.sender_bank && (
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <span className="bg-blue-100 text-blue-700 px-1 rounded uppercase font-bold text-[8px]">Sender:</span>
+                    {row.method === 'check' ? (
+                        <div className="font-medium text-blue-700">Check: {row.check_number}</div>
+                    ) : (
+                        value && <div className="font-medium">{value.name}</div>
+                    )}
+                    {row.method === 'check' && row.check_date && (
+                        <div className="text-[10px] text-muted-foreground">
+                            Date: {new Date(row.check_date).toLocaleDateString()}
+                        </div>
+                    )}
+                    {(row.sender_bank) && (
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <span className="bg-blue-100 text-blue-700 px-1 rounded uppercase font-bold text-[8px]">Bank:</span>
                             {row.sender_bank}
                         </div>
                     )}
+                    <Badge variant="outline" className="text-[8px] px-1 h-3.5 uppercase mt-1">
+                        {row.method}
+                    </Badge>
                 </div>
             )
         },

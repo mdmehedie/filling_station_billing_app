@@ -58,7 +58,9 @@ class PaymentController extends Controller
             'payment_date' => 'required|date',
             'tnx_id' => 'nullable|string|max:255',
             'note' => 'nullable|string',
-            'sender_bank' => 'nullable|string|max:255',
+            'sender_bank' => 'required_if:method,bank,check|nullable|string|max:255',
+            'check_number' => 'required_if:method,check|nullable|string|max:255',
+            'check_date' => 'required_if:method,check|nullable|date',
             'proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -111,7 +113,9 @@ class PaymentController extends Controller
             'payment_date' => 'required|date',
             'tnx_id' => 'nullable|string|max:255',
             'note' => 'nullable|string',
-            'sender_bank' => 'nullable|string|max:255',
+            'sender_bank' => 'required_if:method,bank,check|nullable|string|max:255',
+            'check_number' => 'required_if:method,check|nullable|string|max:255',
+            'check_date' => 'required_if:method,check|nullable|date',
             'proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 

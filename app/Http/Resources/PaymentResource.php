@@ -25,6 +25,9 @@ class PaymentResource extends JsonResource
             'tnx_id' => $this->tnx_id,
             'note' => $this->note,
             'proof' => $this->proof,
+            'sender_bank' => $this->sender_bank,
+            'check_number' => $this->check_number,
+            'check_date' => $this->check_date,
             'bank_account' => $this->whenLoaded('bankAccount', fn () => [
                 'id' => $this->bankAccount->id,
                 'name' => $this->bankAccount->name,

@@ -81,7 +81,14 @@ export default function Show({ organization }: Props) {
             key: 'bank_account',
             render: (value, row) => (
                 <div className="flex flex-col">
-                    <span className="font-medium">{value?.name || 'Cash'}</span>
+                    <span className="font-medium">
+                        {row.method === 'check' ? `Check: ${row.check_number}` : (value?.name || 'Cash')}
+                    </span>
+                    {row.method === 'check' && row.check_date && (
+                        <span className="text-[10px] text-muted-foreground">
+                            Date: {new Date(row.check_date).toLocaleDateString()}
+                        </span>
+                    )}
                     <div className="flex gap-1 mt-1">
                         <Badge variant="secondary" className="text-[8px] px-1 h-4 uppercase">
                             {row?.method}
@@ -89,6 +96,11 @@ export default function Show({ organization }: Props) {
                         <Badge variant="outline" className="text-[8px] px-1 h-4 uppercase">
                             {row?.type?.replace('_', ' ')}
                         </Badge>
+                        {row.sender_bank && (
+                            <Badge variant="outline" className="text-[8px] px-1 h-4 uppercase bg-blue-50 text-blue-700 border-blue-200">
+                                {row.sender_bank}
+                            </Badge>
+                        )}
                     </div>
                 </div>
             )
@@ -300,7 +312,7 @@ export default function Show({ organization }: Props) {
                                         <span className="font-medium">{organization.vehicles_count}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm pt-2 border-t border-dashed mt-2">
-                                        <span className="text-muted-foreground flex items-center gap-2 font-bold text-primary"><Wallet size={14} /> Security Money</span>
+                                        <span className="text-muted-foreground flex items-center gap-2 font-bold"><Wallet size={14} /> Security Money</span>
                                         <span className="font-bold text-primary">
                                             {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(organization.security_money || 0)}
                                         </span>

@@ -18,6 +18,8 @@ class Payment extends Model
         'note',
         'proof',
         'sender_bank',
+        'check_number',
+        'check_date',
         'is_deleted',
         'created_by',
         'updated_by',
@@ -25,6 +27,7 @@ class Payment extends Model
 
     protected $casts = [
         'payment_date' => 'date',
+        'check_date' => 'date',
         'amount' => 'decimal:2',
         'proof' => 'json',
         'method' => PaymentMethodTypeEnums::class,

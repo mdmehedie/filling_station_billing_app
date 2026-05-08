@@ -44,6 +44,8 @@ export interface Payment {
     note?: string;
     proof?: string[];
     sender_bank?: string;
+    check_number?: string;
+    check_date?: string;
     bank_account?: {
         id: number;
         name: string;
