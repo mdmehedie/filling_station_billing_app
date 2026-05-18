@@ -19,11 +19,42 @@ export interface Organization {
     logo_url?: string;
     is_vat_applied: number;
     vat_rate?: string;
+    security_money: number;
+    previous_due?: number;
+    previous_paid?: number;
     deleted_at?: string;
     created_at: string;
     vehicles_count?: number;
     orders_count?: number;
+    total_paid: number;
+    total_due: number;
+    payments?: Payment[];
     user: User;
+}
+
+export interface Payment {
+    id: number;
+    organization_id: number;
+    amount: number;
+    method: 'cash' | 'bank' | 'check';
+    type: 'prev_paid' | 'regular_paid';
+    is_deleted: boolean;
+    payment_date: string;
+    tnx_id?: string;
+    note?: string;
+    proof?: string[];
+    sender_bank?: string;
+    check_number?: string;
+    check_date?: string;
+    bank_account?: {
+        id: number;
+        name: string;
+    };
+    creator?: {
+        id: number;
+        name: string;
+    };
+    created_at: string;
 }
 
 export interface PaginationLink {
@@ -65,6 +96,7 @@ export interface DataTableProps<T> {
     getRowId?: (row: T) => string | number
     selectedRows?: (string | number)[]
     onSelectionChange?: (selectedIds: (string | number)[]) => void
+    getRowClassName?: (row: T) => string
 }
 
 export interface Links {

@@ -21,6 +21,8 @@ interface OrganizationFormData {
     logo: File | null;
     is_vat_applied: boolean;
     vat_rate: number | string;
+    security_money: number | string;
+    previous_due: number | string;
 }
 
 export default function Create() {
@@ -31,6 +33,8 @@ export default function Create() {
         logo: null,
         is_vat_applied: true,
         vat_rate: 0,
+        security_money: 0,
+        previous_due: 0,
     });
 
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -51,7 +55,7 @@ export default function Create() {
         }
 
         setData('logo', file);
-        
+
         // Create preview URL
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -73,7 +77,7 @@ export default function Create() {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-        
+
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             handleFileSelect(files[0]);
@@ -147,7 +151,7 @@ export default function Create() {
                                     {/* Basic Information */}
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-medium">Basic Information</h3>
-                                        
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="name">Organization Name *</Label>
@@ -191,7 +195,7 @@ export default function Create() {
 
                                         <div className="space-y-2">
                                             <Label htmlFor="logo">Organization Logo</Label>
-                                                
+
                                             {logoPreview ? (
                                                 <div className="relative">
                                                     <div className="flex items-center space-x-4 p-4 border rounded-lg bg-muted/50">
@@ -203,7 +207,7 @@ export default function Create() {
                                                         <div className="flex-1">
                                                             <p className="font-medium">{data.logo?.name}</p>
                                                             <p className="text-sm text-muted-foreground">
-                                                                {(data.logo?.size || 0) / 1024 / 1024 < 1 
+                                                                {(data.logo?.size || 0) / 1024 / 1024 < 1
                                                                     ? `${Math.round((data.logo?.size || 0) / 1024)} KB`
                                                                     : `${Math.round((data.logo?.size || 0) / 1024 / 1024 * 10) / 10} MB`
                                                                 }
@@ -222,8 +226,8 @@ export default function Create() {
                                                 </div>
                                             ) : (
                                                 <div
-                                                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDragOver 
-                                                        ? 'border-primary bg-primary/5' 
+                                                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDragOver
+                                                        ? 'border-primary bg-primary/5'
                                                         : 'border-muted-foreground/25 hover:border-primary/50'
                                                         }`}
                                                     onDragOver={handleDragOver}
@@ -246,7 +250,7 @@ export default function Create() {
                                                     </div>
                                                 </div>
                                             )}
-                                                
+
                                             <input
                                                 id="logo-input"
                                                 type="file"
@@ -257,7 +261,7 @@ export default function Create() {
                                                 }}
                                                 className="hidden"
                                             />
-                                                
+
                                             <InputError message={errors.logo} />
                                         </div>
                                     </div>
@@ -274,7 +278,7 @@ export default function Create() {
                                                 </p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="rounded-lg border bg-card p-6 space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-1">
@@ -340,6 +344,62 @@ export default function Create() {
                                                     </div>
                                                 </div>
                                             )}
+                                        </div>
+                                    </div>
+
+                                    <Separator />
+
+                                    {/* Financial Settings */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-medium">Financial Settings</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="security_money">Security Money</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        id="security_money"
+                                                        name="security_money"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={data.security_money}
+                                                        onChange={(e) => setData('security_money', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pl-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span className="text-muted-foreground text-sm">৳</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={errors.security_money} />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Initial security deposit or money
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="previous_due">Previous Due (till 2025)</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        id="previous_due"
+                                                        name="previous_due"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={data.previous_due}
+                                                        onChange={(e) => setData('previous_due', e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="pl-8"
+                                                    />
+                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                        <span className="text-muted-foreground text-sm">৳</span>
+                                                    </div>
+                                                </div>
+                                                <InputError message={errors.previous_due} />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Outstanding due balance before joining the system
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 

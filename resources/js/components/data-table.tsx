@@ -16,7 +16,6 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination'
-import { LaravelPagination } from '@/components/laravel-pagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -64,8 +63,9 @@ export function DataTable<T extends Record<string, any>>({
     // Selection props
     enableSelection = false,
     getRowId = (row: T) => (row as any).id,
-    selectedRows = [],
+    selectedRows,
     onSelectionChange,
+    getRowClassName,
 }: DataTableProps<T>) {
     const [searchTerm, setSearchTerm] = useState(searchValue)
     const [currentPageLocal, setCurrentPageLocal] = useState(1)
@@ -74,7 +74,7 @@ export function DataTable<T extends Record<string, any>>({
         key: keyof T | string | null
         direction: 'asc' | 'desc'
     }>({ key: null, direction: 'asc' })
-    const [internalSelectedRows, setInternalSelectedRows] = useState<(string | number)[]>(selectedRows)
+    const [internalSelectedRows, setInternalSelectedRows] = useState<(string | number)[]>(selectedRows || [])
 
     // Filter data based on search term (only for client-side)
     const filteredData = useMemo(() => {
@@ -262,7 +262,21 @@ export function DataTable<T extends Record<string, any>>({
                 </PaginationItem>
             )
 
-            if (currentPageToUse > 3) {
+            // Calculate range around current page
+            let start = Math.max(2, currentPageToUse - 1)
+            let end = Math.min(totalPages - 1, currentPageToUse + 1)
+
+            // Adjust start/end to ensure we show a consistent number of items
+            if (currentPageToUse <= 3) {
+                start = 2
+                end = 4
+            } else if (currentPageToUse >= totalPages - 2) {
+                start = totalPages - 3
+                end = totalPages - 1
+            }
+
+            // Start ellipsis
+            if (start > 2) {
                 items.push(
                     <PaginationItem key="ellipsis1">
                         <PaginationEllipsis />
@@ -270,27 +284,23 @@ export function DataTable<T extends Record<string, any>>({
                 )
             }
 
-            // Show pages around current page
-            const start = Math.max(2, currentPageToUse - 1)
-            const end = Math.min(totalPages - 1, currentPageToUse + 1)
-
+            // Range pages
             for (let i = start; i <= end; i++) {
-                if (i !== 1 && i !== totalPages) {
-                    items.push(
-                        <PaginationItem key={i}>
-                            <PaginationLink
-                                size="default"
-                                onClick={() => handlePageChange(i)}
-                                isActive={currentPageToUse === i}
-                            >
-                                {i}
-                            </PaginationLink>
-                        </PaginationItem>
-                    )
-                }
+                items.push(
+                    <PaginationItem key={i}>
+                        <PaginationLink
+                            size="default"
+                            onClick={() => handlePageChange(i)}
+                            isActive={currentPageToUse === i}
+                        >
+                            {i}
+                        </PaginationLink>
+                    </PaginationItem>
+                )
             }
 
-            if (currentPageToUse < totalPages - 2) {
+            // End ellipsis
+            if (end < totalPages - 1) {
                 items.push(
                     <PaginationItem key="ellipsis2">
                         <PaginationEllipsis />
@@ -299,19 +309,17 @@ export function DataTable<T extends Record<string, any>>({
             }
 
             // Always show last page
-            if (totalPages > 1) {
-                items.push(
-                    <PaginationItem key={totalPages}>
-                        <PaginationLink
-                            size="default"
-                            onClick={() => handlePageChange(totalPages)}
-                            isActive={currentPageToUse === totalPages}
-                        >
-                            {totalPages}
-                        </PaginationLink>
-                    </PaginationItem>
-                )
-            }
+            items.push(
+                <PaginationItem key={totalPages}>
+                    <PaginationLink
+                        size="default"
+                        onClick={() => handlePageChange(totalPages)}
+                        isActive={currentPageToUse === totalPages}
+                    >
+                        {totalPages}
+                    </PaginationLink>
+                </PaginationItem>
+            )
         }
 
         return items
@@ -439,7 +447,7 @@ export function DataTable<T extends Record<string, any>>({
                                 return (
                                     <TableRow
                                         key={rowIndex}
-                                        className={onRowClick ? "cursor-pointer" : ""}
+                                        className={`${onRowClick ? "cursor-pointer" : ""} ${getRowClassName?.(row) || ""}`}
                                         onClick={(e) => {
                                             // Don't trigger row click if clicking on checkbox
                                             if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
@@ -489,36 +497,27 @@ export function DataTable<T extends Record<string, any>>({
                 
                 {showPagination && totalPages > 1 && (
                     <div className="flex justify-end">
-                        {serverSidePagination && (responseData?.meta.links || paginationLinks) ? (
-                            <LaravelPagination
-                                links={responseData?.meta.links || paginationLinks || []}
-                                currentPage={currentPageToUse}
-                                lastPage={totalPages}
-                                onPageChange={handlePageChange}
-                            />
-                        ) : (
-                            <Pagination>
-                                <PaginationContent>
-                                    <PaginationItem>
-                                        <PaginationPrevious
-                                            size="default"
-                                            onClick={() => handlePageChange(Math.max(1, currentPageToUse - 1))}
-                                            className={currentPageToUse === 1 ? "pointer-events-none opacity-50" : ""}
-                                        />
-                                    </PaginationItem>
-                        
-                                    {renderPaginationItems()}
-                        
-                                    <PaginationItem>
-                                        <PaginationNext
-                                            size="default"
-                                            onClick={() => handlePageChange(Math.min(totalPages, currentPageToUse + 1))}
-                                            className={currentPageToUse === totalPages ? "pointer-events-none opacity-50" : ""}
-                                        />
-                                    </PaginationItem>
-                                </PaginationContent>
-                            </Pagination>
-                        )}
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        size="default"
+                                        onClick={() => handlePageChange(Math.max(1, currentPageToUse - 1))}
+                                        className={currentPageToUse === 1 ? "pointer-events-none opacity-50" : ""}
+                                    />
+                                </PaginationItem>
+                    
+                                {renderPaginationItems()}
+                    
+                                <PaginationItem>
+                                    <PaginationNext
+                                        size="default"
+                                        onClick={() => handlePageChange(Math.min(totalPages, currentPageToUse + 1))}
+                                        className={currentPageToUse === totalPages ? "pointer-events-none opacity-50" : ""}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
                     </div>
                 )}
             </div>

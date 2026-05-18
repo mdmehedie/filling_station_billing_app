@@ -22,10 +22,16 @@ class OrganizationResource extends JsonResource
             'logo_url' => $this->logo_url,
             'is_vat_applied' => $this->is_vat_applied,
             'vat_rate' => $this->vat_rate,
-            'user' => $this->whenLoaded('user', fn() => new UserResource($this->user)),
+            'security_money' => (float) $this->security_money,
+            'previous_due' => (float) $this->previous_due,
+            'previous_paid' => (float) $this->previous_paid,
+            'user' => $this->whenLoaded('user', fn () => new UserResource($this->user)),
             'created_at' => $this->created_at,
             'vehicles_count' => $this->vehicles_count,
             'orders_count' => $this->orders_count,
+            'total_paid' => (float) $this->total_paid,
+            'total_due' => (float) $this->total_due,
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
 }
