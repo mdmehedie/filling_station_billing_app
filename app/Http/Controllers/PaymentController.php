@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethodTypeEnums;
+use App\Http\Resources\OrganizationResource;
+use App\Http\Resources\PaymentResource;
+use App\Models\BankAccount;
 use App\Models\Organization;
 use App\Models\Payment;
-use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Enum;
@@ -23,7 +25,7 @@ class PaymentController extends Controller
             ->paginate(10);
 
         return inertia('Payments/Index', [
-            'payments' => \App\Http\Resources\PaymentResource::collection($payments),
+            'payments' => PaymentResource::collection($payments),
         ]);
     }
 
@@ -34,12 +36,25 @@ class PaymentController extends Controller
     {
         $organization = null;
         if ($request->has('organization_id')) {
-            $organization = Organization::find($request->get('organization_id'), ['id', 'name', 'ucode']);
+            $orgModel = Organization::withSum('orders', 'total_price')
+                ->withSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount')
+                ->find($request->get('organization_id'));
+            if ($orgModel) {
+                $organization = new OrganizationResource($orgModel);
+            }
+        }
+
+        $organizations = [];
+        if (! $organization) {
+            $orgs = Organization::withSum('orders', 'total_price')
+                ->withSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount')
+                ->get();
+            $organizations = OrganizationResource::collection($orgs);
         }
 
         return inertia('Payments/Create', [
             'organization' => $organization,
-            'organizations' => $organization ? [] : Organization::select(['id', 'name', 'ucode'])->get(),
+            'organizations' => $organizations,
             'bankAccounts' => BankAccount::query()->where('is_active', '=', true)->get(),
         ]);
     }
