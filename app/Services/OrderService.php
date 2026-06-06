@@ -6,17 +6,12 @@ use App\Http\Resources\OrderCollection;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
-use \Spatie\Browsershot\Browsershot;
 
 class OrderService
 {
-    function __construct() {}
+    public function __construct() {}
 
     public function orderList()
     {
@@ -51,7 +46,7 @@ class OrderService
                     $query->where('fuel_id', $value);
                 }),
             ])
-            ->when(Auth::user()->role === 'user', fn($q) => $q->where('user_id', Auth::id()))
+            ->when(Auth::user()->role === 'user', fn ($q) => $q->where('user_id', Auth::id()))
             ->allowedSorts(['id', 'organization_id', 'vehicle_id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date', 'created_at']);
 
         $statsQuery = (clone $query)->getEloquentBuilder();
@@ -73,8 +68,9 @@ class OrderService
     {
         $order = Order::query()->orderBy('id', 'desc')->first();
 
-        if (!$order) {
-            $code = now()->format('dmy') . '0001';
+        if (! $order) {
+            $code = now()->format('dmy').'0001';
+
             return (int) $code;
         }
 

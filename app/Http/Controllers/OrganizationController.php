@@ -24,6 +24,8 @@ class OrganizationController extends Controller
             'organizations' => OrganizationResource::collection(
                 QueryBuilder::for(Organization::class)
                     ->with('user')
+                    ->withSum('orders', 'total_price')
+                    ->withSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount')
                     ->orderBy('id', 'desc')
                     ->allowedFilters([
                         AllowedFilter::callback('search', function ($query, $value) {
@@ -31,16 +33,16 @@ class OrganizationController extends Controller
                                 ->where('ucode', 'like', "%{$value}%")
                                 ->orWhere('name', 'like', "%{$value}%")
                                 ->orWhere('name_bn', 'like', "%{$value}%");
-                        })
+                        }),
                     ])
                     ->paginate(intval(request()->get('per_page', 15)))
-            )
+            ),
         ]);
     }
 
     public function getAllOrganizations(Request $request)
     {
-        return OrganizationResource::collection(Organization::select('id', 'name', 'name_bn', 'ucode')->get());
+        return OrganizationResource::collection(Organization::select(['id', 'name', 'name_bn', 'ucode'])->get());
     }
 
     /**
@@ -60,6 +62,7 @@ class OrganizationController extends Controller
         $data['user_id'] = Auth::id();
 
         $organization = Organization::create($data);
+
         return redirect()->route('organizations.index')->with('success', "Organization {$organization->name} created successfully");
     }
 
@@ -68,8 +71,17 @@ class OrganizationController extends Controller
      */
     public function show(Organization $organization)
     {
+        $organization->load([
+            'user',
+            'payments' => fn ($query) => $query->latest('id'),
+            'payments.bankAccount',
+            'payments.creator'
+        ]);
+        $organization->loadSum('orders', 'total_price');
+        $organization->loadSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount');
+
         return inertia('Organizations/Show', [
-            'organization' => OrganizationResource::make($organization->load('user'))
+            'organization' => OrganizationResource::make($organization),
         ]);
     }
 
@@ -79,7 +91,7 @@ class OrganizationController extends Controller
     public function edit(Organization $organization)
     {
         return inertia('Organizations/Edit', [
-            'organization' => OrganizationResource::make($organization)
+            'organization' => OrganizationResource::make($organization),
         ]);
     }
 
@@ -103,7 +115,7 @@ class OrganizationController extends Controller
     public function destroy(Organization $organization)
     {
         if ($organization->logo) {
-            Storage::delete('organizations/' . $organization->logo);
+            Storage::delete('organizations/'.$organization->logo);
         }
 
         if ($organization->vehicles_count > 0) {
@@ -115,6 +127,7 @@ class OrganizationController extends Controller
         }
 
         $organization->delete();
+
         return redirect()->route('organizations.index')->with('success', "Organization {$organization->name} deleted successfully");
     }
 }

@@ -4,6 +4,9 @@
 <head>
     <meta charset="utf-8">
     <title>বিল পরিশোধ প্রসঙ্গে</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@100..900&display=swap" rel="stylesheet">
     <style>
         /* ====== Page Setup (A4) ====== */
         @page {
@@ -11,19 +14,9 @@
             margin: 22mm 18mm 20mm 18mm;
         }
 
-        /* Web Bengali font support */
-        /*@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap');*/
-
-        @font-face{
-            font-family:"Noto Sans Bengali";
-            url("NotoSansBengali.woff") format("woff");
-            font-weight:400; font-style:normal; font-display:swap;
-            unicode-range: U+0980-09FF, U+0964-0965; /* Bengali + danda */
-        }
-
         html,
         body {
-            font-family: "Noto Sans Bengali", Arial, sans-serif;
+            font-family: "Noto Serif Bengali", serif;
             font-size: 11pt;
             line-height: 1.6;
             color: #111;
@@ -388,34 +381,13 @@
                         $serial = 0;
                     @endphp
                     @foreach ($data as $index => $item)
-                        @php
-                            $indexStart = 0;
-                        @endphp
-                        @foreach ($item['per_ltr_price_ranges'] as $range => $price)
-                            @php
-                                $indexs =
-                                    array_reduce(explode('-', $range), function ($carry, $item) {
-                                        return (int) $item - (int) $carry;
-                                    }) + 1;
-
-                                $totalBillOfRange = 0;
-                                $totalQtyOfRange = 0;
-                                foreach ($item['vehicles'] as $vehicle) {
-                                    for ($i = $indexStart; $i < $indexs; $i++) {
-                                        $totalBillOfRange += $vehicle['quantities'][$i] * $price;
-                                        $totalQtyOfRange += $vehicle['quantities'][$i];
-                                    }
-                                }
-                                $indexStart += $indexs;
-                            @endphp
+                        @foreach ($item['per_ltr_price_ranges'] as $range => $rangeData)
                             <tr>
                                 <td class="center">{{ $letterOrder[$serial] }}।</td>
                                 <td>{{ getFuelBengaliName($item['fuel_name']) }}</td>
-                                <td class="num red">{{ bdtBengaliCurrencyFormat($totalQtyOfRange) }}
-                                </td>
-                                <td class="num">{{ bdtBengaliCurrencyFormat($price) }}</td>
-                                <td class="num red">
-                                    {{ bdtBengaliCurrencyFormat($totalBillOfRange) }}</td>
+                                <td class="num red">{{ formatBengaliNumber(number_format($rangeData['total_qty'], 2)) }}</td>
+                                <td class="num">{{ bdtBengaliCurrencyFormat($rangeData['price']) }}</td>
+                                <td class="num red">{{ bdtBengaliCurrencyFormat($rangeData['total_bill']) }}</td>
                                 <td class="center">—</td>
                             </tr>
                             @php
@@ -445,7 +417,7 @@
         </li>
 
         <li class="para">
-            বিল প্রাপ্তি সাপেক্ষে আগামী ১০ {{ $bengaliMonths[now()->month] }}
+            বিল প্রাপ্তি সাপেক্ষে আগামী ১৫ {{ $bengaliMonths[now()->month] }}
             {{ formatBengaliNumber(now()->year) }} তারিখের মধ্যে
             পরিশোধ করার জন্য অনুরোধ করা হলো। উল্লেখ্য যে, অবিনিমেয় চেক অবশ্যই আবরণী পত্রের মাধ্যমে প্রদান করতে হবে। অন
             লাইনে বিল পরিশোধের ক্ষেত্রে পত্রের মাধ্যমে সি এস ডি ফিলিং স্টেশন'কে (চিঠি বা ইমেইলের মাধ্যমে) অবগত করার জন্য অনুরোধ করা হলো।

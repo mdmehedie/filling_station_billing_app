@@ -7,17 +7,18 @@ use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Organization;
-use Illuminate\Support\Facades\DB;
+use App\Models\Payment;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
-use Spatie\Browsershot\Browsershot;
+use Pontedilana\PhpWeasyPrint\Pdf;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class InvoiceService
 {
-    function __construct()
+    public function __construct()
     {
         //
     }
@@ -25,7 +26,7 @@ class InvoiceService
     /**
      * Start date, end date, period
      */
-    function findOutStartEndPeriod($month, $year)
+    public function findOutStartEndPeriod(int $month, int $year): array
     {
         $period = Carbon::create($year, $month, 1);
         $start = $period->copy()->startOfMonth();
@@ -34,7 +35,7 @@ class InvoiceService
         return [$start, $end, $period];
     }
 
-    function exportPdf($validated, $organization_id)
+    public function exportPdf(array $validated, int $organization_id)
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($validated['month'], $validated['year']);
 
@@ -43,8 +44,8 @@ class InvoiceService
 
         // return $data;
 
-        $organization = Organization::find($organization_id);
-        $fileName = $organization->ucode . '_' . $organization->name . '_' . $period->isoFormat('MMMM YYYY');
+        $organization = Organization::find($organization_id, ['*']);
+        $fileName = $organization->ucode.'_'.$organization->name.'_'.$period->isoFormat('MMMM YYYY');
         $month = $validated['month'];
         $year = $validated['year'];
 
@@ -52,64 +53,41 @@ class InvoiceService
         $imagePath = public_path('default/csd-logo.png');
         $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
         $imageData = file_get_contents($imagePath);
-        $logo1 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+        $logo1 = 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
 
         // logo rendering for right side
         $imagePath = public_path('default/logo.jpeg');
         $imageType = pathinfo($imagePath, PATHINFO_EXTENSION);
         $imageData = file_get_contents($imagePath);
-        $logo2 = 'data:image/' . $imageType . ';base64,' . base64_encode($imageData);
+        $logo2 = 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
 
         // calculate repeated coupon count
         $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
 
         if ($validated['include_cover']) {
             try {
-                // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
-                    ->addChromiumArguments([
-                        'no-sandbox',
-                        'disable-setuid-sandbox',
-                        'disable-dev-shm-usage',
-                        'disable-gpu',
-                        'disable-software-rasterizer'
-                    ])
-                    ->format('Legal')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0)
-                    ->showBackground()
-                    ->setNodeModulePath(base_path('node_modules'))
-                    ->setIncludePath('$PATH:/usr/bin')
-                    ->pdf();
+                $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+                $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
 
-                // Generate cover PDF with Browsershot for perfect Bengali support
-                $coverPdf = Browsershot::html(view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render())
-                    ->addChromiumArguments([
-                        'no-sandbox',
-                        'disable-setuid-sandbox',
-                        'disable-dev-shm-usage',
-                        'disable-gpu',
-                        'disable-software-rasterizer'
-                    ])
-                    ->format('Legal')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0)
-                    ->showBackground()
-                    ->setNodeModulePath(base_path('node_modules'))
-                    ->setIncludePath('$PATH:/usr/bin')
-                    ->pdf();
+                // Generate invoice PDF
+                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render();
+                $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
+
+                // Generate cover PDF
+                $coverHtml = view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount'))->render();
+                $coverPdf = $pdf->getOutputFromHtml($coverHtml);
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
             }
 
             // Create a zip file in memory
-            $zipFileName = $fileName . '-invoice-with-cover.zip';
-            $zip = new \ZipArchive();
+            $zipFileName = $fileName.'-invoice-with-cover.zip';
+            $zip = new \ZipArchive;
             $tmpFile = tempnam(sys_get_temp_dir(), 'zip');
 
             if ($zip->open($tmpFile, \ZipArchive::CREATE) === true) {
-                $zip->addFromString($fileName . '-invoice.pdf', $invoicePdf);
-                $zip->addFromString($fileName . '-cover.pdf', $coverPdf);
+                $zip->addFromString($fileName.'-invoice.pdf', $invoicePdf);
+                $zip->addFromString($fileName.'-cover.pdf', $coverPdf);
                 $zip->close();
 
                 return response()->download($tmpFile, $zipFileName)->deleteFileAfterSend(true);
@@ -118,26 +96,16 @@ class InvoiceService
             }
         } else {
             try {
-                // Generate invoice PDF with Browsershot
-                $invoicePdf = Browsershot::html(view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render())
-                    ->addChromiumArguments([
-                        'no-sandbox',
-                        'disable-setuid-sandbox',
-                        'disable-dev-shm-usage',
-                        'disable-gpu',
-                        'disable-software-rasterizer'
-                    ])
-                    ->format('Legal')
-                    ->landscape()
-                    ->margins(0, 0, 0, 0)
-                    ->showBackground()
-                    ->setNodeModulePath(base_path('node_modules'))
-                    ->setIncludePath('$PATH:/usr/bin')
-                    ->pdf();
+                $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+                $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
+
+                // Generate invoice PDF
+                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render();
+                $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
 
                 return response($invoicePdf, 200, [
                     'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'attachment; filename="' . $fileName . '-invoice.pdf' . '"'
+                    'Content-Disposition' => 'attachment; filename="'.$fileName.'-invoice.pdf'.'"',
                 ]);
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());
@@ -148,7 +116,7 @@ class InvoiceService
     /**
      * Fetch and structure invoice data
      */
-    function getInvoiceData($organization_id, $start, $end, $period)
+    public function getInvoiceData(int $organization_id, Carbon $start, Carbon $end, Carbon $period): array
     {
         // Build table headers for each day of the month
         $tableHeaders = [];
@@ -163,13 +131,13 @@ class InvoiceService
 
         // Get all fuels used by this organization in this period
         $fuels = Order::query()
-            ->select('fuels.id', 'fuels.name')
+            ->select(['fuels.id', 'fuels.name'])
             ->where('orders.organization_id', $organization_id)
             ->leftJoin('fuels', 'orders.fuel_id', '=', 'fuels.id')
-            ->whereDate('sold_date', '>=', $start->toDateString())
-            ->whereDate('sold_date', '<=', $end->toDateString())
+            ->whereDate('sold_date', '>=', $start->toDateString(), 'and')
+            ->whereDate('sold_date', '<=', $end->toDateString(), 'and')
             ->groupBy('fuels.id', 'fuels.name')
-            ->get()
+            ->get(['*'])
             ->toArray();
 
         // Get all vehicles for this organization and period, grouped by fuel, vehicle, and day and per_ltr_price
@@ -186,17 +154,18 @@ class InvoiceService
             ->leftJoin('vehicles', 'orders.vehicle_id', '=', 'vehicles.id')
             ->leftJoin('fuels', 'orders.fuel_id', '=', 'fuels.id')
             ->where('orders.organization_id', $organization_id)
-            ->whereBetween('orders.sold_date', [$start->toDateString(), $end->toDateString()])
+            ->where('orders.sold_date', '>=', $start->toDateString())
+            ->where('orders.sold_date', '<=', $end->toDateString())
             ->groupBy(
                 'fuels.name',
                 'vehicles.ucode',
                 'orders.per_ltr_price',
                 DB::raw('EXTRACT(DAY FROM orders.sold_date)')
             )
-            ->orderBy('fuels.name')
-            ->orderBy('vehicles.ucode')
+            ->orderBy('fuels.name', 'asc')
+            ->orderBy('vehicles.ucode', 'asc')
             ->orderBy(DB::raw('EXTRACT(DAY FROM orders.sold_date)'), 'asc')
-            ->get()
+            ->get(['*'])
             ->toArray();
 
         // Build a lookup: [fuel_name][ucode][day] = [qty, price, per_ltr_price, order_count]
@@ -206,16 +175,16 @@ class InvoiceService
             $ucode = $order['ucode'];
             $day = (string) intval($order['sold_day']);  // day as string to match tableHeaders
 
-            if (!isset($vehicleDayData[$fuel])) {
+            if (! isset($vehicleDayData[$fuel])) {
                 $vehicleDayData[$fuel] = [];
             }
 
-            if (!isset($vehicleDayData[$fuel][$ucode])) {
+            if (! isset($vehicleDayData[$fuel][$ucode])) {
                 $vehicleDayData[$fuel][$ucode] = [];
             }
 
             // Initialize day if not set
-            if (!isset($vehicleDayData[$fuel][$ucode][$day])) {
+            if (! isset($vehicleDayData[$fuel][$ucode][$day])) {
                 $vehicleDayData[$fuel][$ucode][$day] = [
                     'qty' => 0,
                     'price' => 0,
@@ -249,7 +218,7 @@ class InvoiceService
                     if (isset($perLtrPriceByDay[$d])) {
                         $lastPerLtrPrice = $perLtrPriceByDay[$d];
                     }
-                    if (!isset($days[$dStr])) {
+                    if (! isset($days[$dStr])) {
                         $days[$dStr] = [
                             'qty' => 0,
                             'price' => 0,
@@ -289,7 +258,7 @@ class InvoiceService
                 $priceChangeDays = [];
                 foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
                     foreach ($days as $day => $info) {
-                        if ($info['per_ltr_price'] > 0) {
+                        if ($info['qty'] > 0 && $info['per_ltr_price'] > 0) {
                             $priceChangeDays[(int) $day] = $info['per_ltr_price'];
                         }
                     }
@@ -326,15 +295,32 @@ class InvoiceService
                 }
 
                 // Ensure the first range always starts from 1
-                if (!empty($ranges) && $ranges[0]['start'] !== 1) {
+                if (! empty($ranges) && $ranges[0]['start'] !== 1) {
                     $ranges[0]['start'] = 1;
                 }
 
                 // Format as "1-7": 121, "8-31": 110, etc. (dynamic, not static)
                 foreach ($ranges as $range) {
-                    $label = $range['start'] . '-' . $range['end'];
-                    // Format price as string with 2 decimals
-                    $perLtrPriceRanges[$label] = number_format($range['per_ltr_price'], 2, '.', '');
+                    $label = $range['start'].'-'.$range['end'];
+
+                    // Calculate exact totals for this specific range
+                    $rangeQty = 0;
+                    $rangeBill = 0;
+                    foreach ($vehicleDayData[$fuelName] as $ucode => $days) {
+                        for ($d = $range['start']; $d <= $range['end']; $d++) {
+                            $dStr = (string) $d;
+                            if (isset($days[$dStr])) {
+                                $rangeQty += $days[$dStr]['qty'];
+                                $rangeBill += $days[$dStr]['qty'] * $days[$dStr]['per_ltr_price'];
+                            }
+                        }
+                    }
+
+                    $perLtrPriceRanges[$label] = [
+                        'price' => number_format($range['per_ltr_price'], 2, '.', ''),
+                        'total_qty' => $rangeQty,
+                        'total_bill' => $rangeBill,
+                    ];
                 }
             }
 
@@ -404,7 +390,7 @@ class InvoiceService
      * 5) Calculate total bill, total coupon, total quantity
      * 6) Calculate page count based on data
      */
-    function generateMonthlyInvoice($sold_date, $organization_id)
+    public function generateMonthlyInvoice(Carbon $sold_date, int $organization_id): void
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($sold_date->month, $sold_date->year);
         [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount] = $this->getInvoiceData($organization_id, $start, $end, $period);
@@ -412,27 +398,27 @@ class InvoiceService
         // get order ids for this period and organization
         $orderIds = Order::query()
             ->where('organization_id', $organization_id)
-            ->whereDate('sold_date', '>=', $start->toDateString())
-            ->whereDate('sold_date', '<=', $end->toDateString())
-            ->pluck('id')
+            ->whereDate('sold_date', '>=', $start->toDateString(), 'and')
+            ->whereDate('sold_date', '<=', $end->toDateString(), 'and')
+            ->pluck('id', null)
             ->toArray();
 
         if (count($orderIds) === 0) {
             // if prev invoice exists, delete it
             $prevInvoice = Invoice::query()
                 ->where('organization_id', $organization_id)
-                ->where('month', $period->isoFormat('MMMM'))
+                ->where('month', $period->format('F'))
                 ->where('year', $period->year)
-                ->first();
+                ->first(['*']);
 
             if ($prevInvoice) {
-                $prevInvoice->delete();
+                Invoice::destroy($prevInvoice->id);
             }
         } else {
             // create invoice
             Invoice::updateOrCreate([
                 'organization_id' => $organization_id,
-                'month' => $period->isoFormat('MMMM'),
+                'month' => $period->format('F'),
                 'year' => $period->year,
             ], [
                 'total_bill' => $totalBill,
@@ -440,7 +426,7 @@ class InvoiceService
                 'total_qty' => $totalQty,
                 'page_count' => $pageCount,
                 'order_ids' => $orderIds,
-                'fuel_breakdown' => array_map(function ($fuel) use ($totalBill, $totalCoupon, $totalQty) {
+                'fuel_breakdown' => array_map(function ($fuel) {
                     return [
                         'fuel_name' => $fuel['fuel_name'],
                         'total_qty' => $fuel['total_qty'],
@@ -449,7 +435,7 @@ class InvoiceService
                             return $carry + $vehicle['order_count'];
                         }, 0),
                     ];
-                }, $data)
+                }, $data),
             ]);
         }
     }
@@ -457,7 +443,7 @@ class InvoiceService
     /**
      * Calculate the number of pages needed for the invoice PDF
      */
-    public function calculatePageCount($data, $tableHeaders)
+    public function calculatePageCount(array $data, array $tableHeaders): int
     {
         $maxVehiclesPerPage = 12;  // Maximum vehicles that can fit on one page (Legal landscape)
         $headerRows = 3;  // Header rows (fuel name, price, totals)
@@ -488,7 +474,7 @@ class InvoiceService
         return max(1, $totalPages);
     }
 
-    function invoiceList()
+    public function invoiceList()
     {
         return InvoiceResource::collection(
             QueryBuilder::for(Invoice::class)
@@ -521,16 +507,16 @@ class InvoiceService
      * Logic: If a coupon (order_no) is used more than 2 times in a single day, it is considered a repeated coupon for that day (counted as 1 for that day).
      * The function sums up the repeated coupon count for all days in the given period.
      */
-    function calculateRepeatedCouponCount($start_date, $end_date, $organization_id)
+    public function calculateRepeatedCouponCount(Carbon $start_date, Carbon $end_date, int $organization_id): int
     {
         // Get all orders in the date range, grouped by sold_date and order_no
         $orders = Order::query()
             ->selectRaw('DATE(sold_date) as sold_date, vehicle_id, COUNT(*) as count')
-            ->whereDate('sold_date', '>=', $start_date)
-            ->whereDate('sold_date', '<=', $end_date)
+            ->whereDate('sold_date', '>=', $start_date, 'and')
+            ->whereDate('sold_date', '<=', $end_date, 'and')
             ->where('organization_id', $organization_id)
             ->groupBy(DB::raw('DATE(sold_date)'), 'vehicle_id')
-            ->get();
+            ->get(['*']);
 
         // For each day, count how many coupons (order_no) are repeated more than 2 times
         $repeatedCouponCount = 0;
@@ -548,7 +534,7 @@ class InvoiceService
         return $repeatedCouponCount;
     }
 
-    function monthlyExport($validated)
+    public function monthlyExport(array $validated)
     {
         $month = $validated['month'];
         $year = $validated['year'];
@@ -557,5 +543,80 @@ class InvoiceService
         $filename = "Bill-Summary-{$monthName}-{$year}.xlsx";
 
         return Excel::download(new InvoiceExport($month, $year), $filename, \Maatwebsite\Excel\Excel::XLSX);
+    }
+
+    public function exportStatement(Organization $organization)
+    {
+        $entries = collect();
+
+        // Add Previous Due as starting entry if exists
+        if ($organization->previous_due > 0) {
+            $entries->push((object) [
+                'date' => $organization->created_at,
+                'description' => 'Initial Previous Due',
+                'entry_type' => 'order',
+                'amount' => $organization->previous_due,
+            ]);
+        }
+
+        // Add Previous Paid as starting entry if exists
+        if ($organization->previous_paid > 0) {
+            $entries->push((object) [
+                'date' => $organization->created_at,
+                'description' => 'Initial Previous Paid',
+                'entry_type' => 'payment',
+                'amount' => $organization->previous_paid,
+            ]);
+        }
+
+        $orders = Order::query()
+            ->where('organization_id', $organization->id)
+            ->select(['id', 'total_price as amount', 'sold_date as date'])
+            ->get()
+            ->map(function ($item) {
+                $item->entry_type = 'order';
+                $item->description = 'Fuel Order #'.$item->id;
+
+                return $item;
+            });
+
+        $payments = Payment::query()
+            ->where('organization_id', $organization->id)
+            ->where('is_deleted', false)
+            ->select(['id', 'amount', 'payment_date as date', 'tnx_id', 'method', 'type'])
+            ->get()
+            ->map(function ($item) {
+                $description = 'Payment ('.ucfirst($item->method->value).')';
+                if ($item->type === 'prev_paid') {
+                    $description .= ' [Prev. Due Payment]';
+                }
+                if ($item->tnx_id) {
+                    $description .= ' - '.$item->tnx_id;
+                }
+                $item->entry_type = 'payment';
+                $item->description = $description;
+
+                return $item;
+            });
+
+        $entries = $entries->concat($orders)->concat($payments)->sortBy('date');
+
+        $totalOrders = $orders->sum('amount') + $organization->previous_due;
+        $totalPayments = $payments->sum('amount') + $organization->previous_paid;
+
+        try {
+            $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+            $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
+
+            $html = view('statement-pdf', compact('organization', 'entries', 'totalOrders', 'totalPayments'))->render();
+            $pdfContent = $pdf->getOutputFromHtml($html);
+
+            return response($pdfContent, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="Statement_'.$organization->ucode.'_'.date('Y-m-d').'.pdf"',
+            ]);
+        } catch (\Exception $e) {
+            abort(500, $e->getMessage());
+        }
     }
 }
