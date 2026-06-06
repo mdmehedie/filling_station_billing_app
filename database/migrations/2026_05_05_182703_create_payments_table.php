@@ -12,17 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bank_accounts', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('account_name')->nullable();
-            $table->string('account_no')->nullable();
-            $table->string('branch_name')->nullable();
-            $table->text('note')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
-
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
@@ -45,7 +34,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('payments');
-        Schema::dropIfExists('bank_accounts');
         Schema::dropIfExists('payment_methods');
     }
 };
