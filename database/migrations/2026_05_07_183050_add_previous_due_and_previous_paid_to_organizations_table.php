@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-//        Schema::table('organizations', function (Blueprint $table) {
-//            $table->decimal('previous_due', 15, 2)->default(0)->after('security_money');
-//            $table->decimal('previous_paid', 15, 2)->default(0)->after('previous_due');
-//        });
+        Schema::table('organizations', function (Blueprint $table) {
+            $table->decimal('previous_due', 15, 2)->default(0)->after('security_money');
+            $table->decimal('previous_paid', 15, 2)->default(0)->after('previous_due');
+        });
 
         Schema::table('payments', function (Blueprint $table) {
             $table->renameColumn('type', 'method');
@@ -31,9 +31,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-//        Schema::table('organizations', function (Blueprint $table) {
-//            $table->dropColumn(['previous_due', 'previous_paid']);
-//        });
+        Schema::table('organizations', function (Blueprint $table) {
+            $table->dropColumn(['previous_due', 'previous_paid']);
+        });
 
         Schema::table('payments', function (Blueprint $table) {
             $table->dropColumn(['is_deleted', 'type']);
