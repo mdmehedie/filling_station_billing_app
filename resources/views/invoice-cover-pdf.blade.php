@@ -417,8 +417,11 @@
         </li>
 
         <li class="para">
-            বিল প্রাপ্তি সাপেক্ষে আগামী ১৫ {{ $bengaliMonths[now()->month] }}
-            {{ formatBengaliNumber(now()->year) }} তারিখের মধ্যে
+            @php
+                $dueDate = now()->addDays(15);
+            @endphp
+            বিল প্রাপ্তি সাপেক্ষে আগামী {{ formatBengaliNumber($dueDate->day) }} {{ $bengaliMonths[$dueDate->month] }}
+            {{ formatBengaliNumber($dueDate->year) }} তারিখের মধ্যে
             পরিশোধ করার জন্য অনুরোধ করা হলো। উল্লেখ্য যে, অবিনিমেয় চেক অবশ্যই আবরণী পত্রের মাধ্যমে প্রদান করতে হবে। অন
             লাইনে বিল পরিশোধের ক্ষেত্রে পত্রের মাধ্যমে সি এস ডি ফিলিং স্টেশন'কে (চিঠি বা ইমেইলের মাধ্যমে) অবগত করার জন্য অনুরোধ করা হলো।
         </li>
