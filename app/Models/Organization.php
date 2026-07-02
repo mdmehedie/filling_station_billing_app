@@ -55,7 +55,7 @@ class Organization extends Model
 
     public function getTotalDueAttribute()
     {
-        $total_orders = ($this->orders_sum_total_price ?? $this->orders()->sum('total_price') ?? 0) + ($this->previous_due ?? 0);
+        $total_orders = ($this->orders_sum_total_price ?? $this->orders()->where('sold_date', '>=', '2026-01-01')->sum('total_price') ?? 0) + ($this->previous_due ?? 0);
 
         return $total_orders - $this->total_paid;
     }

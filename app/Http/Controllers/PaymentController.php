@@ -36,8 +36,8 @@ class PaymentController extends Controller
     {
         $organization = null;
         if ($request->has('organization_id')) {
-            $orgModel = Organization::withSum('orders', 'total_price')
-                ->withSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount')
+            $orgModel = Organization::withSum(['orders' => fn($query) => $query->where('sold_date', '>=', '2026-01-01')], 'total_price')
+                ->withSum(['payments' => fn($query) => $query->where('is_deleted', false)], 'amount')
                 ->find($request->get('organization_id'));
             if ($orgModel) {
                 $organization = new OrganizationResource($orgModel);
@@ -46,8 +46,8 @@ class PaymentController extends Controller
 
         $organizations = [];
         if (! $organization) {
-            $orgs = Organization::withSum('orders', 'total_price')
-                ->withSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount')
+            $orgs = Organization::withSum(['orders' => fn($query) => $query->where('sold_date', '>=', '2026-01-01')], 'total_price')
+                ->withSum(['payments' => fn($query) => $query->where('is_deleted', false)], 'amount')
                 ->get();
             $organizations = OrganizationResource::collection($orgs);
         }

@@ -24,7 +24,7 @@ class OrganizationController extends Controller
             'organizations' => OrganizationResource::collection(
                 QueryBuilder::for(Organization::class)
                     ->with('user')
-                    ->withSum('orders', 'total_price')
+                    ->withSum(['orders' => fn ($query) => $query->where('sold_date', '>=', '2026-01-01')], 'total_price')
                     ->withSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount')
                     ->orderBy('id', 'desc')
                     ->allowedFilters([
@@ -77,7 +77,7 @@ class OrganizationController extends Controller
             'payments.bankAccount',
             'payments.creator'
         ]);
-        $organization->loadSum('orders', 'total_price');
+        $organization->loadSum(['orders' => fn ($query) => $query->where('sold_date', '>=', '2026-01-01')], 'total_price');
         $organization->loadSum(['payments' => fn ($query) => $query->where('is_deleted', false)], 'amount');
 
         return inertia('Organizations/Show', [
