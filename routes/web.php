@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::post('api/invoices/{organization_id}/export', [InvoiceController::class, 'exportPdf'])->name('invoices.export');
     Route::post('invoices/monthly-export', [InvoiceController::class, 'monthlyExport'])->name('invoices.monthly-export');
+    Route::post('invoices/monthly-report-pdf', [InvoiceController::class, 'monthlyReportPdf'])->name('invoices.monthly-report-pdf');
     Route::post('invoices/{organization_id}/sync', [InvoiceController::class, 'sync'])->name('invoices.sync');
     Route::get('organizations/{organization}/statement', [InvoiceController::class, 'statement'])->name('organizations.statement');
 
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('api/vehicles', [VehicleController::class, 'getAllVehicles']);
     Route::get('api/organizations', [OrganizationController::class, 'getAllOrganizations']);
     Route::post('api/reports/monthly-export', [InvoiceController::class, 'monthlyExport']);
+    Route::post('api/reports/monthly-report-pdf', [InvoiceController::class, 'monthlyReportPdf']);
     Route::get('api/orders/export', [OrderController::class, 'export']);
 });
 

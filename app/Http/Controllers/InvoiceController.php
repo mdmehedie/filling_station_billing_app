@@ -64,6 +64,16 @@ class InvoiceController extends Controller
         return $this->invoiceService->monthlyExport($validated);
     }
 
+    public function monthlyReportPdf(Request $request)
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2000|max:2050',
+        ]);
+
+        return $this->invoiceService->monthlyReportPdf($validated);
+    }
+
     public function sync(Request $request, string $organization_id)
     {
         $validated = $request->validate([

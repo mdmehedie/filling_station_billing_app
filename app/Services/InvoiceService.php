@@ -545,6 +545,129 @@ class InvoiceService
         return Excel::download(new InvoiceExport($month, $year), $filename, \Maatwebsite\Excel\Excel::XLSX);
     }
 
+    public function monthlyReportPdf(array $validated)
+    {
+        $month = (int) $validated['month'];
+        $year = (int) $validated['year'];
+        [$start, $end, $period] = $this->findOutStartEndPeriod($month, $year);
+
+        $summary = $this->getMonthlyCreditSalesSummaryData($start, $end);
+        $periodLabel = $period->format('F')."'".$period->format('y');
+        $monthName = $period->format('F');
+        $fileName = "Credit-Sales-Summary-{$monthName}-{$year}.pdf";
+
+        $logo1 = $this->imageDataUri(public_path('default/csd-logo.png'));
+        $logo2 = $this->imageDataUri(public_path('default/logo.jpeg'));
+
+        try {
+            $pdf = new Pdf(env('WEASYPRINT_BINARY', '/opt/homebrew/bin/weasyprint'));
+            $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
+
+            $html = view('monthly-report-pdf', [
+                'rows' => $summary['rows'],
+                'totals' => $summary['totals'],
+                'month' => $month,
+                'year' => $year,
+                'periodLabel' => $periodLabel,
+                'logo1' => $logo1,
+                'logo2' => $logo2,
+            ])->render();
+
+            $monthlyReportPdf = $pdf->getOutputFromHtml($html);
+
+            return response($monthlyReportPdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
+            ]);
+        } catch (\Exception $e) {
+            abort(500, $e->getMessage());
+        }
+    }
+
+    private function getMonthlyCreditSalesSummaryData(Carbon $start, Carbon $end): array
+    {
+        $orders = Order::query()
+            ->with('fuel:id,name')
+            ->whereDate('sold_date', '>=', $start->toDateString())
+            ->whereDate('sold_date', '<=', $end->toDateString())
+            ->get(['id', 'fuel_id', 'fuel_qty', 'total_price', 'sold_date']);
+
+        $rowsByDate = [];
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            $dateKey = $date->toDateString();
+            $rowsByDate[$dateKey] = [
+                'date' => $date->format('j-M'),
+                'coupon_octane' => 0,
+                'coupon_diesel' => 0,
+                'coupon_total' => 0,
+                'liter_octane' => 0,
+                'liter_diesel' => 0,
+                'liter_total' => 0,
+                'amount_octane' => 0,
+                'amount_diesel' => 0,
+                'amount_total' => 0,
+            ];
+        }
+
+        foreach ($orders as $order) {
+            $fuelName = strtolower(trim($order->fuel?->name ?? ''));
+            if (! in_array($fuelName, ['octane', 'diesel'], true)) {
+                continue;
+            }
+
+            $dateKey = $order->sold_date->toDateString();
+            if (! isset($rowsByDate[$dateKey])) {
+                continue;
+            }
+
+            $rowsByDate[$dateKey]["coupon_{$fuelName}"] += 1;
+            $rowsByDate[$dateKey]["liter_{$fuelName}"] += (float) $order->fuel_qty;
+            $rowsByDate[$dateKey]["amount_{$fuelName}"] += (float) $order->total_price;
+        }
+
+        foreach ($rowsByDate as &$row) {
+            $row['coupon_total'] = $row['coupon_octane'] + $row['coupon_diesel'];
+            $row['liter_total'] = $row['liter_octane'] + $row['liter_diesel'];
+            $row['amount_total'] = $row['amount_octane'] + $row['amount_diesel'];
+        }
+        unset($row);
+
+        $totals = [
+            'coupon_octane' => 0,
+            'coupon_diesel' => 0,
+            'coupon_total' => 0,
+            'liter_octane' => 0,
+            'liter_diesel' => 0,
+            'liter_total' => 0,
+            'amount_octane' => 0,
+            'amount_diesel' => 0,
+            'amount_total' => 0,
+        ];
+
+        foreach ($rowsByDate as $row) {
+            foreach (array_keys($totals) as $key) {
+                $totals[$key] += $row[$key];
+            }
+        }
+
+        return [
+            'rows' => array_values($rowsByDate),
+            'totals' => $totals,
+        ];
+    }
+
+    private function imageDataUri(string $path): string
+    {
+        if (! file_exists($path)) {
+            return '';
+        }
+
+        $imageType = pathinfo($path, PATHINFO_EXTENSION);
+        $imageData = file_get_contents($path);
+
+        return 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
+    }
+
     public function exportStatement(Organization $organization)
     {
         $entries = collect();
