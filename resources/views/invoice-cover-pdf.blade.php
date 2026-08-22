@@ -291,7 +291,7 @@
         ];
         $bengaliNumbers = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
         $englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        $bengaliYear = str_replace($englishNumbers, $bengaliNumbers, $year);
+        $bengaliYear = str_replace($englishNumbers, $bengaliNumbers, $year );
 
         function formatBengaliNumber($number)
         {
@@ -397,17 +397,36 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr>
-                        <td colspan="4" class="num">মোট টাকা</td>
-                        <td class="num red">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
-                        <td></td>
-                    </tr>
+                    @if (($vatRate ?? 0) > 0)
+                        <tr>
+                            <td colspan="4" class="num">উপ-মোট</td>
+                            <td class="num">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="num">ভ্যাট ({{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}%)</td>
+                            <td class="num">{{ bdtBengaliCurrencyFormat($vatAmount) }}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="num">সর্বমোট টাকা (ভ্যাটসহ)</td>
+                            <td class="num red">{{ bdtBengaliCurrencyFormat($grandTotal) }}</td>
+                            <td></td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td colspan="4" class="num">মোট টাকা</td>
+                            <td class="num red">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
+                            <td></td>
+                        </tr>
+                    @endif
                 </tfoot>
             </table>
         </li>
 
         <li class="para">
-            উপরোক্ত জ্বালানীর মূল্য বাবদ <span class="red">{{ bdtBengaliCurrencyFormat($totalBill) }}</span> টাকা
+            উপরোক্ত জ্বালানীর মূল্য বাবদ ( @if(($vatRate ?? 0) > 0) {{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}% ভ্যাটসহ @endif )
+            <span class="red">{{ bdtBengaliCurrencyFormat(($vatRate ?? 0) > 0 ? $grandTotal : $totalBill) }}</span> টাকা
             জরুরী
             ভিত্তিতে
             “সি এস ডি ফিলিং স্টেশন” হিসাব নং ০০০২-০২১০০৩৯৯৭৩
