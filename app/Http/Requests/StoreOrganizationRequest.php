@@ -30,6 +30,8 @@ class StoreOrganizationRequest extends FormRequest
             'logo' => 'nullable|image|max:2048',
             'is_vat_applied' => 'required|boolean',
             'vat_rate' => 'required_if:is_vat_applied,true|numeric|min:0|max:100',
+            'is_it_applied' => 'required|boolean',
+            'it_rate' => 'required_if:is_it_applied,true|numeric|min:0|max:100',
             'security_money' => 'nullable|numeric|min:0',
             'previous_due' => 'nullable|numeric|min:0',
         ];
@@ -40,6 +42,7 @@ class StoreOrganizationRequest extends FormRequest
         return [
             'ucode.unique' => 'The organization code must be unique.',
             'vat_rate.required_if' => 'The VAT rate is required when VAT is applied.',
+            'it_rate.required_if' => 'The IT rate is required when IT is applied.',
         ];
     }
 
@@ -48,6 +51,7 @@ class StoreOrganizationRequest extends FormRequest
         return [
             'ucode' => 'Organization Code',
             'vat_rate' => 'VAT Rate',
+            'it_rate' => 'IT Rate',
         ];
     }
 
@@ -55,6 +59,7 @@ class StoreOrganizationRequest extends FormRequest
     {
         $this->merge([
             'is_vat_applied' => $this->boolean('is_vat_applied'),
+            'is_it_applied' => $this->boolean('is_it_applied'),
         ]);
     }
 

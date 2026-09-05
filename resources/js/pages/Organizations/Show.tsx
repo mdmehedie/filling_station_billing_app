@@ -275,6 +275,15 @@ export default function Show({ organization }: Props) {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5 rounded-md border border-slate-200/50 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-800 dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-200">
+                                    <Percent className="h-3.5 w-3.5 text-primary" />
+                                    <span>
+                                        IT:{' '}
+                                        {organization.is_it_applied
+                                            ? `${organization.it_rate}%`
+                                            : 'N/A'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 rounded-md border border-slate-200/50 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-800 dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-200">
                                     <CreditCard className="h-3.5 w-3.5 text-primary" />
                                     <span>
                                         {organization.vehicles_count} Vehicles

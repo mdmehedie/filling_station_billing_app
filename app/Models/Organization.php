@@ -17,6 +17,8 @@ class Organization extends Model
         'security_money',
         'previous_due',
         'previous_paid',
+        'is_it_applied',
+        'it_rate',
     ];
 
     protected $appends = ['logo_url', 'total_paid', 'total_due'];

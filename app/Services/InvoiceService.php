@@ -64,10 +64,12 @@ class InvoiceService
         // calculate repeated coupon count
         $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
 
-        // calculate VAT (if applicable) on top of the total bill
+        // calculate VAT and IT (if applicable) on top of the total bill
         $vatRate = ($organization->is_vat_applied && $organization->vat_rate > 0) ? (float) $organization->vat_rate : 0;
         $vatAmount = round($totalBill * $vatRate / 100, 2);
-        $grandTotal = $totalBill + $vatAmount;
+        $itRate = ($organization->is_it_applied && $organization->it_rate > 0) ? (float) $organization->it_rate : 0;
+        $itAmount = round($totalBill * $itRate / 100, 2);
+        $grandTotal = $totalBill + $vatAmount + $itAmount;
 
         if ($validated['include_cover']) {
             try {
@@ -79,7 +81,7 @@ class InvoiceService
                 $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
 
                 // Generate cover PDF
-                $coverHtml = view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount', 'vatRate', 'vatAmount', 'grandTotal'))->render();
+                $coverHtml = view('invoice-cover-pdf', compact('organization', 'month', 'year', 'data', 'totalCoupon', 'totalBill', 'pageCount', 'vatRate', 'vatAmount', 'itRate', 'itAmount', 'grandTotal'))->render();
                 $coverPdf = $pdf->getOutputFromHtml($coverHtml);
             } catch (\Exception $e) {
                 abort(500, $e->getMessage());

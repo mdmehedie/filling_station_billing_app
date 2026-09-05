@@ -19,6 +19,8 @@ export interface Organization {
     logo_url?: string;
     is_vat_applied: number;
     vat_rate?: string;
+    is_it_applied: number;
+    it_rate?: string;
     security_money: number;
     previous_due?: number;
     previous_paid?: number;

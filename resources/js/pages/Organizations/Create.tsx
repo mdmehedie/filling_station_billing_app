@@ -5,14 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import InputError from '@/components/input-error';
-import { Form, Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { LoaderCircle, Upload, X, Image as ImageIcon, ArrowLeft } from 'lucide-react';
+import { LoaderCircle, Upload, X, ArrowLeft } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import organizationsRoute from '@/routes/organizations';
 import { dashboard } from '@/routes';
-import OrganizationController from '@/actions/App/Http/Controllers/OrganizationController';
 
 interface OrganizationFormData {
     name: string;
@@ -21,6 +20,8 @@ interface OrganizationFormData {
     logo: File | null;
     is_vat_applied: boolean;
     vat_rate: number | string;
+    is_it_applied: boolean;
+    it_rate: number | string;
     security_money: number | string;
     previous_due: number | string;
 }
@@ -33,6 +34,8 @@ export default function Create() {
         logo: null,
         is_vat_applied: true,
         vat_rate: 0,
+        is_it_applied: false,
+        it_rate: 0,
         security_money: 0,
         previous_due: 0,
     });
@@ -40,6 +43,7 @@ export default function Create() {
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const [vatRateFocused, setVatRateFocused] = useState(false);
+    const [itRateFocused, setItRateFocused] = useState(false);
 
     const handleFileSelect = (file: File) => {
         // Validate file type
@@ -268,82 +272,149 @@ export default function Create() {
 
                                     <Separator />
 
-                                    {/* VAT Settings */}
+                                    {/* Tax Settings */}
                                     <div className="space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="text-lg font-medium">VAT Settings</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Configure tax settings for your organization
-                                                </p>
-                                            </div>
+                                        <div>
+                                            <h3 className="text-lg font-medium">Tax Settings</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Configure VAT and IT (income tax) settings for your organization
+                                            </p>
                                         </div>
 
-                                        <div className="rounded-lg border bg-card p-6 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <Label htmlFor="is_vat_applied" className="text-base font-medium">
-                                                        Apply VAT
-                                                    </Label>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Enable VAT calculation for transactions
-                                                    </p>
-                                                </div>
-                                                <Checkbox
-                                                    id="is_vat_applied"
-                                                    name="is_vat_applied"
-                                                    checked={data.is_vat_applied}
-                                                    onCheckedChange={(checked: boolean) => setData('is_vat_applied', checked)}
-                                                    className="h-5 w-5"
-                                                />
-                                            </div>
-
-                                            {data.is_vat_applied && (
-                                                <div className="pt-4 border-t">
-                                                    <div className="space-y-3">
-                                                        <Label htmlFor="vat_rate" className="text-sm font-medium">
-                                                            VAT Rate
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="rounded-lg border bg-card p-6 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="is_vat_applied" className="text-base font-medium">
+                                                            Apply VAT
                                                         </Label>
-                                                        <div className="flex items-center space-x-3">
-                                                            <div className="relative flex-1 max-w-[200px]">
-                                                                <Input
-                                                                    id="vat_rate"
-                                                                    name="vat_rate"
-                                                                    type="number"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    max="100"
-                                                                    value={vatRateFocused && data.vat_rate === 0 ? '' : data.vat_rate}
-                                                                    onChange={(e) => setData('vat_rate', e.target.value)}
-                                                                    onFocus={() => {
-                                                                        setVatRateFocused(true);
-                                                                        if (data.vat_rate === 0) {
-                                                                            setData('vat_rate', '');
-                                                                        }
-                                                                    }}
-                                                                    onBlur={() => {
-                                                                        setVatRateFocused(false);
-                                                                        if (data.vat_rate === '' || data.vat_rate === null) {
-                                                                            setData('vat_rate', 0);
-                                                                        } else {
-                                                                            setData('vat_rate', parseFloat(data.vat_rate.toString()) || 0);
-                                                                        }
-                                                                    }}
-                                                                    placeholder="0.00"
-                                                                    className="text-right pr-8"
-                                                                />
-                                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                                    <span className="text-muted-foreground text-sm">%</span>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Enable VAT calculation for transactions
+                                                        </p>
+                                                    </div>
+                                                    <Checkbox
+                                                        id="is_vat_applied"
+                                                        name="is_vat_applied"
+                                                        checked={data.is_vat_applied}
+                                                        onCheckedChange={(checked: boolean) => setData('is_vat_applied', checked)}
+                                                        className="h-5 w-5"
+                                                    />
+                                                </div>
+
+                                                {data.is_vat_applied && (
+                                                    <div className="pt-4 border-t">
+                                                        <div className="space-y-3">
+                                                            <Label htmlFor="vat_rate" className="text-sm font-medium">
+                                                                VAT Rate
+                                                            </Label>
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="relative flex-1 max-w-[200px]">
+                                                                    <Input
+                                                                        id="vat_rate"
+                                                                        name="vat_rate"
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        min="0"
+                                                                        max="100"
+                                                                        value={vatRateFocused && data.vat_rate === 0 ? '' : data.vat_rate}
+                                                                        onChange={(e) => setData('vat_rate', e.target.value)}
+                                                                        onFocus={() => {
+                                                                            setVatRateFocused(true);
+                                                                            if (data.vat_rate === 0) {
+                                                                                setData('vat_rate', '');
+                                                                            }
+                                                                        }}
+                                                                        onBlur={() => {
+                                                                            setVatRateFocused(false);
+                                                                            if (data.vat_rate === '' || data.vat_rate === null) {
+                                                                                setData('vat_rate', 0);
+                                                                            } else {
+                                                                                setData('vat_rate', parseFloat(data.vat_rate.toString()) || 0);
+                                                                            }
+                                                                        }}
+                                                                        placeholder="0.00"
+                                                                        className="text-right pr-8"
+                                                                    />
+                                                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                                        <span className="text-muted-foreground text-sm">%</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    of transaction value
                                                                 </div>
                                                             </div>
-                                                            <div className="text-sm text-muted-foreground">
-                                                                of transaction value
-                                                            </div>
+                                                            <InputError message={errors.vat_rate} />
                                                         </div>
-                                                        <InputError message={errors.vat_rate} />
                                                     </div>
+                                                )}
+                                            </div>
+
+                                            <div className="rounded-lg border bg-card p-6 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="is_it_applied" className="text-base font-medium">
+                                                            Apply IT
+                                                        </Label>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Enable income tax calculation
+                                                        </p>
+                                                    </div>
+                                                    <Checkbox
+                                                        id="is_it_applied"
+                                                        name="is_it_applied"
+                                                        checked={data.is_it_applied}
+                                                        onCheckedChange={(checked: boolean) => setData('is_it_applied', checked)}
+                                                        className="h-5 w-5"
+                                                    />
                                                 </div>
-                                            )}
+
+                                                {data.is_it_applied && (
+                                                    <div className="pt-4 border-t">
+                                                        <div className="space-y-3">
+                                                            <Label htmlFor="it_rate" className="text-sm font-medium">
+                                                                IT Rate
+                                                            </Label>
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="relative flex-1 max-w-[200px]">
+                                                                    <Input
+                                                                        id="it_rate"
+                                                                        name="it_rate"
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        min="0"
+                                                                        max="100"
+                                                                        value={itRateFocused && data.it_rate === 0 ? '' : data.it_rate}
+                                                                        onChange={(e) => setData('it_rate', e.target.value)}
+                                                                        onFocus={() => {
+                                                                            setItRateFocused(true);
+                                                                            if (data.it_rate === 0) {
+                                                                                setData('it_rate', '');
+                                                                            }
+                                                                        }}
+                                                                        onBlur={() => {
+                                                                            setItRateFocused(false);
+                                                                            if (data.it_rate === '' || data.it_rate === null) {
+                                                                                setData('it_rate', 0);
+                                                                            } else {
+                                                                                setData('it_rate', parseFloat(data.it_rate.toString()) || 0);
+                                                                            }
+                                                                        }}
+                                                                        placeholder="0.00"
+                                                                        className="text-right pr-8"
+                                                                    />
+                                                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                                        <span className="text-muted-foreground text-sm">%</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    of transaction value
+                                                                </div>
+                                                            </div>
+                                                            <InputError message={errors.it_rate} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -429,4 +500,4 @@ export default function Create() {
             </div>
         </AppLayout>
     );
-} 
+}

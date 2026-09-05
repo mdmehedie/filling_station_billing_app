@@ -237,6 +237,19 @@
 <body class="bn-text">
 
     @php
+        /** @var \App\Models\Organization $organization */
+        /** @var int $month */
+        /** @var int $year */
+        /** @var array $data */
+        /** @var int $totalCoupon */
+        /** @var float $totalBill */
+        /** @var int $pageCount */
+        /** @var float $vatRate */
+        /** @var float $vatAmount */
+        /** @var float $itRate */
+        /** @var float $itAmount */
+        /** @var float $grandTotal */
+
         $letterOrder = [
             'ক',
             'খ',
@@ -397,19 +410,36 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    @if (($vatRate ?? 0) > 0)
+                    @if ((($vatRate ?? 0) > 0) || (($itRate ?? 0) > 0))
                         <tr>
                             <td colspan="4" class="num">উপ-মোট</td>
                             <td class="num">{{ bdtBengaliCurrencyFormat($totalBill) }}</td>
                             <td></td>
                         </tr>
+                        @if (($vatRate ?? 0) > 0)
+                            <tr>
+                                <td colspan="4" class="num">ভ্যাট ({{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}%)</td>
+                                <td class="num">{{ bdtBengaliCurrencyFormat($vatAmount) }}</td>
+                                <td></td>
+                            </tr>
+                        @endif
+                        @if (($itRate ?? 0) > 0)
+                            <tr>
+                                <td colspan="4" class="num">আয়কর ({{ formatBengaliNumber(rtrim(rtrim(number_format($itRate, 2), '0'), '.')) }}%)</td>
+                                <td class="num">{{ bdtBengaliCurrencyFormat($itAmount) }}</td>
+                                <td></td>
+                            </tr>
+                        @endif
                         <tr>
-                            <td colspan="4" class="num">ভ্যাট ({{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}%)</td>
-                            <td class="num">{{ bdtBengaliCurrencyFormat($vatAmount) }}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td colspan="4" class="num">সর্বমোট টাকা (ভ্যাটসহ)</td>
+                            <td colspan="4" class="num">
+                                @if (($vatRate ?? 0) > 0 && ($itRate ?? 0) > 0)
+                                    সর্বমোট টাকা (ভ্যাট ও আয়করসহ)
+                                @elseif (($vatRate ?? 0) > 0)
+                                    সর্বমোট টাকা (ভ্যাটসহ)
+                                @else
+                                    সর্বমোট টাকা (আয়করসহ)
+                                @endif
+                            </td>
                             <td class="num red">{{ bdtBengaliCurrencyFormat($grandTotal) }}</td>
                             <td></td>
                         </tr>
@@ -425,8 +455,15 @@
         </li>
 
         <li class="para">
-            উপরোক্ত জ্বালানীর মূল্য বাবদ ( @if(($vatRate ?? 0) > 0) {{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}% ভ্যাটসহ @endif )
-            <span class="red">{{ bdtBengaliCurrencyFormat(($vatRate ?? 0) > 0 ? $grandTotal : $totalBill) }}</span> টাকা
+            উপরোক্ত জ্বালানীর মূল্য বাবদ
+            @if(($vatRate ?? 0) > 0 && ($itRate ?? 0) > 0)
+                ( {{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}% ভ্যাট ও {{ formatBengaliNumber(rtrim(rtrim(number_format($itRate, 2), '0'), '.')) }}% আয়করসহ )
+            @elseif(($vatRate ?? 0) > 0)
+                ( {{ formatBengaliNumber(rtrim(rtrim(number_format($vatRate, 2), '0'), '.')) }}% ভ্যাটসহ )
+            @elseif(($itRate ?? 0) > 0)
+                ( {{ formatBengaliNumber(rtrim(rtrim(number_format($itRate, 2), '0'), '.')) }}% আয়করসহ )
+            @endif
+            <span class="red">{{ bdtBengaliCurrencyFormat((($vatRate ?? 0) > 0 || ($itRate ?? 0) > 0) ? $grandTotal : $totalBill) }}</span> টাকা
             জরুরী
             ভিত্তিতে
             “সি এস ডি ফিলিং স্টেশন” হিসাব নং ০০০২-০২১০০৩৯৯৭৩

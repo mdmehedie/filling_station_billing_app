@@ -22,6 +22,8 @@ class OrganizationResource extends JsonResource
             'logo_url' => $this->logo_url,
             'is_vat_applied' => $this->is_vat_applied,
             'vat_rate' => $this->vat_rate,
+            'is_it_applied' => $this->is_it_applied,
+            'it_rate' => $this->it_rate,
             'security_money' => (float) $this->security_money,
             'previous_due' => (float) $this->previous_due,
             'previous_paid' => (float) $this->previous_paid,
