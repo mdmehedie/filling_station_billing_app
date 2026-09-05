@@ -5,11 +5,9 @@ use App\Http\Controllers\FuelController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrganizationController;
-use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -20,6 +18,8 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
 
     Route::resource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization')->middleware('is_admin');
+    Route::resource('payments', \App\Http\Controllers\PaymentController::class)->middleware('is_admin');
+    Route::resource('bank-accounts', \App\Http\Controllers\BankAccountController::class)->middleware('is_admin');
     Route::resource('fuels', FuelController::class)->except(['show'])->middleware('is_admin');
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
@@ -34,15 +34,20 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
 
     // invoices routes
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
-    Route::post('api/invoices/{invoice}/export', [InvoiceController::class, 'exportPdf']);
+    Route::post('api/invoices/{organization_id}/export', [InvoiceController::class, 'exportPdf'])->name('invoices.export');
+    Route::post('invoices/monthly-export', [InvoiceController::class, 'monthlyExport'])->name('invoices.monthly-export');
+    Route::post('invoices/monthly-report-pdf', [InvoiceController::class, 'monthlyReportPdf'])->name('invoices.monthly-report-pdf');
+    Route::post('invoices/{organization_id}/sync', [InvoiceController::class, 'sync'])->name('invoices.sync');
+    Route::get('organizations/{organization}/statement', [InvoiceController::class, 'statement'])->name('organizations.statement');
 
     // api routes
     Route::get('api/orders', [OrderController::class, 'orderList']);
     Route::get('api/vehicles', [VehicleController::class, 'getAllVehicles']);
     Route::get('api/organizations', [OrganizationController::class, 'getAllOrganizations']);
     Route::post('api/reports/monthly-export', [InvoiceController::class, 'monthlyExport']);
+    Route::post('api/reports/monthly-report-pdf', [InvoiceController::class, 'monthlyReportPdf']);
     Route::get('api/orders/export', [OrderController::class, 'export']);
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';
