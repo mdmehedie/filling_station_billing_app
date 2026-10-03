@@ -137,6 +137,18 @@
             text-align: center;
             width: 23%;
         }
+
+        .signature-space {
+            height: 64px;
+        }
+
+        .signature-image {
+            display: block;
+            width: 180px;
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+        }
     </style>
 </head>
 
@@ -240,14 +252,19 @@
 
         <div class="signatures">
             <div class="sign-box">
+                <div class="signature-space"></div>
                 <strong>Md Mohi Uddin</strong>
                 <br>Executive<br>CSD Filling Station
             </div>
             <div class="sign-box">
+                <div class="signature-space"></div>
                 <strong>WO Md Rafiqul Islam (Retd)</strong>
                 <br>Manager<br>CSD Filling Station
             </div>
             <div class="sign-box">
+                <div class="signature-space">
+                    <img class="signature-image" src="{{ $signature }}" alt="Signature of Lt Col Md. Akhtaruzzaman (Retd)">
+                </div>
                 <strong>Lt Col Md. Akhtaruzzaman (Retd)</strong>
                 <br>Head of CSD Filling Station
             </div>

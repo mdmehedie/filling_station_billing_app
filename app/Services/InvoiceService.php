@@ -61,6 +61,8 @@ class InvoiceService
         $imageData = file_get_contents($imagePath);
         $logo2 = 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
 
+        $signature = $this->imageDataUri(public_path('default/signature.png'));
+
         // calculate repeated coupon count
         $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
 
@@ -77,7 +79,7 @@ class InvoiceService
                 $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
 
                 // Generate invoice PDF
-                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render();
+                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'signature', 'repeatedCouponCount'))->render();
                 $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
 
                 // Generate cover PDF
@@ -107,7 +109,7 @@ class InvoiceService
                 $pdf->setTimeout(env('WEASYPRINT_TIMEOUT', 3600));
 
                 // Generate invoice PDF
-                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'repeatedCouponCount'))->render();
+                $invoiceHtml = view('invoice-pdf', compact('data', 'tableHeaders', 'organization', 'month', 'year', 'totalBill', 'totalCoupon', 'pageCount', 'logo1', 'logo2', 'signature', 'repeatedCouponCount'))->render();
                 $invoicePdf = $pdf->getOutputFromHtml($invoiceHtml);
 
                 return response($invoicePdf, 200, [
