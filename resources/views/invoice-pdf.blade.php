@@ -139,15 +139,18 @@
         }
 
         .signature-space {
-            height: 64px;
+            height: 65px;
         }
 
         .signature-image {
             display: block;
-            width: 180px;
+            width: 220px;
             max-width: 100%;
             height: auto;
             margin: 0 auto;
+            position: relative;
+            top: -28px;
+            transform: rotate(-30deg);
         }
     </style>
 </head>
