@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -28,7 +29,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): HttpResponse
     {
         $user = $request->validateCredentials();
 
@@ -45,11 +46,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if($user->role === 'admin') {
-            return redirect()->intended(route('dashboard', absolute: false));
-        }
+//        if($user->role === 'admin') {
+        return Inertia::location(route('dashboard'));
+//        }
 
-        return redirect()->intended(route('orders.index', absolute: false));
+//        return Inertia::location(route('orders.index'));
     }
 
     /**
