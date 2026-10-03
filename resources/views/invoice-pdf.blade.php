@@ -150,6 +150,7 @@
             margin: 0 auto;
             position: relative;
             top: -28px;
+            left: 50px;
             transform: rotate(-30deg);
         }
     </style>
