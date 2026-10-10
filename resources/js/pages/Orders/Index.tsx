@@ -583,7 +583,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                         <Button
                             variant="ghost"
                             size="sm"
-                            hidden={(auth as any).user?.role !== 'admin'}
+                            hidden={!['admin', 'superadmin'].includes((auth as any).user?.role)}
                             asChild
                         >
                             <Link href={ordersRoute.edit(row.id).url}>
@@ -591,7 +591,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                             </Link>
                         </Button>
                         <Button
-                            hidden={(auth as any).user?.role !== 'admin'}
+                            hidden={!['admin', 'superadmin'].includes((auth as any).user?.role)}
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
@@ -1052,7 +1052,7 @@ export default function Index({ fuels }: { fuels: Fuel[] }) {
                                 selected
                             </div>
                             <div className="flex items-center gap-2">
-                                {(auth as any).user?.role === 'admin' && (
+                                {['admin', 'superadmin'].includes((auth as any).user?.role) && (
                                     <Button
                                         variant="destructive"
                                         size="sm"

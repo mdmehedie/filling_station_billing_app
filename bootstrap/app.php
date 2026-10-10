@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\CheckSuperAdminRoleMiddleware;
+use App\Http\Middleware\CheckUserRoleMiddleware;
+use App\Http\Middleware\CheckUserStatusMiddleware;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -7,8 +10,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
-use App\Http\Middleware\CheckUserStatusMiddleware;
-use App\Http\Middleware\CheckUserRoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'is_active' => CheckUserStatusMiddleware::class,
             'is_admin' => CheckUserRoleMiddleware::class,
+            'is_superadmin' => CheckSuperAdminRoleMiddleware::class,
             'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         ]);
 

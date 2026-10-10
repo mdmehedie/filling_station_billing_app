@@ -1,12 +1,11 @@
 import AppLayout from "@/layouts/app-layout";
-import { Head, router } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import { DataTable, Column } from "@/components/data-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, Eye, Shield, Mail, Phone, Calendar, Check, X, Loader2, Plus } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Edit, Trash2, Mail, Phone, Calendar, Loader2, Plus } from "lucide-react";
 import { User, PaginatedResponse } from "@/types/response";
-import { BreadcrumbItem } from "@/types";
+import { BreadcrumbItem, SharedData } from "@/types";
 import usersRoute from "@/routes/users";
 import { dashboard } from "@/routes";
 import { useState, useCallback, useRef, useMemo } from "react";
@@ -17,6 +16,7 @@ interface Props {
 }
 
 export default function Index({ users }: Props) {
+    const canAssignSuperadmin = usePage<SharedData>().props.auth.user?.role === 'superadmin';
     const [searchTerm, setSearchTerm] = useState('');
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [updatingUsers, setUpdatingUsers] = useState<Set<number>>(new Set());
@@ -60,17 +60,6 @@ export default function Index({ users }: Props) {
             .join('')
             .toUpperCase()
             .slice(0, 2);
-    };
-
-    const getRoleColor = (role: string) => {
-        switch (role?.toLowerCase()) {
-            case 'admin':
-                return 'destructive';
-            case 'user':
-                return 'secondary';
-            default:
-                return 'default';
-        }
     };
 
     const handleStatusUpdate = async (userId: number, newStatus: string) => {
@@ -151,7 +140,7 @@ export default function Index({ users }: Props) {
                             <Select
                                 value={row.role || 'user'}
                                 onValueChange={(newRole) => handleRoleUpdate(row.id, newRole)}
-                                disabled={isUpdating || row.id === 1}
+                                disabled={isUpdating || row.id === 1 || (row.role === 'superadmin' && !canAssignSuperadmin)}
                             >
                                 <SelectTrigger className="w-32">
                                     <SelectValue />
@@ -159,6 +148,7 @@ export default function Index({ users }: Props) {
                                 <SelectContent>
                                     <SelectItem value="user">User</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
+                                    {canAssignSuperadmin && <SelectItem value="superadmin">Super Admin</SelectItem>}
                                 </SelectContent>
                             </Select>
                         )}
@@ -202,7 +192,7 @@ export default function Index({ users }: Props) {
                             <Select
                                 value={currentStatus}
                                 onValueChange={(newStatus) => handleStatusUpdate(row.id, newStatus)}
-                                disabled={isUpdating || row.id === 1}
+                                disabled={isUpdating || row.id === 1 || (row.role === 'superadmin' && !canAssignSuperadmin)}
                             >
                                 <SelectTrigger className="w-32">
                                     <SelectValue />
@@ -246,7 +236,7 @@ export default function Index({ users }: Props) {
                     {/* <Button variant="ghost" size="sm" title="View User">
                         <Eye className="h-4 w-4" />
                     </Button> */}
-                    <Button variant="ghost" size="sm" title="Edit User" onClick={() => router.get(usersRoute.edit(row.id).url)}>
+                    <Button variant="ghost" size="sm" title="Edit User" disabled={row.role === 'superadmin' && !canAssignSuperadmin} onClick={() => router.get(usersRoute.edit(row.id).url)}>
                         <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
@@ -254,6 +244,7 @@ export default function Index({ users }: Props) {
                         size="sm" 
                         className="text-destructive hover:text-destructive"
                         title="Delete User"
+                        disabled={row.role === 'superadmin' && !canAssignSuperadmin}
                         onClick={() => router.delete(usersRoute.destroy(row.id).url)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -261,7 +252,7 @@ export default function Index({ users }: Props) {
                 </div>
             )
         }
-    ], [updatingUsers]);
+    ], [updatingUsers, canAssignSuperadmin]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {

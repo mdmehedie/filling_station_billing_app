@@ -16,7 +16,7 @@ class CheckUserRoleMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::user()->role !== 'admin') {
+        if (! in_array(Auth::user()->role, ['admin', 'superadmin'], true)) {
             abort(403, 'You are not authorized to access this page');
         }
 

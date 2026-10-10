@@ -16,6 +16,19 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('subscription-payments', [\App\Http\Controllers\SubscriptionPaymentController::class, 'index'])->name('subscription-payments.index');
+    Route::get('subscription-payments/pay', [\App\Http\Controllers\SubscriptionPaymentController::class, 'create'])->name('subscription-payments.create');
+    Route::post('subscription-payments', [\App\Http\Controllers\SubscriptionPaymentController::class, 'store'])->name('subscription-payments.store');
+    Route::get('subscription-payments/{subscriptionPayment}/invoice', [\App\Http\Controllers\SubscriptionPaymentController::class, 'invoice'])->name('subscription-payments.invoice');
+    Route::get('subscription-payments/{subscriptionPayment}/receipt', [\App\Http\Controllers\SubscriptionPaymentController::class, 'receipt'])->name('subscription-payments.receipt');
+    Route::middleware('is_superadmin')->group(function () {
+        Route::get('admin/subscription-payments', [\App\Http\Controllers\AdminSubscriptionPaymentController::class, 'index'])->name('admin.subscription-payments.index');
+        Route::get('admin/subscription-payments/{subscriptionPayment}', [\App\Http\Controllers\AdminSubscriptionPaymentController::class, 'show'])->name('admin.subscription-payments.show');
+        Route::post('admin/subscription-payments/{subscriptionPayment}/approve', [\App\Http\Controllers\AdminSubscriptionPaymentController::class, 'approve'])->name('admin.subscription-payments.approve');
+        Route::post('admin/subscription-payments/{subscriptionPayment}/reject', [\App\Http\Controllers\AdminSubscriptionPaymentController::class, 'reject'])->name('admin.subscription-payments.reject');
+    });
+
+
     Route::resource('vehicles', VehicleController::class);
     Route::resource('organizations', OrganizationController::class)->whereNumber('organization')->middleware('is_admin');
     Route::resource('payments', \App\Http\Controllers\PaymentController::class)->middleware('is_admin');
