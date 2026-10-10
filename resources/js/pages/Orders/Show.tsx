@@ -2,7 +2,6 @@ import AppLayout from "@/layouts/app-layout";
 import { Head, router } from "@inertiajs/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Car, Fuel, Calendar, DollarSign, Hash, Edit, Trash2, ArrowLeft, Receipt } from "lucide-react";
 import { BreadcrumbItem } from "@/types";

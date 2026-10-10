@@ -47,6 +47,14 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     libu2f-udev \
     libvulkan1 \
+    python3-pip \
+    python3-cffi \
+    python3-brotli \
+    libpango-1.0-0 \
+    libharfbuzz0b \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    && pip3 install weasyprint --break-system-packages \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && apt-get install -y chromium \
@@ -56,11 +64,6 @@ RUN apt-get update && apt-get install -y \
     && fc-cache -fv \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Configure Chromium for Docker environment
-ENV CHROME_BIN=/usr/bin/chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

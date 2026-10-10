@@ -4,10 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Credit Sale Statement</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@100..900&display=swap" rel="stylesheet">
     <style>
+        @page {
+            size: legal landscape;
+            margin: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: "Noto Serif Bengali", serif;
+            margin: 5mm;
         }
 
         .header {
@@ -129,6 +137,22 @@
             text-align: center;
             width: 23%;
         }
+
+        .signature-space {
+            height: 65px;
+        }
+
+        .signature-image {
+            display: block;
+            width: 220px;
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            position: relative;
+            top: -28px;
+            left: 50px;
+            transform: rotate(-30deg);
+        }
     </style>
 </head>
 
@@ -193,7 +217,7 @@
             <tfoot>
                 <tr>
                     <td colspan="2" style="text-align:left;">Rate:</td>
-                    @foreach ($fuel['per_ltr_price_ranges'] as $range => $price)
+                    @foreach ($fuel['per_ltr_price_ranges'] as $range => $rangeData)
                         @php
                             $colspan =
                                 array_reduce(
@@ -205,7 +229,7 @@
                                 ) + 1;
                         @endphp
                         <td colspan={{ $colspan }} style="text-align:center;">
-                            <strong>{{ removeLeadingZeros($price) }} Tk</strong>
+                            <strong>{{ removeLeadingZeros($rangeData['price']) }} Tk</strong>
                         </td>
                     @endforeach
                 </tr>
@@ -232,14 +256,19 @@
 
         <div class="signatures">
             <div class="sign-box">
+                <div class="signature-space"></div>
                 <strong>Md Mohi Uddin</strong>
                 <br>Executive<br>CSD Filling Station
             </div>
             <div class="sign-box">
+                <div class="signature-space"></div>
                 <strong>WO Md Rafiqul Islam (Retd)</strong>
                 <br>Manager<br>CSD Filling Station
             </div>
             <div class="sign-box">
+                <div class="signature-space">
+                    <img class="signature-image" src="{{ $signature }}" alt="Signature of Lt Col Md. Akhtaruzzaman (Retd)">
+                </div>
                 <strong>Lt Col Md. Akhtaruzzaman (Retd)</strong>
                 <br>Head of CSD Filling Station
             </div>

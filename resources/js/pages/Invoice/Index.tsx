@@ -12,12 +12,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing } from "lucide-react";
+import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing, RefreshCcw } from "lucide-react";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization, Invoice, PaginatedResponse } from "@/types/response";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
 import { Column } from "@/components/data-table";
 import { currenyFormat } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface IndexProps {
     months: number[];
@@ -36,6 +37,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
     const [downloadProgress, setDownloadProgress] = useState<number>(0);
     const [showGenerateModal, setShowGenerateModal] = useState<boolean>(false);
+    const { toast } = useToast();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -54,14 +56,23 @@ export default function Index({ months, years, organizations, invoices }: IndexP
 
         try {
             if (!selectedOrganization) {
-                alert('Please select an organization');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Please select an organization",
+                });
                 return;
             }
 
-            const resp = await axios.post(`/api/invoices/${selectedOrganization.id}/export`, { 
-                month: selectedMonth, 
+            toast({
+                title: "Downloading...",
+                description: `Preparing invoice for ${selectedOrganization.name}...`,
+            });
+
+            const resp = await axios.post(`/api/invoices/${selectedOrganization.id}/export`, {
+                month: selectedMonth,
                 year: selectedYear,
-                include_cover: includeCover 
+                include_cover: includeCover
             }, {
                 responseType: 'blob',
                 withCredentials: true,
@@ -76,11 +87,11 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
                 `${includeCover ? 'invoice-with-cover' : 'invoice'}-${selectedMonth}-${selectedYear}.${includeCover ? 'zip' : 'pdf'}`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
-                type: includeCover ? 'application/zip' : 'application/pdf' 
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: includeCover ? 'application/zip' : 'application/pdf'
             }));
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -89,9 +100,18 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             a.click();
             a.remove();
             URL.revokeObjectURL(blobUrl);
+
+            toast({
+                title: "Success",
+                description: "Invoice downloaded successfully",
+            });
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 404) {
-                alert('No invoice found for the selected month and organization.');
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No invoice found for the selected month and organization.",
+                });
             }
         } finally {
             setIsDownloading(false);
@@ -109,9 +129,9 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
-        
+
         searchTimeoutRef.current = setTimeout(() => {
-            router.get('/invoices', { 
+            router.get('/invoices', {
                 "filter[search]": term,
                 page: 1 // Reset to first page when searching
             }, {
@@ -127,7 +147,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
     };
 
     const handlePageChange = (page: number) => {
-        router.get('/invoices', { 
+        router.get('/invoices', {
             page,
             "filter[search]": searchTerm // Preserve search term when changing pages
         }, {
@@ -141,11 +161,16 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         try {
             setIsDownloading(true);
             setDownloadProgress(0);
-       
-            const resp = await axios.post(`/api/invoices/${invoice.organization.id}/export`, { 
-                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1, 
+
+            toast({
+                title: "Downloading...",
+                description: `Preparing invoice for ${invoice.organization.name}...`,
+            });
+
+            const resp = await axios.post(`/api/invoices/${invoice.organization.id}/export`, {
+                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1,
                 year: +invoice.year,
-                include_cover: true 
+                include_cover: true
             }, {
                 responseType: 'blob',
                 withCredentials: true,
@@ -160,22 +185,26 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
                 `${includeCover ? 'invoice-with-cover' : 'invoice'}-${selectedMonth}-${selectedYear}.${includeCover ? 'zip' : 'pdf'}`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
-                type: includeCover ? 'application/zip' : 'application/pdf' 
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: includeCover ? 'application/zip' : 'application/pdf'
             }));
             const a = document.createElement('a');
             a.href = blobUrl;
             a.download = filename;
             document.body.appendChild(a);
-            a.click();
+            a.click(); toast({ title: "Success", description: "Invoice downloaded successfully" });
             a.remove();
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 404) {
-                alert('No invoice found for the selected month and organization.');
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No invoice found for the selected month and organization.",
+                });
             }
         } finally {
             setIsDownloading(false);
@@ -188,12 +217,43 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         }
     }
 
+    const [isSyncing, setIsSyncing] = useState<number | null>(null);
+
+    const handleSync = async (invoice: Invoice) => {
+        setIsSyncing(invoice.id);
+        try {
+            await router.post(`/invoices/${invoice.organization.id}/sync`, {
+                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1,
+                year: +invoice.year,
+            }, {
+                onSuccess: () => {
+                    toast({
+                        title: "Success",
+                        description: "Invoice synchronized successfully",
+                    });
+                },
+                onError: () => {
+                    toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "An error occurred while syncing the invoice",
+                    });
+                },
+                preserveScroll: true,
+            });
+        } finally {
+            setIsSyncing(null);
+        }
+    };
+
     // monthly report modal
     const [showMonthlyReportModal, setShowMonthlyReportModal] = useState<boolean>(false);
     const [selectedMonthForReport, setSelectedMonthForReport] = useState<number>(months[0] || 0);
     const [selectedYearForReport, setSelectedYearForReport] = useState<number>(years[0] || 0);
     const [isDownloadingReport, setIsDownloadingReport] = useState<boolean>(false);
     const [downloadReportProgress, setDownloadReportProgress] = useState<number>(0);
+    const [isDownloadingMonthlyPdf, setIsDownloadingMonthlyPdf] = useState<boolean>(false);
+    const [downloadMonthlyPdfProgress, setDownloadMonthlyPdfProgress] = useState<number>(0);
 
     const handleMonthlyReportDownload = async () => {
         setIsDownloadingReport(true);
@@ -201,8 +261,8 @@ export default function Index({ months, years, organizations, invoices }: IndexP
 
         try {
 
-            const resp = await axios.post(`/api/reports/monthly-export`, { 
-                month: selectedMonthForReport, 
+            const resp = await axios.post(`/api/reports/monthly-export`, {
+                month: selectedMonthForReport,
                 year: selectedYearForReport,
             }, {
                 responseType: 'blob',
@@ -215,14 +275,19 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 },
             });
 
+            toast({
+                title: "Downloading...",
+                description: "Preparing monthly report...",
+            });
+
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) : 
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
                 `monthly-report-${selectedMonthForReport}-${selectedYearForReport}.xlsx`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], { 
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             }));
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -233,9 +298,17 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
             if (axios.isAxiosError(error) && error.response?.status === 404) {
-                alert('No data found for the selected month, year and organization.');
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No data found for the selected month and year.",
+                });
             } else {
-                alert('An error occurred while downloading the report.');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "An error occurred while downloading the report.",
+                });
             }
         } finally {
             setIsDownloadingReport(false);
@@ -245,6 +318,76 @@ export default function Index({ months, years, organizations, invoices }: IndexP
             setSelectedYearForReport(years[0] || 0);
         }
     }
+
+    const handleMonthlyReportPdfDownload = async () => {
+        setIsDownloadingMonthlyPdf(true);
+        setDownloadMonthlyPdfProgress(0);
+
+        try {
+            toast({
+                title: "Downloading...",
+                description: "Preparing monthly PDF report...",
+            });
+
+            const resp = await axios.post(`/api/reports/monthly-report-pdf`, {
+                month: selectedMonthForReport,
+                year: selectedYearForReport,
+            }, {
+                responseType: 'blob',
+                withCredentials: true,
+                onDownloadProgress: (e: any) => {
+                    if (e.total) {
+                        const pct = Math.round((e.loaded / e.total) * 100);
+                        setDownloadMonthlyPdfProgress(pct);
+                    }
+                },
+            });
+
+            const cd = resp.headers['content-disposition'] || '';
+            const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
+            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
+                `monthly-report-${selectedMonthForReport}-${selectedYearForReport}.pdf`;
+
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
+                type: 'application/pdf'
+            }));
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+
+            toast({
+                title: "Success",
+                description: "Monthly PDF report downloaded successfully",
+            });
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                toast({
+                    variant: "destructive",
+                    title: "Not Found",
+                    description: "No data found for the selected month and year.",
+                });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "An error occurred while downloading the PDF report.",
+                });
+            }
+        } finally {
+            setIsDownloadingMonthlyPdf(false);
+            setDownloadMonthlyPdfProgress(0);
+            setSelectedMonthForReport(months[0] || 0);
+            setSelectedYearForReport(years[0] || 0);
+        }
+    }
+
+    const isReportDownloading = isDownloadingReport || isDownloadingMonthlyPdf;
+    const activeReportProgress = isDownloadingMonthlyPdf ? downloadMonthlyPdfProgress : downloadReportProgress;
+    const activeReportLabel = isDownloadingMonthlyPdf ? 'Generating PDF report...' : 'Generating Excel report...';
 
     const columns: Column<Invoice>[] = useMemo(() => [
         {
@@ -327,11 +470,21 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                         {isDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                         PDF
                     </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSync(row)}
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                        disabled={isSyncing === row.id}
+                    >
+                        {isSyncing === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCcw className="h-3 w-3" />}
+                        Sync
+                    </Button>
                 </div>
             )
         }
     ], []);
-    
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Download Invoice" />
@@ -339,7 +492,9 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 {/* Header Section */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Invoice Management</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Invoice Management
+                        </h1>
                         <p className="text-muted-foreground">
                             View, generate and download invoices
                         </p>
@@ -388,7 +543,10 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 </Card>
 
                 {/* Generate New Invoice Modal */}
-                <Dialog open={showGenerateModal} onOpenChange={setShowGenerateModal}>
+                <Dialog
+                    open={showGenerateModal}
+                    onOpenChange={setShowGenerateModal}
+                >
                     <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
@@ -396,37 +554,55 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                 Generate New Invoice
                             </DialogTitle>
                             <DialogDescription>
-                                Choose the month and year for your invoice download
+                                Choose the month and year for your invoice
+                                download
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="space-y-6">
                             {/* Organization Selection */}
                             <div className="space-y-2">
-                                <Label className="text-base font-medium">Organization</Label>
+                                <Label className="text-base font-medium">
+                                    Organization
+                                </Label>
                                 <OrganizationSelector
                                     organizations={organizations}
                                     selectedOrganization={selectedOrganization}
-                                    onOrganizationSelect={setSelectedOrganization}
+                                    onOrganizationSelect={
+                                        setSelectedOrganization
+                                    }
                                     placeholder="Select organization..."
                                 />
                             </div>
 
                             {/* Month and Year Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label className="text-base font-medium">Month</Label>
+                                    <Label className="text-base font-medium">
+                                        Month
+                                    </Label>
                                     <Select
                                         value={selectedMonth.toString()}
-                                        onValueChange={(value) => setSelectedMonth(Number(value))}
+                                        onValueChange={(value) =>
+                                            setSelectedMonth(Number(value))
+                                        }
                                     >
                                         <SelectTrigger className="h-12">
                                             <SelectValue placeholder="Select month" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {months.map((month) => (
-                                                <SelectItem key={month} value={month.toString()}>
-                                                    {new Date(0, month - 1).toLocaleString("default", { month: "long" })}
+                                                <SelectItem
+                                                    key={month}
+                                                    value={month.toString()}
+                                                >
+                                                    {new Date(
+                                                        0,
+                                                        month - 1,
+                                                    ).toLocaleString(
+                                                        'default',
+                                                        { month: 'long' },
+                                                    )}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -434,17 +610,24 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-base font-medium">Year</Label>
+                                    <Label className="text-base font-medium">
+                                        Year
+                                    </Label>
                                     <Select
                                         value={selectedYear.toString()}
-                                        onValueChange={(value) => setSelectedYear(Number(value))}
+                                        onValueChange={(value) =>
+                                            setSelectedYear(Number(value))
+                                        }
                                     >
                                         <SelectTrigger className="h-12">
                                             <SelectValue placeholder="Select year" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {years.map((year) => (
-                                                <SelectItem key={year} value={year.toString()}>
+                                                <SelectItem
+                                                    key={year}
+                                                    value={year.toString()}
+                                                >
                                                     {year}
                                                 </SelectItem>
                                             ))}
@@ -459,22 +642,28 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                     <Checkbox
                                         id="include-cover"
                                         checked={includeCover}
-                                        onCheckedChange={(checked) => setIncludeCover(checked as boolean)}
+                                        onCheckedChange={(checked) =>
+                                            setIncludeCover(checked as boolean)
+                                        }
                                     />
-                                    <Label htmlFor="include-cover" className="text-sm font-medium cursor-pointer">
+                                    <Label
+                                        htmlFor="include-cover"
+                                        className="cursor-pointer text-sm font-medium"
+                                    >
                                         Include cover page
                                     </Label>
                                 </div>
-                                <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                                <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
                                     <div className="flex items-start gap-2">
-                                        <Building className="h-4 w-4 mt-0.5 text-blue-600" />
+                                        <Building className="mt-0.5 h-4 w-4 text-blue-600" />
                                         <div>
-                                            <p className="font-medium text-blue-600">Cover Page Option</p>
+                                            <p className="font-medium text-blue-600">
+                                                Cover Page Option
+                                            </p>
                                             <p className="mt-1">
-                                                {includeCover 
-                                                    ? "Download will include a cover page and be packaged as a ZIP file"
-                                                    : "Download will be a single PDF file without cover page"
-                                                }
+                                                {includeCover
+                                                    ? 'Download will include a cover page and be packaged as a ZIP file'
+                                                    : 'Download will be a single PDF file without cover page'}
                                             </p>
                                         </div>
                                     </div>
@@ -482,20 +671,33 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             </div>
 
                             {/* Download Info */}
-                            <div className="text-center text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
+                            <div className="rounded-lg bg-muted/30 p-4 text-center text-sm text-muted-foreground">
                                 <p>
-                                    Organization: <span className="font-medium">
-                                        {selectedOrganization ? selectedOrganization.name : 'Not selected'}
+                                    Organization:{' '}
+                                    <span className="font-medium">
+                                        {selectedOrganization
+                                            ? selectedOrganization.name
+                                            : 'Not selected'}
                                     </span>
                                 </p>
                                 <p>
-                                    Period: <span className="font-medium">
-                                        {new Date(0, selectedMonth - 1).toLocaleString("default", { month: "long" })} {selectedYear}
+                                    Period:{' '}
+                                    <span className="font-medium">
+                                        {new Date(
+                                            0,
+                                            selectedMonth - 1,
+                                        ).toLocaleString('default', {
+                                            month: 'long',
+                                        })}{' '}
+                                        {selectedYear}
                                     </span>
                                 </p>
                                 <p className="mt-1">
-                                    Format: <span className="font-medium">
-                                        {includeCover ? 'ZIP (with cover)' : 'PDF (standard)'}
+                                    Format:{' '}
+                                    <span className="font-medium">
+                                        {includeCover
+                                            ? 'ZIP (with cover)'
+                                            : 'PDF (standard)'}
                                     </span>
                                 </p>
                             </div>
@@ -507,10 +709,12 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                         <span>Downloading...</span>
                                         <span>{downloadProgress}%</span>
                                     </div>
-                                    <div className="w-full bg-muted rounded-full h-2">
-                                        <div 
-                                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                                            style={{ width: `${downloadProgress}%` }}
+                                    <div className="h-2 w-full rounded-full bg-muted">
+                                        <div
+                                            className="h-2 rounded-full bg-primary transition-all duration-300"
+                                            style={{
+                                                width: `${downloadProgress}%`,
+                                            }}
                                         ></div>
                                     </div>
                                 </div>
@@ -527,19 +731,28 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             </Button>
                             <Button
                                 onClick={handleDownload}
-                                disabled={isDownloading || !selectedMonth || !selectedYear || !selectedOrganization}
+                                disabled={
+                                    isDownloading ||
+                                    !selectedMonth ||
+                                    !selectedYear ||
+                                    !selectedOrganization
+                                }
                                 className="flex items-center gap-2"
                             >
                                 {isDownloading ? (
                                     <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>Downloading... {downloadProgress}%</span>
+                                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                        <span>
+                                            Downloading... {downloadProgress}%
+                                        </span>
                                     </>
                                 ) : (
                                     <>
                                         <Download className="h-4 w-4" />
                                         <span>
-                                            Download {includeCover ? 'ZIP' : 'PDF'} Invoice
+                                            Download{' '}
+                                            {includeCover ? 'ZIP' : 'PDF'}{' '}
+                                            Invoice
                                         </span>
                                     </>
                                 )}
@@ -549,7 +762,10 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 </Dialog>
 
                 {/* Monthly Report Modal */}
-                <Dialog open={showMonthlyReportModal} onOpenChange={setShowMonthlyReportModal}>
+                <Dialog
+                    open={showMonthlyReportModal}
+                    onOpenChange={setShowMonthlyReportModal}
+                >
                     <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
@@ -557,26 +773,42 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                 Monthly Report
                             </DialogTitle>
                             <DialogDescription>
-                                Generate and download monthly Excel report
+                                Generate and download monthly Excel or PDF
+                                report
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         <div className="space-y-6">
                             {/* Month and Year Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label className="text-base font-medium">Month</Label>
+                                    <Label className="text-base font-medium">
+                                        Month
+                                    </Label>
                                     <Select
                                         value={selectedMonthForReport.toString()}
-                                        onValueChange={(value) => setSelectedMonthForReport(Number(value))}
+                                        onValueChange={(value) =>
+                                            setSelectedMonthForReport(
+                                                Number(value),
+                                            )
+                                        }
                                     >
                                         <SelectTrigger className="h-12">
                                             <SelectValue placeholder="Select month" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {months.map((month) => (
-                                                <SelectItem key={month} value={month.toString()}>
-                                                    {new Date(0, month - 1).toLocaleString("default", { month: "long" })}
+                                                <SelectItem
+                                                    key={month}
+                                                    value={month.toString()}
+                                                >
+                                                    {new Date(
+                                                        0,
+                                                        month - 1,
+                                                    ).toLocaleString(
+                                                        'default',
+                                                        { month: 'long' },
+                                                    )}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -584,17 +816,26 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-base font-medium">Year</Label>
+                                    <Label className="text-base font-medium">
+                                        Year
+                                    </Label>
                                     <Select
                                         value={selectedYearForReport.toString()}
-                                        onValueChange={(value) => setSelectedYearForReport(Number(value))}
+                                        onValueChange={(value) =>
+                                            setSelectedYearForReport(
+                                                Number(value),
+                                            )
+                                        }
                                     >
                                         <SelectTrigger className="h-12">
                                             <SelectValue placeholder="Select year" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {years.map((year) => (
-                                                <SelectItem key={year} value={year.toString()}>
+                                                <SelectItem
+                                                    key={year}
+                                                    value={year.toString()}
+                                                >
                                                     {year}
                                                 </SelectItem>
                                             ))}
@@ -604,28 +845,40 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             </div>
 
                             {/* Report Info */}
-                            <div className="text-center text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
+                            <div className="rounded-lg bg-muted/30 p-4 text-center text-sm text-muted-foreground">
                                 <p>
-                                    Period: <span className="font-medium">
-                                        {new Date(0, selectedMonthForReport - 1).toLocaleString("default", { month: "long" })} {selectedYearForReport}
+                                    Period:{' '}
+                                    <span className="font-medium">
+                                        {new Date(
+                                            0,
+                                            selectedMonthForReport - 1,
+                                        ).toLocaleString('default', {
+                                            month: 'long',
+                                        })}{' '}
+                                        {selectedYearForReport}
                                     </span>
                                 </p>
                                 <p className="mt-1">
-                                    Format: <span className="font-medium">Excel (.xlsx)</span>
+                                    Format:{' '}
+                                    <span className="font-medium">
+                                        Excel (.xlsx) / PDF (.pdf)
+                                    </span>
                                 </p>
                             </div>
 
                             {/* Progress Bar */}
-                            {isDownloadingReport && (
+                            {isReportDownloading && (
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span>Generating report...</span>
-                                        <span>{downloadReportProgress}%</span>
+                                        <span>{activeReportLabel}</span>
+                                        <span>{activeReportProgress}%</span>
                                     </div>
-                                    <div className="w-full bg-muted rounded-full h-2">
-                                        <div 
-                                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                                            style={{ width: `${downloadReportProgress}%` }}
+                                    <div className="h-2 w-full rounded-full bg-muted">
+                                        <div
+                                            className="h-2 rounded-full bg-primary transition-all duration-300"
+                                            style={{
+                                                width: `${activeReportProgress}%`,
+                                            }}
                                         ></div>
                                     </div>
                                 </div>
@@ -636,19 +889,26 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             <Button
                                 variant="outline"
                                 onClick={() => setShowMonthlyReportModal(false)}
-                                disabled={isDownloadingReport}
+                                disabled={isReportDownloading}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 onClick={handleMonthlyReportDownload}
-                                disabled={isDownloadingReport || !selectedMonthForReport || !selectedYearForReport}
+                                disabled={
+                                    isReportDownloading ||
+                                    !selectedMonthForReport ||
+                                    !selectedYearForReport
+                                }
                                 className="flex items-center gap-2"
                             >
                                 {isDownloadingReport ? (
                                     <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>Generating... {downloadReportProgress}%</span>
+                                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                        <span>
+                                            Generating...{' '}
+                                            {downloadReportProgress}%
+                                        </span>
                                     </>
                                 ) : (
                                     <>
@@ -657,10 +917,36 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                     </>
                                 )}
                             </Button>
+
+                            <Button
+                                variant="warningOutline"
+                                onClick={handleMonthlyReportPdfDownload}
+                                disabled={
+                                    isReportDownloading ||
+                                    !selectedMonthForReport ||
+                                    !selectedYearForReport
+                                }
+                                className="flex items-center gap-2"
+                            >
+                                {isDownloadingMonthlyPdf ? (
+                                    <>
+                                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                                        <span>
+                                            Generating...{' '}
+                                            {downloadMonthlyPdfProgress}%
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="h-4 w-4" />
+                                        <span>Download Monthly Summary</span>
+                                    </>
+                                )}
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
         </AppLayout>
-    )
-} 
+    );
+}

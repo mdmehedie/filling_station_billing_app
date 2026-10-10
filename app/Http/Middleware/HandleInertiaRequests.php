@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\SubscriptionService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,6 +46,8 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'subscriptionPaymentDue' => $request->user()?->role === 'admin'
+                ? app(SubscriptionService::class)->hasPaymentDue($request->user()) : false,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [
                 'success' => $request->session()->get('success'),
