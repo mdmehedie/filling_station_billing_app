@@ -37,6 +37,10 @@ class InvoiceCoverSheet implements WithEvents, WithTitle
 
     private const AMOUNT_FORMAT = '"৳ "#,##0.00';
 
+    // Ships with Windows 8+ and Excel for Mac (cloud font); without an explicit Bengali font
+    // Excel falls back per cell and breaks conjuncts in some of them
+    private const BENGALI_FONT = 'Nirmala UI';
+
     public function __construct(private array $export) {}
 
     public function title(): string
@@ -212,6 +216,7 @@ class InvoiceCoverSheet implements WithEvents, WithTitle
         $sheet->setCellValue("A{$row}", 'ইমেইল: csdfillingstation@gmail.com | ফোন: ০১৭৬৯০৪০৯৪৯');
         $sheet->mergeCells("A{$row}:F{$row}");
 
+        $sheet->getStyle("A1:F{$row}")->getFont()->setName(self::BENGALI_FONT);
         $sheet->setSelectedCell('A1');
     }
 
@@ -228,8 +233,8 @@ class InvoiceCoverSheet implements WithEvents, WithTitle
             ->setHorizontal(Alignment::HORIZONTAL_JUSTIFY);
 
         // Excel does not auto-fit merged cells, so estimate the height
-        $lines = max(1, (int) ceil(mb_strlen($text) / 75));
-        $sheet->getRowDimension($row)->setRowHeight($lines * 18);
+        $lines = max(1, (int) ceil(mb_strlen($text) / 70));
+        $sheet->getRowDimension($row)->setRowHeight($lines * 21);
     }
 
     private function bn(int|string $value): string
