@@ -51,7 +51,6 @@ export default function Dashboard({
     fuelConsumption
 }: Props) {
 
-    console.log(dailySales);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />

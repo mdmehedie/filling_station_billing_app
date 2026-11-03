@@ -1,18 +1,19 @@
 import AppLayout from "@/layouts/app-layout";
-import { Head, useForm, router } from "@inertiajs/react";
+import { Head, useForm, router, usePage } from "@inertiajs/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Save, User, Mail, Phone, Shield, Eye, EyeOff } from "lucide-react";
-import { BreadcrumbItem } from "@/types";
+import { BreadcrumbItem, SharedData } from "@/types";
 import { dashboard } from "@/routes";
 import usersRoute from "@/routes/users";
 import { useState } from "react";
 import InputError from "@/components/input-error";
 
 export default function Create() {
+    const canAssignSuperadmin = usePage<SharedData>().props.auth.user?.role === 'superadmin';
     const [showPassword, setShowPassword] = useState(false);
     
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -193,6 +194,7 @@ export default function Create() {
                                             <SelectContent>
                                                 <SelectItem value="user">User</SelectItem>
                                                 <SelectItem value="admin">Admin</SelectItem>
+                                                {canAssignSuperadmin && <SelectItem value="superadmin">Super Admin</SelectItem>}
                                             </SelectContent>
                                         </Select>
                                         <InputError message={errors.role} />
@@ -253,4 +255,4 @@ export default function Create() {
             </div>
         </AppLayout>
     );
-} 
+}

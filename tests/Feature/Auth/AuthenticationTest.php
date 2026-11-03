@@ -10,8 +10,11 @@ test('login screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+test('users can authenticate using the login screen', function (string $role) {
+    $user = User::factory()->create([
+        'phone' => fake()->unique()->numerify('01#########'),
+        'role' => $role,
+    ]);
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
@@ -19,8 +22,24 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
-});
+    $response->assertRedirect(route('dashboard'));
+})->with(['admin', 'user']);
+
+test('inertia login loads the dashboard as a full page', function (string $role) {
+    $user = User::factory()->create([
+        'phone' => fake()->unique()->numerify('01#########'),
+        'role' => $role,
+    ]);
+
+    $response = $this->withHeader('X-Inertia', 'true')->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user);
+    $response->assertStatus(409);
+    $response->assertHeader('X-Inertia-Location', route('dashboard'));
+})->with(['admin', 'user']);
 
 test('users with two factor enabled are redirected to two factor challenge', function () {
     if (! Features::canManageTwoFactorAuthentication()) {

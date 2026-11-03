@@ -11,18 +11,27 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { BookOpen, Car, Folder, Fuel, LayoutGrid, ShoppingCart, Users, Building2, SchoolIcon, File } from 'lucide-react';
+import bankAccounts from '@/routes/bank-accounts';
+import fuels from '@/routes/fuels';
+import invoices from '@/routes/invoices';
+import orders from '@/routes/orders';
+import organizations from '@/routes/organizations';
+import users from '@/routes/users';
+import vehicles from '@/routes/vehicles';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import {
+    Car,
+    CreditCard,
+    File,
+    Fuel,
+    LayoutGrid,
+    SchoolIcon,
+    ShoppingCart,
+    Users,
+    Wallet,
+} from 'lucide-react';
 import AppLogo from './app-logo';
-import organizations from "@/routes/organizations";
-import vehicles from "@/routes/vehicles";
-import fuels from "@/routes/fuels";
-import orders from "@/routes/orders";
-import users from "@/routes/users";
-import { usePage } from '@inertiajs/react';
-import { useCallback } from "react";
-import invoices from "@/routes/invoices";
 
 const mainNavItemsBase: NavItem[] = [
     {
@@ -60,6 +69,11 @@ const mainNavItemsBase: NavItem[] = [
         href: invoices.index(),
         icon: File,
     },
+    {
+        title: 'Bank Information',
+        href: bankAccounts.index(),
+        icon: Wallet,
+    },
 ];
 
 // if user is admin, show reports
@@ -78,13 +92,30 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const page = usePage();
+    const page = usePage<SharedData>();
     const { auth } = page.props;
 
-    const mainNavItems = useCallback((items: NavItem[]): NavItem[] => {
-        // @ts-ignore
+    const mainNavItems = (items: NavItem[]): NavItem[] => {
+        if (auth.user?.role === 'superadmin') {
+            return [
+                ...items,
+                {
+                    title: 'Subscription Payments',
+                    href: '/admin/subscription-payments',
+                    icon: CreditCard,
+                },
+            ];
+        }
+
         if (auth.user?.role === 'admin') {
-            return items
+            return [
+                ...items,
+                {
+                    title: 'Payments',
+                    href: '/subscription-payments',
+                    icon: CreditCard,
+                },
+            ];
         }
 
         return [
@@ -103,8 +134,8 @@ export function AppSidebar() {
                 href: vehicles.index(),
                 icon: Car,
             },
-        ]
-    }, []);
+        ];
+    };
 
     return (
         <Sidebar collapsible="icon" variant="inset">

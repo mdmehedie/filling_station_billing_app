@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\User;
 use App\Http\Resources\UserResource;
-use Illuminate\Http\Requests;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
     public function index()
     {
         $users = User::paginate(intval(request()->get('per_page', 15)));
+
         return Inertia::render('Users/Index', [
-            'users' => UserResource::collection($users)
+            'users' => UserResource::collection($users),
         ]);
     }
 
@@ -32,7 +32,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:8',
             'phone' => 'required|string|max:15',
-            'role' => 'required|string|in:admin,user',
+            'role' => ['required', 'string', Rule::in($request->user()->role === 'superadmin' ? ['superadmin', 'admin', 'user'] : ['admin', 'user'])],
             'status' => 'required|string|in:active,inactive',
         ]);
 
@@ -41,18 +41,23 @@ class UserController extends Controller
         }
 
         $user = User::create($validated);
+
         return redirect()->route('users.index')->with('success', 'User created successfully');
     }
 
     public function edit(User $user)
     {
+        abort_if($user->role === 'superadmin' && auth()->user()->role !== 'superadmin', 403);
+
         return inertia('Users/Edit', [
-            'user' => UserResource::make($user)
+            'user' => UserResource::make($user),
         ]);
     }
 
     public function update(Request $request, User $user)
     {
+        abort_if($user->role === 'superadmin' && $request->user()->role !== 'superadmin', 403);
+
         if ($user->id === auth()->user()->id) {
             return redirect()->route('users.index')->with('error', 'You cannot update your own account status');
         }
@@ -61,31 +66,35 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'You cannot update your own account');
         }
 
-        if ($user->id === 1 && ($user->isDirty('role') || $user->isDirty('status'))) {    
+        if ($user->id === 1 && ($user->isDirty('role') || $user->isDirty('status'))) {
             return redirect()->route('users.index')->with('error', 'You cannot update admin role or status');
         }
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'email' => 'sometimes|email|unique:users,email,'.$user->id,
             'password' => 'sometimes|string|min:8|confirmed',
-            'phone' => 'sometimes|string|max:15|unique:users,phone,' . $user->id,
-            'role' => 'sometimes|string|in:admin,user',
+            'phone' => 'sometimes|string|max:15|unique:users,phone,'.$user->id,
+            'role' => ['sometimes', 'string', Rule::in($request->user()->role === 'superadmin' ? ['superadmin', 'admin', 'user'] : ['admin', 'user'])],
             'status' => 'sometimes|string|in:active,inactive',
         ]);
-
 
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         }
 
         $user->update($validated);
+
         return redirect()->route('users.index')->with('success', 'User updated successfully');
     }
 
     public function destroy(User $user)
     {
+        abort_if($user->role === 'superadmin' && auth()->user()->role !== 'superadmin', 403);
+        abort_if($user->role === 'superadmin' && User::where('role', 'superadmin')->count() === 1, 422, 'The last superadmin cannot be deleted.');
+
         $user->delete();
+
         return redirect()->route('users.index')->with('success', 'User deleted successfully');
     }
 }
