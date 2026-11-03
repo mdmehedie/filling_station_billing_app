@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing, RefreshCcw } from "lucide-react";
+import { Download, FileText, Calendar, Building, CheckCircle, Eye, Loader2, ChartColumnIncreasing, RefreshCcw, FileSpreadsheet } from "lucide-react";
 import OrganizationSelector from "@/components/OrganizationSelector";
 import { Organization, Invoice, PaginatedResponse } from "@/types/response";
 import { DataTableWrapper } from "@/components/data-table-wrapper";
@@ -27,6 +27,8 @@ interface IndexProps {
     invoices: PaginatedResponse<Invoice>;
 }
 
+type DownloadFormat = 'pdf' | 'excel';
+
 export default function Index({ months, years, organizations, invoices }: IndexProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -36,6 +38,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
     const [includeCover, setIncludeCover] = useState<boolean>(false);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
     const [downloadProgress, setDownloadProgress] = useState<number>(0);
+    const [downloadingFormat, setDownloadingFormat] = useState<DownloadFormat | null>(null);
     const [showGenerateModal, setShowGenerateModal] = useState<boolean>(false);
     const { toast } = useToast();
 
@@ -50,29 +53,36 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         },
     ];
 
-    const handleDownload = async () => {
+    const resetForm = () => {
+        setSelectedOrganization(null);
+        setSelectedMonth(months[0] || 0);
+        setSelectedYear(years[0] || 0);
+        setIncludeCover(false);
+    };
+
+    // Shared PDF / Excel invoice download
+    const downloadInvoice = async (
+        organization: Pick<Organization, 'id' | 'name'>,
+        month: number,
+        year: number,
+        withCover: boolean,
+        format: DownloadFormat,
+    ) => {
         setIsDownloading(true);
+        setDownloadingFormat(format);
         setDownloadProgress(0);
 
         try {
-            if (!selectedOrganization) {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Please select an organization",
-                });
-                return;
-            }
-
             toast({
                 title: "Downloading...",
-                description: `Preparing invoice for ${selectedOrganization.name}...`,
+                description: `Preparing ${format === 'excel' ? 'Excel' : 'PDF'} invoice for ${organization.name}...`,
             });
 
-            const resp = await axios.post(`/api/invoices/${selectedOrganization.id}/export`, {
-                month: selectedMonth,
-                year: selectedYear,
-                include_cover: includeCover
+            const endpoint = format === 'excel' ? 'export-excel' : 'export';
+            const resp = await axios.post(`/api/invoices/${organization.id}/${endpoint}`, {
+                month,
+                year,
+                include_cover: withCover
             }, {
                 responseType: 'blob',
                 withCredentials: true,
@@ -84,15 +94,17 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 },
             });
 
+            const [extension, mimeType] = format === 'excel'
+                ? ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+                : withCover ? ['zip', 'application/zip'] : ['pdf', 'application/pdf'];
+
             // Extract filename from Content-Disposition
             const cd = resp.headers['content-disposition'] || '';
             const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
             const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
-                `${includeCover ? 'invoice-with-cover' : 'invoice'}-${selectedMonth}-${selectedYear}.${includeCover ? 'zip' : 'pdf'}`;
+                `${withCover ? 'invoice-with-cover' : 'invoice'}-${month}-${year}.${extension}`;
 
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
-                type: includeCover ? 'application/zip' : 'application/pdf'
-            }));
+            const blobUrl = URL.createObjectURL(new Blob([resp.data], { type: mimeType }));
             const a = document.createElement('a');
             a.href = blobUrl;
             a.download = filename;
@@ -112,17 +124,33 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                     title: "Not Found",
                     description: "No invoice found for the selected month and organization.",
                 });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Failed to download invoice. Please try again.",
+                });
             }
         } finally {
             setIsDownloading(false);
+            setDownloadingFormat(null);
             setDownloadProgress(0);
-            // clear the form
-            setSelectedOrganization(null);
-            setSelectedMonth(months[0] || 0);
-            setSelectedYear(years[0] || 0);
-            setIncludeCover(false);
+            resetForm();
         }
-    }
+    };
+
+    const handleDownload = async (format: DownloadFormat) => {
+        if (!selectedOrganization) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Please select an organization",
+            });
+            return;
+        }
+
+        await downloadInvoice(selectedOrganization, selectedMonth, selectedYear, includeCover, format);
+    };
 
     // Custom debounced search function
     const debouncedSearch = useCallback((term: string) => {
@@ -156,66 +184,14 @@ export default function Index({ months, years, organizations, invoices }: IndexP
         });
     };
 
-    const handleRowDownload = async (invoice: Invoice) => {
-
-        try {
-            setIsDownloading(true);
-            setDownloadProgress(0);
-
-            toast({
-                title: "Downloading...",
-                description: `Preparing invoice for ${invoice.organization.name}...`,
-            });
-
-            const resp = await axios.post(`/api/invoices/${invoice.organization.id}/export`, {
-                month: new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1,
-                year: +invoice.year,
-                include_cover: true
-            }, {
-                responseType: 'blob',
-                withCredentials: true,
-                onDownloadProgress: (e: any) => {
-                    if (e.total) {
-                        const pct = Math.round((e.loaded / e.total) * 100);
-                        setDownloadProgress(pct);
-                    }
-                },
-            });
-
-            // Extract filename from Content-Disposition
-            const cd = resp.headers['content-disposition'] || '';
-            const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]+)/i);
-            const filename = match ? decodeURIComponent(match[1].replace(/['"]/g, '')) :
-                `${includeCover ? 'invoice-with-cover' : 'invoice'}-${selectedMonth}-${selectedYear}.${includeCover ? 'zip' : 'pdf'}`;
-
-            const blobUrl = URL.createObjectURL(new Blob([resp.data], {
-                type: includeCover ? 'application/zip' : 'application/pdf'
-            }));
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click(); toast({ title: "Success", description: "Invoice downloaded successfully" });
-            a.remove();
-            URL.revokeObjectURL(blobUrl);
-        } catch (error) {
-            if (axios.isAxiosError(error) && error.response?.status === 404) {
-                toast({
-                    variant: "destructive",
-                    title: "Not Found",
-                    description: "No invoice found for the selected month and organization.",
-                });
-            }
-        } finally {
-            setIsDownloading(false);
-            setDownloadProgress(0);
-            // clear the form
-            setSelectedOrganization(null);
-            setSelectedMonth(months[0] || 0);
-            setSelectedYear(years[0] || 0);
-            setIncludeCover(false);
-        }
-    }
+    const handleRowDownload = (invoice: Invoice, format: DownloadFormat) =>
+        downloadInvoice(
+            invoice.organization,
+            new Date(`${invoice.month} 1, ${invoice.year}`).getMonth() + 1,
+            +invoice.year,
+            true,
+            format,
+        );
 
     const [isSyncing, setIsSyncing] = useState<number | null>(null);
 
@@ -463,12 +439,22 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRowDownload(row)}
+                        onClick={() => handleRowDownload(row, 'pdf')}
                         className="flex items-center gap-1"
                         disabled={isDownloading}
                     >
-                        {isDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                        {downloadingFormat === 'pdf' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                         PDF
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRowDownload(row, 'excel')}
+                        className="flex items-center gap-1 text-green-700 hover:text-green-800"
+                        disabled={isDownloading}
+                    >
+                        {downloadingFormat === 'excel' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileSpreadsheet className="h-3 w-3" />}
+                        Excel
                     </Button>
                     <Button
                         variant="outline"
@@ -483,7 +469,7 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                 </div>
             )
         }
-    ], []);
+    ], [isDownloading, downloadingFormat, isSyncing]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -662,8 +648,8 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                             </p>
                                             <p className="mt-1">
                                                 {includeCover
-                                                    ? 'Download will include a cover page and be packaged as a ZIP file'
-                                                    : 'Download will be a single PDF file without cover page'}
+                                                    ? 'PDF: cover + invoice packaged as a ZIP file. Excel: one workbook with Cover and Invoice sheets'
+                                                    : 'PDF: a single invoice file. Excel: one workbook with the Invoice sheet'}
                                             </p>
                                         </div>
                                     </div>
@@ -696,8 +682,8 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                                     Format:{' '}
                                     <span className="font-medium">
                                         {includeCover
-                                            ? 'ZIP (with cover)'
-                                            : 'PDF (standard)'}
+                                            ? 'ZIP (with cover) or Excel (2 sheets)'
+                                            : 'PDF (standard) or Excel'}
                                     </span>
                                 </p>
                             </div>
@@ -729,34 +715,42 @@ export default function Index({ months, years, organizations, invoices }: IndexP
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                onClick={handleDownload}
-                                disabled={
-                                    isDownloading ||
-                                    !selectedMonth ||
-                                    !selectedYear ||
-                                    !selectedOrganization
-                                }
-                                className="flex items-center gap-2"
-                            >
-                                {isDownloading ? (
-                                    <>
-                                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                        <span>
-                                            Downloading... {downloadProgress}%
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Download className="h-4 w-4" />
-                                        <span>
-                                            Download{' '}
-                                            {includeCover ? 'ZIP' : 'PDF'}{' '}
-                                            Invoice
-                                        </span>
-                                    </>
-                                )}
-                            </Button>
+                            {(['pdf', 'excel'] as const).map((format) => (
+                                <Button
+                                    key={format}
+                                    variant={format === 'excel' ? 'secondary' : 'default'}
+                                    onClick={() => handleDownload(format)}
+                                    disabled={
+                                        isDownloading ||
+                                        !selectedMonth ||
+                                        !selectedYear ||
+                                        !selectedOrganization
+                                    }
+                                    className="flex items-center gap-2"
+                                >
+                                    {downloadingFormat === format ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <span>
+                                                Downloading... {downloadProgress}%
+                                            </span>
+                                        </>
+                                    ) : format === 'excel' ? (
+                                        <>
+                                            <FileSpreadsheet className="h-4 w-4" />
+                                            <span>Download Excel</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="h-4 w-4" />
+                                            <span>
+                                                Download{' '}
+                                                {includeCover ? 'ZIP' : 'PDF'}
+                                            </span>
+                                        </>
+                                    )}
+                                </Button>
+                            ))}
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

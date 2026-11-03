@@ -54,6 +54,17 @@ class InvoiceController extends Controller
         return $this->invoiceService->exportPdf($validated, $organization_id);
     }
 
+    public function exportExcel(Request $request, $organization_id)
+    {
+        $validated = $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2000|max:2050',
+            'include_cover' => 'required|boolean',
+        ]);
+
+        return $this->invoiceService->exportExcel($validated, $organization_id);
+    }
+
     public function monthlyExport(Request $request)
     {
         $validated = $request->validate([

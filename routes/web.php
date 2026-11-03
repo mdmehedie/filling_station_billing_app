@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified', 'is_active'])->group(function () {
     // invoices routes
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::post('api/invoices/{organization_id}/export', [InvoiceController::class, 'exportPdf'])->name('invoices.export');
+    Route::post('api/invoices/{organization_id}/export-excel', [InvoiceController::class, 'exportExcel'])->name('invoices.export-excel');
     Route::post('invoices/monthly-export', [InvoiceController::class, 'monthlyExport'])->name('invoices.monthly-export');
     Route::post('invoices/monthly-report-pdf', [InvoiceController::class, 'monthlyReportPdf'])->name('invoices.monthly-report-pdf');
     Route::post('invoices/{organization_id}/sync', [InvoiceController::class, 'sync'])->name('invoices.sync');

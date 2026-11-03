@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exports\InvoiceExport;
+use App\Exports\OrganizationInvoiceExport;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -35,19 +36,64 @@ class InvoiceService
         return [$start, $end, $period];
     }
 
-    public function exportPdf(array $validated, int $organization_id)
+    /**
+     * Collect everything the invoice and cover documents need (shared by PDF and Excel exports)
+     */
+    public function prepareInvoiceExport(array $validated, int $organization_id): array
     {
         [$start, $end, $period] = $this->findOutStartEndPeriod($validated['month'], $validated['year']);
 
-        // 4) Structure data by fuel type and vehicle
+        // Structure data by fuel type and vehicle
         [$data, $tableHeaders, $totalBill, $totalCoupon, $totalQty, $pageCount] = $this->getInvoiceData($organization_id, $start, $end, $period);
-
-        // return $data;
 
         $organization = Organization::find($organization_id, ['*']);
         $fileName = $organization->ucode.'_'.$organization->name.'_'.$period->isoFormat('MMMM YYYY');
         $month = $validated['month'];
         $year = $validated['year'];
+
+        // calculate repeated coupon count
+        $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
+
+        // calculate VAT and IT (if applicable) on top of the total bill
+        $vatRate = ($organization->is_vat_applied && $organization->vat_rate > 0) ? (float) $organization->vat_rate : 0;
+        $vatAmount = round($totalBill * $vatRate / 100, 2);
+        $itRate = ($organization->is_it_applied && $organization->it_rate > 0) ? (float) $organization->it_rate : 0;
+        $itAmount = round($totalBill * $itRate / 100, 2);
+        $grandTotal = $totalBill + $vatAmount + $itAmount;
+
+        return compact('data', 'tableHeaders', 'totalBill', 'totalCoupon', 'totalQty', 'pageCount', 'organization', 'fileName', 'month', 'year', 'repeatedCouponCount', 'vatRate', 'vatAmount', 'itRate', 'itAmount', 'grandTotal');
+    }
+
+    public function exportExcel(array $validated, int $organization_id)
+    {
+        $export = $this->prepareInvoiceExport($validated, $organization_id);
+
+        return Excel::download(
+            new OrganizationInvoiceExport($export, (bool) $validated['include_cover']),
+            $export['fileName'].'-invoice.xlsx',
+            \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+    public function exportPdf(array $validated, int $organization_id)
+    {
+        [
+            'data' => $data,
+            'tableHeaders' => $tableHeaders,
+            'totalBill' => $totalBill,
+            'totalCoupon' => $totalCoupon,
+            'pageCount' => $pageCount,
+            'organization' => $organization,
+            'fileName' => $fileName,
+            'month' => $month,
+            'year' => $year,
+            'repeatedCouponCount' => $repeatedCouponCount,
+            'vatRate' => $vatRate,
+            'vatAmount' => $vatAmount,
+            'itRate' => $itRate,
+            'itAmount' => $itAmount,
+            'grandTotal' => $grandTotal,
+        ] = $this->prepareInvoiceExport($validated, $organization_id);
 
         // logo rendering for left side
         $imagePath = public_path('default/csd-logo.png');
@@ -62,16 +108,6 @@ class InvoiceService
         $logo2 = 'data:image/'.$imageType.';base64,'.base64_encode($imageData);
 
         $signature = $this->imageDataUri(public_path('default/signature.png'));
-
-        // calculate repeated coupon count
-        $repeatedCouponCount = $this->calculateRepeatedCouponCount($start, $end, $organization_id);
-
-        // calculate VAT and IT (if applicable) on top of the total bill
-        $vatRate = ($organization->is_vat_applied && $organization->vat_rate > 0) ? (float) $organization->vat_rate : 0;
-        $vatAmount = round($totalBill * $vatRate / 100, 2);
-        $itRate = ($organization->is_it_applied && $organization->it_rate > 0) ? (float) $organization->it_rate : 0;
-        $itAmount = round($totalBill * $itRate / 100, 2);
-        $grandTotal = $totalBill + $vatAmount + $itAmount;
 
         if ($validated['include_cover']) {
             try {
